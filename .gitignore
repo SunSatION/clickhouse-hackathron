@@ -1,0 +1,7 @@
+.trigger
+.env
+node_modules
+dist
+.DS_Store
+.playwright-mcp
+.kilo

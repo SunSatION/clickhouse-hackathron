@@ -1,0 +1,1123 @@
+import "dotenv/config";
+
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import express from "express";
+
+import { auth, runs, tasks } from "@trigger.dev/sdk";
+
+import { listTaskDescriptions } from "../trigger/task-descriptions";
+import { logger } from "../lib/logger";
+import { CRAWL_CONFIG } from "../config/crawl";
+import { RYANAIR_DEFAULT_BASES } from "../airlines/ryanair";
+import { newTraceId } from "../observability/ids";
+
+const PORT = Number(process.env.FRONTEND_PORT ?? 3030);
+const HYPERDX_URL = (process.env.HYPERDX_URL ?? "http://localhost:8090").replace(/\/$/, "");
+
+const log = logger("src/frontend/server.ts");
+
+const app = express();
+app.use(express.json());
+app.use(express.static(join(import.meta.dirname, "..", "..", "public")));
+
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const bodyBytes = req.headers["content-length"] ? Number(req.headers["content-length"]) : 0;
+  log.info(">>> request enter", {
+    method: req.method,
+    path: req.originalUrl,
+    ip: req.ip ?? req.socket.remoteAddress,
+    bytes: bodyBytes,
+  });
+
+  let logged = false;
+  const finalize = () => {
+    if (logged) return;
+    logged = true;
+    const durationMs = Date.now() - startedAt;
+    const status = res.statusCode;
+    const meta = {
+      method: req.method,
+      path: req.originalUrl,
+      status,
+      durationMs,
+    };
+    if (status >= 500) log.error("<<< request exit", meta);
+    else if (status >= 400) log.warn("<<< request exit", meta);
+    else log.info("<<< request exit", meta);
+  };
+
+  res.on("finish", finalize);
+  res.on("close", finalize);
+  next();
+});
+
+app.get("/", (_req, res) => {
+  res.sendFile(join(import.meta.dirname, "index.html"));
+});
+
+function parseIataList(input: unknown): string[] {
+  if (!Array.isArray(input)) {
+    if (typeof input === "string") {
+      return input
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter((s) => /^[A-Z]{3}$/.test(s));
+    }
+    return [];
+  }
+  return input
+    .map((s) => String(s).trim().toUpperCase())
+    .filter((s) => /^[A-Z]{3}$/.test(s));
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function nextMonthIso(): string {
+  const d = new Date();
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function nextMonthStartIso(): string {
+  const d = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1));
+  return d.toISOString().slice(0, 10);
+}
+
+function monthAfterNextStartIso(): string {
+  const d = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 2, 1));
+  return d.toISOString().slice(0, 10);
+}
+
+function uuidToTraceId(runId: string): string {
+  return newTraceId(runId);
+}
+
+async function resolveTraceId(runIdRaw: string): Promise<string> {
+  if (runIdRaw.startsWith("run_")) {
+    const run = await runs.retrieve(runIdRaw);
+    const payload = run.payload as Record<string, unknown> | undefined;
+    const crawlRunId = payload?.crawlRunId as string | undefined;
+    if (!crawlRunId) throw new Error(`No crawlRunId in run payload for ${runIdRaw}`);
+    return newTraceId(crawlRunId);
+  }
+  return newTraceId(runIdRaw);
+}
+
+function clampString(s: unknown, max: number): string {
+  return String(s ?? "").slice(0, max);
+}
+
+app.get("/api/health", async (_req, res) => {
+  try {
+    const { pingClickHouse, getClickHouseForOtel } = await import("../db/clickhouse");
+    const flights = await pingClickHouse();
+    let otel = false;
+    try {
+      const ch = getClickHouseForOtel();
+      const r = await ch.ping();
+      otel = Boolean(r.success);
+    } catch {
+      otel = false;
+    }
+    res.json({
+      ok: true,
+      ts: new Date().toISOString(),
+      clickhouse: { flights, otel },
+      hyperdx: { url: HYPERDX_URL },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/tasks", (_req, res) => {
+  res.json({ ok: true, tasks: listTaskDescriptions() });
+});
+
+app.get("/api/config", (_req, res) => {
+  const envOrigins = parseIataList(process.env.RYANAIR_ORIGINS);
+  res.json({
+    ok: true,
+    crawl: CRAWL_CONFIG,
+    ryanair: {
+      useFarfnd: process.env.RYANAIR_USE_FARFND !== "false",
+      envOrigins,
+      defaultBasesCount: RYANAIR_DEFAULT_BASES.length,
+      defaultBases: RYANAIR_DEFAULT_BASES,
+    },
+    frontend: { port: PORT },
+    hyperdx: { url: HYPERDX_URL },
+    server: { version: readPackageVersion(), pid: process.pid, startedAt: new Date().toISOString() },
+  });
+});
+
+function readPackageVersion(): string {
+  try {
+    const raw = readFileSync(join(import.meta.dirname, "..", "..", "package.json"), "utf8");
+    return (JSON.parse(raw) as { version?: string }).version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+app.post("/api/trigger/sync-ryanair-routes", async (req, res) => {
+  try {
+    const source: "dynamic" | "bases" = req.body?.source === "bases" ? "bases" : "dynamic";
+    const concurrency = Math.min(
+      20,
+      Math.max(1, Math.floor(Number(req.body?.concurrency ?? 1)))
+    );
+
+    if (source === "dynamic") {
+      const handle = await tasks.trigger<
+        typeof import("../trigger/sync-ryanair-routes").syncRyanairRoutes
+      >("sync-ryanair-routes", { concurrency });
+      res.json({
+        ok: true,
+        runId: handle.id,
+        publicAccessToken: handle.publicAccessToken,
+        task: "sync-ryanair-routes",
+        params: { source, concurrency },
+      });
+      return;
+    }
+
+    const origins = parseIataList(req.body?.origins ?? []);
+    const envOrigins = parseIataList(process.env.RYANAIR_ORIGINS);
+    const finalOrigins =
+      origins.length > 0 ? origins : envOrigins.length > 0 ? envOrigins : undefined;
+    const args = ["--source", "bases"];
+    if (finalOrigins && finalOrigins.length > 0) {
+      args.push("--origins", finalOrigins.join(","));
+    }
+    const result = await spawnScript("sync-ryanair-routes.ts", args);
+    res.json({
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: result.durationMs,
+      params: { source, concurrency, origins: finalOrigins },
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/trigger/full-scan", async (req, res) => {
+  try {
+    const dateFrom: string = req.body?.dateFrom ?? nextMonthStartIso();
+    const dateTo: string = req.body?.dateTo ?? monthAfterNextStartIso();
+    const requestedOrigins = parseIataList(req.body?.origins ?? []);
+    const envOrigins = parseIataList(process.env.RYANAIR_ORIGINS);
+    const origins = requestedOrigins.length > 0 ? requestedOrigins : envOrigins;
+    const crawlRunId: string = req.body?.runId || crypto.randomUUID();
+    const adults = Math.max(1, Math.floor(Number(req.body?.adults ?? CRAWL_CONFIG.ryanair.adults)));
+    const requestDelayMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestDelayMs ?? CRAWL_CONFIG.ryanair.requestDelayMs))
+    );
+    const requestJitterMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestJitterMs ?? CRAWL_CONFIG.ryanair.requestJitterMs))
+    );
+    const cooldownMs = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
+    const maxIterations: number = Math.min(
+      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 1500))),
+      2000
+    );
+
+    if (origins.length === 0) {
+      res.status(400).json({
+        ok: false,
+        error: "origins must be provided in the request or RYANAIR_ORIGINS",
+      });
+      return;
+    }
+
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const enqueueResult = await enqueuePendingRoutes({
+      airline: "Ryanair",
+      origins,
+      dateFrom,
+      dateTo,
+    });
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline: "Ryanair",
+      crawlRunId,
+      maxIterations,
+      adults,
+      requestDelayMs,
+      requestJitterMs,
+      cooldownMs,
+    });
+    res.json({
+      ok: true,
+      runId: handle.id,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      publicAccessToken: handle.publicAccessToken,
+      task: "crawl-queue-worker",
+      enqueued: enqueueResult.enqueued,
+      alreadyPending: enqueueResult.already_pending,
+      params: {
+        origins,
+        dateFrom,
+        dateTo,
+        adults,
+        requestDelayMs,
+        requestJitterMs,
+        cooldownMs,
+        maxIterations,
+      },
+      hyperdx: { url: `${HYPERDX_URL}/search` },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/trigger/single-origin", async (req, res) => {
+  try {
+    const origin: string = String(req.body?.origin ?? "").trim().toUpperCase();
+    const dateFrom: string = req.body?.dateFrom ?? nextMonthStartIso();
+    const dateTo: string = req.body?.dateTo ?? monthAfterNextStartIso();
+    const destinations =
+      req.body?.destinations != null ? parseIataList(req.body.destinations) : undefined;
+    const crawlRunId: string = req.body?.runId || crypto.randomUUID();
+    const adults = Math.max(1, Math.floor(Number(req.body?.adults ?? CRAWL_CONFIG.ryanair.adults)));
+    const requestDelayMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestDelayMs ?? CRAWL_CONFIG.ryanair.requestDelayMs))
+    );
+    const requestJitterMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestJitterMs ?? CRAWL_CONFIG.ryanair.requestJitterMs))
+    );
+    const cooldownMs = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
+    const maxIterations: number = Math.min(
+      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 1500))),
+      2000
+    );
+
+    if (!/^[A-Z]{3}$/.test(origin)) {
+      res.status(400).json({ ok: false, error: "origin must be a 3-letter IATA code" });
+      return;
+    }
+
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const enqueueResult = await enqueuePendingRoutes({
+      airline: "Ryanair",
+      origins: [origin],
+      dateFrom,
+      dateTo,
+    });
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline: "Ryanair",
+      crawlRunId,
+      maxIterations,
+      adults,
+      requestDelayMs,
+      requestJitterMs,
+      cooldownMs,
+    });
+    res.json({
+      ok: true,
+      runId: handle.id,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      publicAccessToken: handle.publicAccessToken,
+      task: "crawl-queue-worker",
+      enqueued: enqueueResult.enqueued,
+      alreadyPending: enqueueResult.already_pending,
+      params: {
+        origin,
+        dateFrom,
+        dateTo,
+        destinations,
+        adults,
+        requestDelayMs,
+        requestJitterMs,
+        cooldownMs,
+        maxIterations,
+      },
+      hyperdx: { url: `${HYPERDX_URL}/search` },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/trigger/seed-queue", async (req, res) => {
+  try {
+    const airline = (req.body?.airline ?? "Ryanair") as "Ryanair" | "EasyJet";
+    const origins = parseIataList(req.body?.origins ?? []);
+    const dateFrom: string = req.body?.dateFrom ?? nextMonthStartIso();
+    const dateTo: string = req.body?.dateTo ?? monthAfterNextStartIso();
+    const maxIterations: number = Math.min(Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 100))), 1000);
+    const adults: number = Math.max(1, Math.floor(Number(req.body?.adults ?? CRAWL_CONFIG.ryanair.adults)));
+    const requestDelayMs: number = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestDelayMs ?? CRAWL_CONFIG.ryanair.requestDelayMs))
+    );
+    const requestJitterMs: number = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestJitterMs ?? CRAWL_CONFIG.ryanair.requestJitterMs))
+    );
+    const cooldownMs: number = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
+
+    if (origins.length === 0) {
+      res.status(400).json({ ok: false, error: "origins array is required" });
+      return;
+    }
+
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const enqueueResult = await enqueuePendingRoutes({
+      airline,
+      origins,
+      dateFrom,
+      dateTo,
+    });
+
+    const crawlRunId = crypto.randomUUID();
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline,
+      crawlRunId,
+      maxIterations,
+      adults,
+      requestDelayMs,
+      requestJitterMs,
+      cooldownMs,
+    });
+
+    res.json({
+      ok: true,
+      runId: handle.id,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      publicAccessToken: handle.publicAccessToken,
+      task: "crawl-queue-worker",
+      enqueued: enqueueResult.enqueued,
+      alreadyPending: enqueueResult.already_pending,
+      params: { airline, origins, dateFrom, dateTo, maxIterations, adults, requestDelayMs, requestJitterMs, cooldownMs },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/trigger/crawl-pending-item", async (req, res) => {
+  try {
+    const airline: "Ryanair" | "EasyJet" = req.body?.airline === "EasyJet" ? "EasyJet" : "Ryanair";
+    const origin = String(req.body?.origin ?? "").trim().toUpperCase();
+    const destination = String(req.body?.destination ?? "").trim().toUpperCase();
+    const dateFrom: string = req.body?.dateFrom ?? nextMonthStartIso();
+    const dateTo: string = req.body?.dateTo ?? monthAfterNextStartIso();
+    const crawlRunId: string = req.body?.runId || crypto.randomUUID();
+    const force: boolean = Boolean(req.body?.force);
+    const adults = Math.max(1, Math.floor(Number(req.body?.adults ?? CRAWL_CONFIG.ryanair.adults)));
+    const requestDelayMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestDelayMs ?? CRAWL_CONFIG.ryanair.requestDelayMs))
+    );
+    const requestJitterMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestJitterMs ?? CRAWL_CONFIG.ryanair.requestJitterMs))
+    );
+    const cooldownMs = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
+
+    if (!/^[A-Z]{3}$/.test(origin)) {
+      res.status(400).json({ ok: false, error: "origin must be a 3-letter IATA code" });
+      return;
+    }
+    if (!/^[A-Z]{3}$/.test(destination)) {
+      res.status(400).json({ ok: false, error: "destination must be a 3-letter IATA code" });
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) {
+      res.status(400).json({ ok: false, error: "dateFrom and dateTo must be YYYY-MM-DD" });
+      return;
+    }
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-pending-item").crawlPendingItem
+    >("crawl-pending-item", {
+      airline,
+      crawlRunId,
+      originIata: origin,
+      destinationIata: destination,
+      dateFrom,
+      dateTo,
+      force,
+      adults,
+      requestDelayMs,
+      requestJitterMs,
+      cooldownMs,
+    });
+
+    res.json({
+      ok: true,
+      runId: handle.id,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      publicAccessToken: handle.publicAccessToken,
+      task: "crawl-pending-item",
+      params: { airline, origin, destination, dateFrom, dateTo, force, adults, requestDelayMs, requestJitterMs, cooldownMs },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/origins", async (req, res) => {
+  try {
+    const airline = String(req.query.airline ?? "").toUpperCase() || undefined;
+    const { getClickHouse } = await import("../db/clickhouse");
+    const ch = getClickHouse();
+    const params: Record<string, unknown> = {};
+    let filter = "";
+    if (airline) {
+      filter = "WHERE airline_code = {airline:String}";
+      params.airline = airline;
+    }
+    const r = await ch.query({
+      query: `
+        SELECT origin_iata AS iata, count() AS n
+        FROM airline_routes FINAL
+        ${filter}
+        GROUP BY origin_iata
+        ORDER BY origin_iata
+      `,
+      query_params: params,
+      format: "JSONEachRow",
+    });
+    const rows = (await r.json()) as Array<{ iata: string; n: number }>;
+    res.json({
+      ok: true,
+      airline,
+      origins: rows.map((row) => ({
+        iata: String(row.iata).toUpperCase(),
+        destinations: Number(row.n),
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/destinations", async (req, res) => {
+  try {
+    const originRaw = String(req.query.origin ?? "").trim().toUpperCase();
+    const airline = String(req.query.airline ?? "").toUpperCase() || undefined;
+    if (!/^[A-Z]{3}$/.test(originRaw)) {
+      res.status(400).json({ ok: false, error: "origin must be a 3-letter IATA code" });
+      return;
+    }
+    const { getClickHouse } = await import("../db/clickhouse");
+    const ch = getClickHouse();
+    const params: Record<string, unknown> = { origin: originRaw };
+    let extra = "";
+    if (airline) {
+      extra = "AND airline_code = {airline:String}";
+      params.airline = airline;
+    }
+    const r = await ch.query({
+      query: `
+        SELECT destination_iata AS iata, any(destination_name) AS name
+        FROM airline_routes FINAL
+        WHERE origin_iata = {origin:String}
+        ${extra}
+        GROUP BY destination_iata
+        ORDER BY destination_iata
+      `,
+      query_params: params,
+      format: "JSONEachRow",
+    });
+    const rows = (await r.json()) as Array<{ iata: string; name: string }>;
+    res.json({
+      ok: true,
+      origin: originRaw,
+      airline,
+      destinations: rows.map((row) => ({
+        iata: String(row.iata).toUpperCase(),
+        name: row.name ?? "",
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/iatas", async (req, res) => {
+  try {
+    const airline = (req.query.airline as string | undefined)?.toUpperCase();
+    const { getClickHouse } = await import("../db/clickhouse");
+    const ch = getClickHouse();
+    const result = await ch.query({
+      query: `
+        SELECT origin_iata AS iata FROM airline_routes FINAL WHERE origin_iata != ''
+        ${airline ? "AND airline_code = {airline:String}" : ""}
+        UNION DISTINCT
+        SELECT destination_iata AS iata FROM airline_routes FINAL WHERE destination_iata != ''
+        ${airline ? "AND airline_code = {airline:String}" : ""}
+        ORDER BY iata
+      `,
+      query_params: airline ? { airline } : undefined,
+      format: "JSONEachRow",
+    });
+    const rows = (await result.json()) as Array<{ iata: string }>;
+    res.json({ ok: true, iatas: rows.map((r) => r.iata.toUpperCase()) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/queue/stats", async (req, res) => {
+  try {
+    const airlineRaw = String(req.query.airline ?? "Ryanair");
+    if (airlineRaw !== "Ryanair" && airlineRaw !== "EasyJet") {
+      res.status(400).json({ ok: false, error: `airline must be "Ryanair" or "EasyJet"` });
+      return;
+    }
+    const { getQueueStats, listProgress } = await import("../db/crawl-progress");
+    const stats = await getQueueStats({ airline: airlineRaw });
+    res.json({ ok: true, airline: airlineRaw, ...stats });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/queue/items", async (req, res) => {
+  try {
+    const airlineRaw = String(req.query.airline ?? "Ryanair");
+    if (airlineRaw !== "Ryanair" && airlineRaw !== "EasyJet") {
+      res.status(400).json({ ok: false, error: `airline must be "Ryanair" or "EasyJet"` });
+      return;
+    }
+    const statusRaw = String(req.query.status ?? "pending").toLowerCase();
+    const validStatuses = new Set(["pending", "processing", "completed", "failed"]);
+    if (!validStatuses.has(statusRaw)) {
+      res.status(400).json({
+        ok: false,
+        error: "status must be one of pending|processing|completed|failed",
+      });
+      return;
+    }
+    const limit = Math.min(Math.max(1, Number(req.query.limit ?? 200)), 1000);
+    const offset = Math.max(0, Math.floor(Number(req.query.offset ?? 0)));
+    const originRaw = typeof req.query.origin === "string" ? req.query.origin.trim().toUpperCase() : "";
+    const origin = /^[A-Z]{3}$/.test(originRaw) ? originRaw : "";
+    const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : "";
+    const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : "";
+
+    const { getClickHouse } = await import("../db/clickhouse");
+    const ch = getClickHouse();
+
+    const params: Record<string, string | number> = {
+      airline: airlineRaw,
+      limit,
+      offset,
+    };
+    const conditions: string[] = ["airline = {airline:String}", "status = {status:String}"];
+    params.status = statusRaw;
+
+    if (origin) {
+      conditions.push("origin_iata = {origin:String}");
+      params.origin = origin;
+    }
+    if (dateFrom) {
+      conditions.push("date_from = {dateFrom:Date}");
+      params.dateFrom = dateFrom;
+    }
+    if (dateTo) {
+      conditions.push("date_to = {dateTo:Date}");
+      params.dateTo = dateTo;
+    }
+
+    const orderBy = statusRaw === "pending" ? "ORDER BY inserted_at ASC" : "ORDER BY completed_at DESC, started_at DESC";
+
+    const query = `
+      SELECT
+        airline,
+        origin_iata,
+        destination_iata,
+        date_from,
+        date_to,
+        status,
+        crawl_run_id,
+        rows_inserted,
+        error_message,
+        if(started_at = toDateTime(0), '', formatDateTime(started_at, '%Y-%m-%dT%H:%i:%s.%fZ')) AS started_at,
+        if(completed_at = toDateTime(0), '', formatDateTime(completed_at, '%Y-%m-%dT%H:%i:%s.%fZ')) AS completed_at,
+        formatDateTime(inserted_at, '%Y-%m-%dT%H:%i:%s.%fZ') AS inserted_at
+      FROM crawl_progress_latest
+      WHERE ${conditions.join(" AND ")}
+      ${orderBy}
+      LIMIT {limit:UInt32} OFFSET {offset:UInt32}
+    `;
+    const r = await ch.query({ query, query_params: params, format: "JSONEachRow" });
+    const rows = (await r.json()) as Array<Record<string, unknown>>;
+    const items = rows.map((r) => ({
+      airline: r.airline,
+      origin: String(r.origin_iata).toUpperCase(),
+      destination: String(r.destination_iata).toUpperCase(),
+      dateFrom: String(r.date_from).slice(0, 10),
+      dateTo: String(r.date_to).slice(0, 10),
+      status: r.status,
+      crawlRunId: r.crawl_run_id,
+      traceId: r.crawl_run_id ? uuidToTraceId(String(r.crawl_run_id)) : "",
+      rowsInserted: Number(r.rows_inserted ?? 0),
+      errorMessage: r.error_message,
+      startedAt: r.started_at,
+      completedAt: r.completed_at,
+      insertedAt: r.inserted_at,
+    }));
+    res.json({ ok: true, airline: airlineRaw, status: statusRaw, count: items.length, items });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/queue/items-by-run", async (req, res) => {
+  try {
+    const crawlRunId = String(req.query.runId ?? "").trim();
+    if (!crawlRunId) {
+      res.status(400).json({ ok: false, error: "runId is required" });
+      return;
+    }
+    const { getClickHouse } = await import("../db/clickhouse");
+    const ch = getClickHouse();
+    const r = await ch.query({
+      query: `
+        SELECT
+          airline,
+          origin_iata,
+          destination_iata,
+          date_from,
+          date_to,
+          status,
+          crawl_run_id,
+          rows_inserted,
+          error_message,
+          if(started_at = toDateTime(0), '', formatDateTime(started_at, '%Y-%m-%dT%H:%i:%s.%fZ')) AS started_at,
+          if(completed_at = toDateTime(0), '', formatDateTime(completed_at, '%Y-%m-%dT%H:%i:%s.%fZ')) AS completed_at
+        FROM crawl_progress_latest
+        WHERE crawl_run_id = {runId:String}
+        ORDER BY destination_iata
+      `,
+      query_params: { runId: crawlRunId },
+      format: "JSONEachRow",
+    });
+    const rows = (await r.json()) as Array<Record<string, unknown>>;
+    res.json({
+      ok: true,
+      runId: crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      count: rows.length,
+      items: rows.map((r) => ({
+        airline: r.airline,
+        origin: String(r.origin_iata).toUpperCase(),
+        destination: String(r.destination_iata).toUpperCase(),
+        dateFrom: String(r.date_from).slice(0, 10),
+        dateTo: String(r.date_to).slice(0, 10),
+        status: r.status,
+        crawlRunId: r.crawl_run_id,
+        rowsInserted: Number(r.rows_inserted ?? 0),
+        errorMessage: r.error_message,
+        startedAt: r.started_at,
+        completedAt: r.completed_at,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/runs/recent", async (req, res) => {
+  try {
+    const limit = Math.min(50, Number(req.query.limit ?? 20));
+    const taskIdentifier = typeof req.query.task === "string" ? req.query.task : undefined;
+    const list = await runs.list({ limit });
+    type RunLite = {
+      id: string;
+      taskIdentifier?: string;
+      status?: string;
+      createdAt?: Date | string;
+      updatedAt?: Date | string;
+      startedAt?: Date | string;
+      finishedAt?: Date | string;
+      isCompleted?: boolean;
+      output?: unknown;
+      payload?: unknown;
+      metadata?: unknown;
+    };
+    const rawData = (list.data ?? []) as unknown as RunLite[];
+    const data = taskIdentifier
+      ? rawData.filter((r) => r.taskIdentifier === taskIdentifier)
+      : rawData;
+    const toIso = (v: Date | string | undefined): string | null =>
+      v == null ? null : v instanceof Date ? v.toISOString() : String(v);
+    const summaries = data.slice(0, limit).map((r) => {
+      const output = (r.output ?? {}) as Record<string, unknown>;
+      const payload = (r.payload ?? {}) as Record<string, unknown>;
+      const meta = (r.metadata ?? {}) as Record<string, unknown>;
+      return {
+        id: r.id,
+        taskIdentifier: r.taskIdentifier ?? null,
+        status: r.status ?? null,
+        isCompleted: Boolean(r.isCompleted),
+        createdAt: toIso(r.createdAt),
+        updatedAt: toIso(r.updatedAt),
+        startedAt: toIso(r.startedAt),
+        finishedAt: toIso(r.finishedAt),
+        crawlRunId: payload?.crawlRunId ? String(payload.crawlRunId) : null,
+        runId: payload?.runId ? String(payload.runId) : null,
+        workerRunId: output?.workerRunId ? String(output.workerRunId) : null,
+        currentOrigin: meta?.currentOrigin ? String(meta.currentOrigin) : null,
+        currentDestination: meta?.currentDestination ? String(meta.currentDestination) : null,
+      };
+    });
+    res.json({ ok: true, count: summaries.length, runs: summaries });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/runs", async (req, res) => {
+  try {
+    const limit = Math.min(50, Number(req.query.limit ?? 10));
+    const list = await runs.list({ limit });
+    res.json({ ok: true, runs: list.data });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/runs/active", async (_req, res) => {
+  try {
+    const list = await runs.list({ limit: 50 });
+    const all = (list.data ?? []) as Array<Record<string, unknown>>;
+    const toMs = (v: unknown): number => {
+      if (!v) return Number.MAX_SAFE_INTEGER;
+      const d = v instanceof Date ? v : new Date(String(v));
+      const t = d.getTime();
+      return Number.isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+    };
+    const executing = all
+      .filter((r) => String(r.status ?? "").toUpperCase() === "EXECUTING")
+      .sort((a, b) => toMs(a.startedAt) - toMs(b.startedAt));
+    const queued = all
+      .filter((r) => String(r.status ?? "").toUpperCase() === "QUEUED")
+      .sort((a, b) => toMs(a.createdAt) - toMs(b.createdAt));
+    res.json({
+      ok: true,
+      executing,
+      queued,
+      totals: { executing: executing.length, queued: queued.length },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/runs/:runId", async (req, res) => {
+  try {
+    const run = await runs.retrieve(req.params.runId);
+    res.json({ ok: true, run });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/runs/:runId/cancel", async (req, res) => {
+  try {
+    const result = await runs.cancel(req.params.runId);
+    res.json({ ok: true, runId: req.params.runId, status: (result as unknown as { status?: string } | null)?.status ?? null });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/otel/trace", async (req, res) => {
+  try {
+    const runIdRaw = String(req.query.runId ?? "").trim();
+    const traceIdRaw = String(req.query.traceId ?? "").trim();
+    let traceId = traceIdRaw;
+    if (!traceId && runIdRaw) traceId = await resolveTraceId(runIdRaw);
+    if (!traceId || !/^[a-f0-9]{8,32}$/.test(traceId)) {
+      res.status(400).json({ ok: false, error: "valid runId (UUID) or traceId is required" });
+      return;
+    }
+    const { getClickHouseForOtel } = await import("../db/clickhouse");
+    const ch = getClickHouseForOtel();
+
+    const minutes = Math.min(Math.max(1, Number(req.query.windowMinutes ?? 1440)), 60 * 24 * 30);
+    const sinceIso = new Date(Date.now() - minutes * 60_000).toISOString().slice(0, 19).replace("T", " ");
+
+    const [logsRes, spansRes, metricsRes] = await Promise.all([
+      ch.query({
+        query: `
+          SELECT Timestamp, SeverityText, ServiceName, Body, LogAttributes, EventName, TraceId, SpanId
+          FROM otel_logs
+          WHERE TraceId = {traceId:String} AND Timestamp >= {since:DateTime}
+          ORDER BY Timestamp ASC
+          LIMIT 500
+        `,
+        query_params: { traceId, since: sinceIso },
+        format: "JSONEachRow",
+      }),
+      ch.query({
+        query: `
+          SELECT Timestamp, SpanName, SpanKind, ServiceName, Duration, StatusCode, StatusMessage,
+                 SpanAttributes, ParentSpanId, TraceId, SpanId
+          FROM otel_traces
+          WHERE TraceId = {traceId:String} AND Timestamp >= {since:DateTime}
+          ORDER BY Timestamp ASC
+          LIMIT 500
+        `,
+        query_params: { traceId, since: sinceIso },
+        format: "JSONEachRow",
+      }),
+      ch.query({
+        query: `
+          SELECT TimeUnix, ServiceName, MetricName, MetricUnit, Value, Attributes
+          FROM otel_metrics_gauge
+          WHERE ServiceName != '' AND toUnixTimestamp(TimeUnix) >= toUnixTimestamp({since:DateTime})
+          ORDER BY TimeUnix DESC
+          LIMIT 25
+        `,
+        query_params: { since: sinceIso },
+        format: "JSONEachRow",
+      }),
+    ]);
+
+    const logs = (await logsRes.json()) as Array<Record<string, unknown>>;
+    const spans = (await spansRes.json()) as Array<Record<string, unknown>>;
+    const metrics = (await metricsRes.json()) as Array<Record<string, unknown>>;
+
+    res.json({
+      ok: true,
+      runId: runIdRaw || null,
+      traceId,
+      hyperdx: hyperdxForTrace(traceId, minutes, runIdRaw),
+      counts: { logs: logs.length, spans: spans.length, metrics: metrics.length },
+      logs,
+      spans,
+      metrics,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/otel/recent-traces", async (_req, res) => {
+  try {
+    const { getClickHouseForOtel } = await import("../db/clickhouse");
+    const ch = getClickHouseForOtel();
+    const r = await ch.query({
+      query: `
+        SELECT
+          TraceId,
+          min(Timestamp) AS started,
+          max(Timestamp) AS ended,
+          count() AS span_count,
+          any(SpanName) AS root_span,
+          any(ServiceName) AS service
+        FROM otel_traces
+        WHERE TraceId != ''
+        GROUP BY TraceId
+        ORDER BY started DESC
+        LIMIT 30
+      `,
+      format: "JSONEachRow",
+    });
+    const rows = (await r.json()) as Array<Record<string, unknown>>;
+    res.json({
+      ok: true,
+      count: rows.length,
+      traces: rows.map((row) => ({
+        traceId: row.TraceId,
+        started: row.started,
+        ended: row.ended,
+        spanCount: Number(row.span_count ?? 0),
+        rootSpan: row.root_span,
+        service: row.service,
+        hyperdx: hyperdxForTrace(String(row.TraceId), 60 * 24 * 7),
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+function hyperdxForTrace(traceId: string, windowMinutes = 60 * 24 * 7, runIdHint?: string) {
+  const from = new Date(Date.now() - windowMinutes * 60_000).toISOString();
+  const to = new Date(Date.now() + 60_000).toISOString();
+  const search = `${HYPERDX_URL}/search?q=${encodeURIComponent(traceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const session = `${HYPERDX_URL}/search/${encodeURIComponent(traceId)}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  return { search, session, traceId, runIdHint: runIdHint ?? null, windowMinutes };
+}
+
+function spawnScript(scriptRelPath: string, args: string[]): Promise<{
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+}> {
+  const repoRoot = join(import.meta.dirname, "..", "..");
+  const scriptPath = join(repoRoot, "scripts", scriptRelPath);
+  return new Promise((resolve, reject) => {
+    const child = spawn("npx", ["tsx", scriptPath, ...args], {
+      cwd: repoRoot,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    const started = Date.now();
+    child.stdout.on("data", (b: Buffer) => {
+      stdout += b.toString("utf8");
+    });
+    child.stderr.on("data", (b: Buffer) => {
+      stderr += b.toString("utf8");
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      resolve({ code, stdout, stderr, durationMs: Date.now() - started });
+    });
+  });
+}
+
+app.post("/api/scripts/backfill-crawl-progress", async (req, res) => {
+  try {
+    const mode: "rows" | "mark-failed" =
+      req.body?.mode === "mark-failed" ? "mark-failed" : "rows";
+    const dryRun: boolean = Boolean(req.body?.dryRun);
+    const errorMessage: string = String(
+      req.body?.errorMessage ?? "Ryanair terms-of-use not accepted (backfilled)"
+    );
+
+    const args = ["--mode", mode];
+    if (mode === "rows" && dryRun) args.push("--dry-run");
+    if (mode === "mark-failed") args.push("--error-message", errorMessage);
+
+    const result = await spawnScript("backfill-crawl-progress.ts", args);
+    res.json({
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: result.durationMs,
+      params: { mode, dryRun, errorMessage },
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/scripts/manage-crawl-progress", async (req, res) => {
+  try {
+    const mode: "list" | "failed" | "requeue" = ((): "list" | "failed" | "requeue" => {
+      if (req.body?.mode === "failed") return "failed";
+      if (req.body?.mode === "requeue") return "requeue";
+      return "list";
+    })();
+    const airline: string = String(req.body?.airline ?? "Ryanair");
+    const origin: string = String(req.body?.origin ?? "").trim().toUpperCase();
+    const dateFrom: string = String(req.body?.dateFrom ?? "");
+    const dateTo: string = String(req.body?.dateTo ?? "");
+    const destinations = parseIataList(req.body?.destinations ?? []);
+    const includeCompleted: boolean = Boolean(req.body?.includeCompleted);
+
+    if (airline !== "Ryanair" && airline !== "EasyJet") {
+      res.status(400).json({ ok: false, error: `airline must be "Ryanair" or "EasyJet" (got "${airline}")` });
+      return;
+    }
+    if (!origin || !dateFrom || !dateTo) {
+      res
+        .status(400)
+        .json({ ok: false, error: "origin, dateFrom and dateTo are required" });
+      return;
+    }
+
+    const args = [
+      `--${mode}`,
+      "--airline",
+      airline,
+      "--origin",
+      origin,
+      "--from",
+      dateFrom,
+      "--to",
+      dateTo,
+    ];
+    if (destinations.length > 0) args.push("--dest", destinations.join(","));
+    if (includeCompleted) args.push("--include-completed");
+
+    const result = await spawnScript("manage-crawl-progress.ts", args);
+    res.json({
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: result.durationMs,
+      params: { mode, airline, origin, dateFrom, dateTo, destinations, includeCompleted },
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/scripts/run-migrations", async (_req, res) => {
+  try {
+    const result = await spawnScript("run-migrations.ts", []);
+    res.json({
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: result.durationMs,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/scripts/smoke-observability", async (_req, res) => {
+  try {
+    const result = await spawnScript("smoke-observability.ts", []);
+    res.json({
+      ok: result.code === 0,
+      exitCode: result.code,
+      durationMs: result.durationMs,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Frontend listening on http://localhost:${PORT}`);
+});
+
+void auth;
+void todayIso;
+void nextMonthIso;

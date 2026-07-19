@@ -1,0 +1,2171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8fafc" />
+    <title>Hackathron Crawler — Control Center</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --surface-2: #f1f5f9;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --fg: #0f172a;
+        --fg-soft: #334155;
+        --muted: #64748b;
+        --muted-2: #94a3b8;
+        --accent: #4f46e5;
+        --accent-hover: #4338ca;
+        --accent-soft: #eef2ff;
+        --ok: #10b981;
+        --ok-soft: #d1fae5;
+        --warn: #f59e0b;
+        --warn-soft: #fef3c7;
+        --err: #ef4444;
+        --err-soft: #fee2e2;
+        --running: #8b5cf6;
+        --running-soft: #ede9fe;
+        --pending: #f59e0b;
+        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+        --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+        --radius: 10px;
+        --radius-sm: 6px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 14px;
+        line-height: 1.5;
+        min-height: 100vh;
+      }
+
+      /* === Layout === */
+      .app { display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; }
+      .topbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: var(--shadow-sm);
+      }
+      .brand {
+        display: flex; align-items: center; gap: 10px;
+        font-weight: 700; letter-spacing: -0.01em; font-size: 16px;
+      }
+      .brand-dot {
+        width: 28px; height: 28px; border-radius: 8px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        display: grid; place-items: center; color: #fff; font-weight: 800;
+        box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+      }
+      .tabs { display: flex; gap: 4px; flex: 1; }
+      .tab-btn {
+        border: 0; background: transparent;
+        padding: 8px 14px; border-radius: var(--radius-sm);
+        font: 600 13px inherit; color: var(--muted);
+        cursor: pointer; transition: all 120ms ease;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .tab-btn:hover { background: var(--surface-2); color: var(--fg); }
+      .tab-btn.active { background: var(--accent-soft); color: var(--accent); }
+      .tab-btn .badge {
+        background: var(--border); color: var(--muted);
+        padding: 1px 6px; border-radius: 8px; font-size: 11px; font-weight: 600;
+      }
+      .tab-btn.active .badge { background: var(--accent); color: #fff; }
+      .topbar-right { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+      .pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px;
+        font-size: 12px; font-weight: 600;
+        background: var(--surface-2); color: var(--muted);
+      }
+      .pill .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--muted-2);
+      }
+      .pill.ok { background: var(--ok-soft); color: #047857; }
+      .pill.ok .dot { background: var(--ok); }
+      .pill.err { background: var(--err-soft); color: #b91c1c; }
+      .pill.err .dot { background: var(--err); }
+      .pill.warn { background: var(--warn-soft); color: #b45309; }
+      .pill.warn .dot { background: var(--warn); }
+
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 24px;
+      }
+      .view { display: none; }
+      .view.active { display: block; }
+      .view-header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+      }
+      .view-title { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+      .view-subtitle { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+      .view-actions { display: flex; gap: 8px; align-items: center; }
+
+      /* === Cards === */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 16px;
+      }
+      .card h3 {
+        margin: 0 0 4px;
+        font-size: 15px; font-weight: 700;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .card .desc {
+        color: var(--muted); font-size: 13px;
+        margin: 0 0 16px; line-height: 1.55;
+      }
+      .card .desc code, .desc code {
+        background: var(--surface-2);
+        padding: 1px 5px; border-radius: 4px; font-size: 12px;
+        color: var(--fg-soft);
+      }
+      .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+      @media (max-width: 900px) {
+        .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      }
+
+      /* === KPI tiles === */
+      .kpi {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        display: flex; flex-direction: column; gap: 6px;
+      }
+      .kpi .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+      .kpi .value { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+      .kpi .sub { font-size: 12px; color: var(--muted); }
+      .kpi.ok { border-color: rgba(16,185,129,0.3); }
+      .kpi.ok .value { color: #047857; }
+      .kpi.warn { border-color: rgba(245,158,11,0.3); }
+      .kpi.warn .value { color: #b45309; }
+      .kpi.err { border-color: rgba(239,68,68,0.3); }
+      .kpi.err .value { color: #b91c1c; }
+      .kpi.running { border-color: rgba(139,92,246,0.3); }
+      .kpi.running .value { color: #6d28d9; }
+
+      /* === Forms === */
+      label { display: block; font-size: 12px; font-weight: 600; color: var(--fg-soft); margin-bottom: 4px; }
+      label .req { color: var(--err); margin-left: 2px; }
+      .hint { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+      input, select, textarea {
+        width: 100%;
+        background: var(--surface);
+        color: var(--fg);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 9px 12px;
+        font: inherit;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      }
+      input[disabled], select[disabled], textarea[disabled] { background: var(--surface-2); cursor: not-allowed; opacity: 0.7; }
+      input.invalid { border-color: var(--err); }
+      input.invalid:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+      input[type="checkbox"] { width: auto; margin-right: 8px; vertical-align: middle; }
+
+      .field { margin-bottom: 14px; }
+      .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .row-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .actions { display: flex; gap: 8px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+      @media (max-width: 900px) { .row, .row-3, .row-2 { grid-template-columns: 1fr; } }
+
+      button {
+        background: var(--accent);
+        color: #ffffff;
+        border: 0;
+        border-radius: var(--radius-sm);
+        padding: 9px 16px;
+        font: 600 13px inherit;
+        cursor: pointer;
+        transition: background-color 120ms ease, transform 120ms ease;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      button:hover:not(:disabled) { background: var(--accent-hover); }
+      button:active:not(:disabled) { transform: translateY(1px); }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.secondary {
+        background: var(--surface); color: var(--fg);
+        border: 1px solid var(--border-strong);
+      }
+      button.secondary:hover:not(:disabled) { background: var(--surface-2); }
+      button.warn { background: var(--warn); color: #ffffff; }
+      button.warn:hover:not(:disabled) { background: #d97706; }
+      button.danger { background: var(--err); }
+      button.danger:hover:not(:disabled) { background: #dc2626; }
+      button.ghost { background: transparent; color: var(--fg-soft); border: 0; padding: 6px 8px; font-weight: 500; }
+      button.ghost:hover:not(:disabled) { background: var(--surface-2); }
+      button.small { padding: 6px 10px; font-size: 12px; }
+
+      details.advanced { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px; }
+      details.advanced > summary {
+        cursor: pointer; user-select: none;
+        font-size: 13px; font-weight: 600; color: var(--muted);
+        list-style: none;
+      }
+      details.advanced > summary::-webkit-details-marker { display: none; }
+      details.advanced > summary::before { content: "▸"; display: inline-block; width: 14px; color: var(--muted); transition: transform 120ms; }
+      details.advanced[open] > summary::before { content: "▾"; }
+
+      .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-soft); }
+      .check input { margin: 0; }
+
+      /* === Status badges === */
+      .status {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px; font-weight: 700;
+        text-transform: capitalize;
+        background: var(--surface-2); color: var(--muted);
+        white-space: nowrap;
+      }
+      .status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .status.pending { background: var(--warn-soft); color: #b45309; }
+      .status.processing { background: var(--running-soft); color: #6d28d9; }
+      .status.completed { background: var(--ok-soft); color: #047857; }
+      .status.failed { background: var(--err-soft); color: #b91c1c; }
+      .status.queued { background: var(--surface-2); color: var(--muted); }
+      .status.executing { background: var(--running-soft); color: #6d28d9; }
+      .status.waiting { background: var(--warn-soft); color: #b45309; }
+      .status.canceled, .status.cancelled { background: var(--surface-2); color: var(--muted); }
+      .status.timed_out, .status.expired { background: var(--warn-soft); color: #b45309; }
+      .status.crashed, .status.system_failure { background: var(--err-soft); color: #b91c1c; }
+
+      /* === Tables === */
+      .table-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.data th {
+        text-align: left;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 1;
+      }
+      table.data td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      table.data tr:hover td { background: var(--bg); }
+      table.data tr:last-child td { border-bottom: 0; }
+      table.data td.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; color: var(--fg-soft); }
+      table.data td.actions { white-space: nowrap; text-align: right; }
+      .table-scroll { max-height: 540px; overflow: auto; }
+      .empty-row { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
+      .table-toolbar {
+        display: flex; gap: 8px; align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        flex-wrap: wrap;
+      }
+      .table-toolbar input, .table-toolbar select {
+        padding: 6px 10px; font-size: 12px;
+        max-width: 240px;
+      }
+      .spacer { flex: 1; }
+
+      /* === Output & metadata === */
+      pre.output {
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 320px;
+        overflow-y: auto;
+      }
+      pre.output .ok-key { color: #34d399; }
+      pre.output .err-key { color: #f87171; }
+
+      /* === Run queue (dashboard) === */
+      .queue-position {
+        display: inline-block; min-width: 24px; text-align: center;
+        padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+        background: var(--surface-2); color: var(--muted);
+      }
+      .queue-position.next { background: var(--accent); color: #fff; }
+      .queue-position.running { background: var(--running); color: #fff; }
+      tr.queue-row-next td { background: rgba(79, 70, 229, 0.06); }
+      tr.queue-row-running td { background: rgba(139, 92, 246, 0.06); }
+      tr.queue-row.js-run-row { cursor: pointer; }
+      tr.queue-row.js-run-row:hover { background: var(--surface-2); }
+      tr.queue-row > td:first-child::before {
+        content: ""; display: inline-block; width: 0;
+      }
+
+      /* === Run accordion === */
+      tbody tr.js-run-row { cursor: pointer; }
+      tbody tr.js-run-row:hover { background: var(--surface-2); }
+      tbody tr.js-run-row > td:first-child::before {
+        content: "▸"; display: inline-block; margin-right: 6px; color: var(--muted-2); font-size: 11px;
+        transition: transform 120ms ease;
+      }
+      tbody tr.row-expanded > td:first-child::before { content: "▾"; color: var(--accent); }
+      .run-detail { padding: 14px 16px; background: var(--surface-2); border-radius: var(--radius-sm); }
+      .run-detail-meta {
+        display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px;
+        margin: 0 0 12px 0; font-size: 12px;
+      }
+      .run-detail-meta dt { color: var(--muted); font-weight: 500; }
+      .run-detail-meta dd { margin: 0; word-break: break-all; }
+      .run-detail-section {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+        padding: 8px 12px; margin-top: 8px;
+      }
+      .run-detail-section summary {
+        cursor: pointer; font-weight: 600; font-size: 13px; color: var(--fg-soft);
+        user-select: none;
+      }
+      .run-detail-json {
+        background: var(--surface-2); padding: 10px; border-radius: 4px;
+        overflow-x: auto; font-size: 11px; line-height: 1.45;
+        max-height: 320px; overflow-y: auto; margin: 8px 0 0 0;
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .run-detail-loading, .run-detail-error { padding: 12px; color: var(--muted); font-size: 12px; }
+      .run-detail-error { color: var(--err); }
+
+      /* === Toasts === */
+      .toast-stack {
+        position: fixed; bottom: 24px; right: 24px;
+        display: flex; flex-direction: column; gap: 8px;
+        z-index: 1000;
+        max-width: 360px;
+      }
+      .toast {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 13px;
+        box-shadow: var(--shadow-md);
+        animation: toast-in 200ms ease;
+      }
+      .toast.success { border-left-color: var(--ok); }
+      .toast.error { border-left-color: var(--err); }
+      .toast.warn { border-left-color: var(--warn); }
+      .toast .toast-title { font-weight: 700; margin-bottom: 2px; }
+      .toast .toast-body { color: var(--muted); font-size: 12px; }
+      @keyframes toast-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* === Tabs within a view === */
+      .subtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+      .subtab {
+        border: 0; background: transparent;
+        padding: 8px 14px;
+        font: 600 13px inherit; color: var(--muted);
+        cursor: pointer; border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .subtab:hover { color: var(--fg); }
+      .subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+      .subview { display: none; }
+      .subview.active { display: block; }
+
+      /* === Trace panel === */
+      .timeline { position: relative; padding-left: 20px; }
+      .timeline::before {
+        content: ""; position: absolute; top: 0; bottom: 0; left: 7px;
+        width: 2px; background: var(--border);
+      }
+      .timeline-item { position: relative; padding: 10px 12px 10px 16px; margin-bottom: 8px; background: var(--bg); border-radius: var(--radius-sm); }
+      .timeline-item::before {
+        content: ""; position: absolute; left: -17px; top: 14px;
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--accent); border: 2px solid var(--surface);
+      }
+      .timeline-item.severity-ERROR::before { background: var(--err); }
+      .timeline-item.severity-WARN::before { background: var(--warn); }
+      .timeline-item.severity-INFO::before { background: var(--accent); }
+      .timeline-item.severity-DEBUG::before { background: var(--muted-2); }
+      .timeline-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; align-items: center; margin-bottom: 2px; }
+      .timeline-body { font-size: 13px; }
+
+      /* === Helpers === */
+      .hidden { display: none !important; }
+      .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+      .muted { color: var(--muted); }
+      .row-flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .right { margin-left: auto; }
+      .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .fab-hyperdx {
+        background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+        color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 600;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        font-size: 13px;
+      }
+      .fab-hyperdx:hover { filter: brightness(1.1); }
+
+      .info-callout {
+        background: #eef2ff; border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        color: #3730a3; font-size: 13px; line-height: 1.5; margin: 0 0 16px;
+      }
+      .info-callout code { background: #c7d2fe; padding: 1px 5px; border-radius: 3px; }
+
+      .metric-mini {
+        display: grid; grid-template-columns: auto 1fr auto;
+        gap: 12px; align-items: center;
+        padding: 6px 0; border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .metric-mini:last-child { border-bottom: 0; }
+      .metric-mini .name { color: var(--fg-soft); font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+      .metric-mini .value { font-weight: 600; }
+      .metric-mini .time { color: var(--muted); font-size: 11px; }
+
+      footer { padding: 20px 24px; text-align: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); background: var(--surface); }
+
+      /* Selection of text becomes accent */
+      ::selection { background: var(--accent-soft); color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-dot">H</span>
+          Hackathron <span style="color: var(--muted); font-weight: 500; margin-left: 4px;">control center</span>
+        </div>
+        <nav class="tabs" role="tablist">
+          <button class="tab-btn active" data-view="dashboard" role="tab">Dashboard</button>
+          <button class="tab-btn" data-view="trigger" role="tab">Trigger</button>
+          <button class="tab-btn" data-view="queue" role="tab">
+            Queue <span class="badge" id="nav-queue-count">…</span>
+          </button>
+          <button class="tab-btn" data-view="traces" role="tab">Traces</button>
+          <button class="tab-btn" data-view="maintenance" role="tab">Maintenance</button>
+        </nav>
+        <div class="topbar-right">
+          <span id="health-pill" class="pill"><span class="dot"></span><span>connecting…</span></span>
+          <button class="ghost small" id="refresh-now" title="Refresh data">↻</button>
+        </div>
+      </header>
+
+      <main>
+        <!-- ====================================================== -->
+        <!-- Dashboard                                              -->
+        <!-- ====================================================== -->
+        <section class="view active" id="view-dashboard" role="tabpanel">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Dashboard</h1>
+              <p class="view-subtitle">Live overview of crawl progress, queue health and latest activity.</p>
+            </div>
+            <div class="view-actions">
+              <span class="pill" id="dash-updated">never</span>
+              <button class="secondary small" id="btn-dash-refresh">Refresh now</button>
+            </div>
+          </div>
+
+          <div class="grid-4">
+            <div class="kpi" id="kpi-pending">
+              <span class="label">Pending</span>
+              <span class="value">—</span>
+              <span class="sub">awaiting claim</span>
+            </div>
+            <div class="kpi running" id="kpi-processing">
+              <span class="label">Processing</span>
+              <span class="value">—</span>
+              <span class="sub">in flight</span>
+            </div>
+            <div class="kpi ok" id="kpi-completed">
+              <span class="label">Completed</span>
+              <span class="value">—</span>
+              <span class="sub">rows_inserted &gt; 0</span>
+            </div>
+            <div class="kpi err" id="kpi-failed">
+              <span class="label">Failed</span>
+              <span class="value">—</span>
+              <span class="sub">terminal error</span>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 16px;">
+            <h3>Run queue <span class="muted" id="queue-summary" style="font-size: 12px; font-weight: 500;"></span></h3>
+            <p class="desc">Live Trigger.dev queue — <strong>EXECUTING</strong> at the top, <strong>QUEUED</strong> below in pickup order (oldest first, since concurrencyLimit = 1).</p>
+            <div class="table-wrap" style="border-radius: var(--radius-sm);">
+              <table class="data" id="dash-queue-table">
+                <thead>
+                  <tr>
+                    <th style="width: 60px;">#</th>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Queued at</th>
+                    <th>Started</th>
+                    <th>Origin</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="dash-queue-tbody">
+                  <tr><td colspan="7" class="empty-row">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top: 16px;">
+            <div class="card">
+              <h3>Recent runs</h3>
+              <p class="desc">Latest Trigger.dev runs across this project — click any to inspect its crawl trace.</p>
+              <div class="table-wrap" style="border-radius: var(--radius-sm);">
+                <table class="data" id="dash-runs-table">
+                  <thead>
+                    <tr>
+                      <th>Task</th>
+                      <th>Status</th>
+                      <th>Started</th>
+                      <th>Origin</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-runs-tbody">
+                    <tr><td colspan="5" class="empty-row">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>System</h3>
+              <p class="desc">Connection state for the services this UI talks to.</p>
+              <div class="metric-mini"><span>Trigger.dev</span><span class="value" id="dash-trigger">—</span><span class="time" id="dash-trigger-time"></span></div>
+              <div class="metric-mini"><span>ClickHouse (flights)</span><span class="value" id="dash-ch-flights">—</span><span class="time" id="dash-ch-flights-time"></span></div>
+              <div class="metric-mini"><span>ClickHouse (otel)</span><span class="value" id="dash-ch-otel">—</span><span class="time" id="dash-ch-otel-time"></span></div>
+              <div class="metric-mini"><span>HyperDX</span><a class="value" id="dash-hyperdx" target="_blank" rel="noopener">—</a><span class="time" id="dash-hyperdx-time"></span></div>
+              <div class="metric-mini"><span>Server</span><span class="value" id="dash-server">v—</span><span class="time" id="dash-server-time"></span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!-- Trigger                                                -->
+        <!-- ====================================================== -->
+        <section class="view" id="view-trigger" role="tabpanel">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Trigger</h1>
+              <p class="view-subtitle">Fire a Trigger.dev task or kick off the queue worker. All inputs are validated against the DB and config.</p>
+            </div>
+          </div>
+
+          <div class="subtabs" role="tablist">
+            <button class="subtab active" data-sub="single">Single origin</button>
+            <button class="subtab" data-sub="full">Full scan</button>
+            <button class="subtab" data-sub="queue">Seed &amp; run queue</button>
+            <button class="subtab" data-sub="item">Run one pending item</button>
+            <button class="subtab" data-sub="sync">Sync Ryanair routes</button>
+          </div>
+
+          <div id="trigger-tasks-meta" hidden></div>
+          <datalist id="dl-origins"></datalist>
+          <datalist id="dl-iatas"></datalist>
+
+          <!-- Single origin -->
+          <div class="subview active" data-sub="single">
+            <div class="card">
+              <h3>Crawl one Ryanair origin <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc" data-desc>Loading…</p>
+              <div class="row">
+                <div class="field">
+                  <label for="single-origin">Origin IATA <span class="req">*</span></label>
+                  <input id="single-origin" type="text" placeholder="MLA" maxlength="3" pattern="[A-Z]{3}" required autocomplete="off" list="dl-iatas" />
+                  <span class="hint">Type a 3-letter code — autocomplete from the routes table.</span>
+                </div>
+                <div class="field">
+                  <label for="single-from">Date from <span class="req">*</span></label>
+                  <input id="single-from" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="single-to">Date to <span class="req">*</span></label>
+                  <input id="single-to" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="single-adults">Adults</label>
+                  <input id="single-adults" type="number" min="1" max="9" step="1" value="1" />
+                </div>
+              </div>
+              <div class="row-2">
+                <div class="field">
+                  <label for="single-destinations">Destinations filter</label>
+                  <input id="single-destinations" type="text" placeholder="STN,DUB — empty = all from airline_routes" list="dl-iatas" />
+                  <span class="hint">Comma-separated. Leave empty to use every destination in <code>airline_routes</code> for the origin.</span>
+                </div>
+                <div class="field">
+                  <label for="single-run-id">Run ID (optional)</label>
+                  <div class="row-flex">
+                    <input id="single-run-id" type="text" placeholder="auto-generated UUID" class="mono" />
+                    <button class="ghost small" type="button" id="single-run-id-gen" title="Generate a UUID">Generate</button>
+                  </div>
+                  <span class="hint">Set this to correlate the run's trace with a known crawl_run_id.</span>
+                </div>
+              </div>
+              <details class="advanced">
+                <summary>Pacing</summary>
+                <div class="row-3">
+                  <div class="field"><label for="single-delay">Request delay (ms)</label><input id="single-delay" type="number" min="0" step="500" value="20000" /></div>
+                  <div class="field"><label for="single-jitter">Jitter (ms)</label><input id="single-jitter" type="number" min="0" step="500" value="10000" /></div>
+                  <div class="field"><label for="single-cooldown">Cooldown (ms)</label><input id="single-cooldown" type="number" min="0" step="500" value="0" /></div>
+                </div>
+              </details>
+              <div class="actions">
+                <button id="btn-single">Run</button>
+                <button class="secondary" type="button" id="btn-single-reset">Reset</button>
+                <span class="muted" id="single-output-hint"></span>
+              </div>
+              <pre class="output" id="single-output">// No run yet.</pre>
+            </div>
+          </div>
+
+          <!-- Full scan -->
+          <div class="subview" data-sub="full">
+            <div class="card">
+              <h3>Full Ryanair scan <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc" data-desc>Loading…</p>
+              <div class="info-callout">
+                Fan-out across every origin in <code>airline_routes</code> (or a subset you pick). Uses the
+                FARFND <code>/cheapestPerDay</code> endpoint — <strong>1 HTTP call per (origin, destination)</strong>.
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="scan-from">Date from <span class="req">*</span></label>
+                  <input id="scan-from" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="scan-to">Date to <span class="req">*</span></label>
+                  <input id="scan-to" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="scan-adults">Adults</label>
+                  <input id="scan-adults" type="number" min="1" max="9" step="1" value="1" />
+                </div>
+                <div class="field">
+                  <label for="scan-run-id">Run ID</label>
+                  <div class="row-flex">
+                    <input id="scan-run-id" type="text" placeholder="auto-generated UUID" class="mono" />
+                    <button class="ghost small" type="button" id="scan-run-id-gen">Generate</button>
+                  </div>
+                </div>
+              </div>
+              <div class="row-2">
+                <div class="field">
+                  <label for="scan-origins">Origins override</label>
+                  <select id="scan-origins" multiple size="4"></select>
+                  <span class="hint">Empty = every origin in <code>airline_routes</code>. Ctrl/Cmd-click to pick specific ones.</span>
+                </div>
+                <div class="field">
+                  <label for="scan-destinations">Destinations filter</label>
+                  <input id="scan-destinations" type="text" placeholder="STN,DUB — empty = scan all" list="dl-iatas" />
+                </div>
+              </div>
+              <details class="advanced">
+                <summary>Pacing</summary>
+                <div class="row-3">
+                  <div class="field"><label for="scan-delay">Request delay (ms)</label><input id="scan-delay" type="number" min="0" step="500" value="20000" /></div>
+                  <div class="field"><label for="scan-jitter">Jitter (ms)</label><input id="scan-jitter" type="number" min="0" step="500" value="10000" /></div>
+                  <div class="field"><label for="scan-cooldown">Cooldown (ms)</label><input id="scan-cooldown" type="number" min="0" step="500" value="0" /></div>
+                </div>
+              </details>
+              <div class="actions">
+                <button id="btn-scan">Run scan</button>
+                <span class="muted" id="scan-output-hint"></span>
+              </div>
+              <pre class="output" id="scan-output">// No run yet.</pre>
+            </div>
+          </div>
+
+          <!-- Seed & run queue -->
+          <div class="subview" data-sub="queue">
+            <div class="card">
+              <h3>Seed &amp; run crawl queue <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc">
+                Inserts one <code>pending</code> row per (origin, destination) into <code>crawl_progress</code> and
+                immediately fires the <code>crawl-queue-worker</code> task, which loops at concurrency 1.
+              </p>
+              <div class="row">
+                <div class="field">
+                  <label for="seed-airline">Airline <span class="req">*</span></label>
+                  <select id="seed-airline" required>
+                    <option value="Ryanair" selected>Ryanair</option>
+                    <option value="EasyJet">EasyJet</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="seed-origins">Origins <span class="req">*</span></label>
+                  <select id="seed-origins" multiple size="4"></select>
+                  <span class="hint">Pick one or more origins from the routes table.</span>
+                </div>
+                <div class="field">
+                  <label for="seed-from">Date from <span class="req">*</span></label>
+                  <input id="seed-from" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="seed-to">Date to <span class="req">*</span></label>
+                  <input id="seed-to" type="date" required />
+                </div>
+              </div>
+              <div class="row-3">
+                <div class="field"><label for="seed-adults">Adults</label><input id="seed-adults" type="number" min="1" max="9" step="1" value="1" /></div>
+                <div class="field"><label for="seed-iter">Worker max iterations</label><input id="seed-iter" type="number" min="1" max="1000" step="1" value="100" /></div>
+                <div class="field"><label for="seed-pacing-info">Pacing</label><input id="seed-pacing-info" type="text" disabled value="Uses CRAWL_CONFIG.ryanair defaults" /></div>
+              </div>
+              <div class="actions">
+                <button id="btn-seed-queue">Seed &amp; run worker</button>
+                <span class="muted" id="seed-output-hint"></span>
+              </div>
+              <pre class="output" id="seed-queue-output">// No run yet.</pre>
+            </div>
+          </div>
+
+          <!-- Run a single pending item -->
+          <div class="subview" data-sub="item">
+            <div class="card">
+              <h3>Run one pending queue item <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc" data-desc>Loading…</p>
+              <div class="row-3">
+                <div class="field">
+                  <label for="pi-airline">Airline <span class="req">*</span></label>
+                  <select id="pi-airline">
+                    <option value="Ryanair" selected>Ryanair</option>
+                    <option value="EasyJet">EasyJet</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="pi-origin">Origin <span class="req">*</span></label>
+                  <input id="pi-origin" type="text" maxlength="3" pattern="[A-Z]{3}" placeholder="MLA" list="dl-iatas" />
+                </div>
+                <div class="field">
+                  <label for="pi-destination">Destination <span class="req">*</span></label>
+                  <input id="pi-destination" type="text" maxlength="3" pattern="[A-Z]{3}" placeholder="STN" list="dl-iatas" />
+                </div>
+              </div>
+              <div class="row-3">
+                <div class="field"><label for="pi-from">Date from <span class="req">*</span></label><input id="pi-from" type="date" required /></div>
+                <div class="field"><label for="pi-to">Date to <span class="req">*</span></label><input id="pi-to" type="date" required /></div>
+                <div class="field">
+                  <label for="pi-force">&nbsp;</label>
+                  <label class="check"><input id="pi-force" type="checkbox" /> Force (steal from worker)</label>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="secondary" type="button" id="btn-pi-load">Refresh pending list</button>
+                <button id="btn-pi-run">Run selected item</button>
+                <span class="muted" id="pi-count"></span>
+              </div>
+              <div class="table-wrap" style="border-radius: var(--radius-sm); margin-top: 14px;">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px;">Origin</th>
+                      <th style="width: 80px;">Destination</th>
+                      <th>From</th>
+                      <th>To</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="pi-tbody">
+                    <tr><td colspan="5" class="empty-row">Click "Refresh pending list" to load.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <pre class="output" id="pi-output">// No run yet.</pre>
+            </div>
+          </div>
+
+          <!-- Sync Ryanair routes -->
+          <div class="subview" data-sub="sync">
+            <div class="card">
+              <h3>Sync Ryanair routes <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc" data-desc>Loading…</p>
+              <div class="row-3">
+                <div class="field">
+                  <label for="sync-source">Source <span class="req">*</span></label>
+                  <select id="sync-source">
+                    <option value="dynamic">dynamic — all active airports (often WAF-blocked)</option>
+                    <option value="bases">bases — RYANAIR_DEFAULT_BASES static list (~199 origins)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="sync-concurrency">Concurrency</label>
+                  <input id="sync-concurrency" type="number" min="1" max="20" step="1" value="1" />
+                </div>
+                <div class="field" id="sync-origins-wrap">
+                  <label for="sync-origins">Origins override</label>
+                  <input id="sync-origins" type="text" placeholder="MLA,STN — used with bases only" list="dl-iatas" />
+                  <span class="hint">Empty = full list.</span>
+                </div>
+              </div>
+              <div class="actions">
+                <button id="btn-sync">Sync now</button>
+              </div>
+              <pre class="output" id="sync-output">// No run yet.</pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!-- Queue                                                  -->
+        <!-- ====================================================== -->
+        <section class="view" id="view-queue" role="tabpanel">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Queue</h1>
+              <p class="view-subtitle">Crawl progress ledger — what is pending, in flight, completed and failed. Backed by <code>crawl_progress_latest</code>.</p>
+            </div>
+            <div class="view-actions">
+              <select id="queue-airline" aria-label="airline">
+                <option value="Ryanair" selected>Ryanair</option>
+                <option value="EasyJet">EasyJet</option>
+              </select>
+              <button class="secondary small" id="btn-queue-refresh">Refresh</button>
+            </div>
+          </div>
+
+          <div class="grid-4" id="queue-kpis"></div>
+
+          <div class="card" style="margin-top: 16px;">
+            <div class="subtabs">
+              <button class="subtab active" data-queue-status="pending">Pending</button>
+              <button class="subtab" data-queue-status="processing">Processing</button>
+              <button class="subtab" data-queue-status="completed">Completed</button>
+              <button class="subtab" data-queue-status="failed">Failed</button>
+            </div>
+            <div class="table-toolbar">
+              <input id="queue-filter-origin" type="text" placeholder="Filter origin…" maxlength="3" style="text-transform:uppercase;width:120px" />
+              <input id="queue-filter-date-from" type="date" />
+              <span class="muted">→</span>
+              <input id="queue-filter-date-to" type="date" />
+              <span class="spacer"></span>
+              <span class="muted" id="queue-count"></span>
+            </div>
+            <div class="table-scroll">
+              <table class="data">
+                <thead id="queue-thead">
+                  <tr>
+                    <th>Origin</th><th>Destination</th><th>From</th><th>To</th>
+                    <th>Inserted / Started / Completed</th>
+                    <th>Rows</th>
+                    <th>Trace</th>
+                  </tr>
+                </thead>
+                <tbody id="queue-tbody">
+                  <tr><td colspan="7" class="empty-row">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!-- Traces                                                 -->
+        <!-- ====================================================== -->
+        <section class="view" id="view-traces" role="tabpanel">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Traces</h1>
+              <p class="view-subtitle">Resolve a crawl run / Trigger run into the OTel trace id, then jump straight to HyperDX.</p>
+            </div>
+            <div class="view-actions">
+              <a class="fab-hyperdx" id="hyperdx-home" target="_blank" rel="noopener">Open HyperDX ↗</a>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Resolve a run → trace</h3>
+            <p class="desc">Paste a <code>crawl_run_id</code> (UUID) or a Trigger.dev <code>run id</code> to fetch every log &amp; span recorded for that trace, plus a direct HyperDX link.</p>
+            <div class="row-2">
+              <div class="field">
+                <label for="trace-input">crawl_run_id / Trigger run id</label>
+                <input id="trace-input" type="text" placeholder="UUID or run id" class="mono" />
+                <span class="hint">UUIDs are converted to the 32-char trace id used by ClickHouse.</span>
+              </div>
+              <div class="field">
+                <label for="trace-window">Time window</label>
+                <select id="trace-window">
+                  <option value="60">Last hour</option>
+                  <option value="1440" selected>Last 24 hours</option>
+                  <option value="10080">Last 7 days</option>
+                  <option value="43200">Last 30 days</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button id="btn-trace-resolve">Resolve trace</button>
+              <button class="secondary" type="button" id="btn-trace-recent">Show recent traces</button>
+            </div>
+          </div>
+
+          <div id="trace-result" class="hidden">
+            <div class="card">
+              <h3>Trace summary</h3>
+              <div class="row-2">
+                <div class="metric-mini"><span>Trace id</span><span class="mono value" id="trace-id">—</span><span class="time" id="trace-id-meta"></span></div>
+                <div class="metric-mini"><span>crawl_run_id</span><span class="mono value" id="trace-runid">—</span><span class="time"></span></div>
+                <div class="metric-mini"><span>Spans</span><span class="value" id="trace-span-count">0</span><span class="time"></span></div>
+                <div class="metric-mini"><span>Logs</span><span class="value" id="trace-log-count">0</span><span class="time"></span></div>
+              </div>
+              <div class="actions">
+                <a class="fab-hyperdx" id="trace-hyperdx-link" target="_blank" rel="noopener">Open in HyperDX ↗</a>
+                <button class="secondary small" id="btn-trace-copy">Copy trace id</button>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="card">
+                <h3>Spans</h3>
+                <p class="desc">All <code>otel_traces</code> rows tagged with this trace id, in order.</p>
+                <div class="table-scroll">
+                  <table class="data">
+                    <thead><tr><th>Span</th><th>Kind</th><th>Duration</th><th>Status</th></tr></thead>
+                    <tbody id="trace-spans-tbody"><tr><td colspan="4" class="empty-row">No spans.</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card">
+                <h3>Logs timeline</h3>
+                <p class="desc">All <code>otel_logs</code> rows for the trace, top-to-bottom in time.</p>
+                <div class="timeline" id="trace-logs-timeline"><div class="empty-row">No logs.</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="trace-recent-card" style="margin-top: 16px;">
+            <h3>Recent traces in ClickHouse</h3>
+            <p class="desc">Most recent OTel traces observed in <code>otel.otel_traces</code>. Click any to copy its trace id.</p>
+            <div class="table-scroll">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Started</th>
+                    <th>Span count</th>
+                    <th>Root span</th>
+                    <th>Service</th>
+                    <th>Trace id</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="traces-recent-tbody">
+                  <tr><td colspan="6" class="empty-row">Click "Show recent traces" to load.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!-- Maintenance                                            -->
+        <!-- ====================================================== -->
+        <section class="view" id="view-maintenance" role="tabpanel">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Maintenance</h1>
+              <p class="view-subtitle">ClickHouse jobs, backfills and one-shot scripts.</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h3>Backfill crawl progress</h3>
+              <p class="desc">Targets <code>crawl_progress</code> rows with <code>status='completed' AND rows_inserted=0</code> and writes a corrected row (ReplacingMergeTree collapses it).</p>
+              <div class="row-2">
+                <div class="field">
+                  <label for="bf-mode">Mode <span class="req">*</span></label>
+                  <select id="bf-mode">
+                    <option value="rows">rows — recompute rows_inserted from flight_listings</option>
+                    <option value="mark-failed">mark-failed — reclassify as failed (Ryanair ToU)</option>
+                  </select>
+                </div>
+                <div class="field" id="bf-dry-run-wrap">
+                  <label for="bf-dry-run">&nbsp;</label>
+                  <label class="check"><input id="bf-dry-run" type="checkbox" /> Dry run (rows mode only)</label>
+                </div>
+              </div>
+              <div class="field">
+                <label for="bf-error-message">Error message (mark-failed mode)</label>
+                <input id="bf-error-message" type="text" value="Ryanair terms-of-use not accepted (backfilled)" />
+              </div>
+              <div class="actions">
+                <button class="warn" id="btn-backfill">Run backfill</button>
+              </div>
+              <pre class="output" id="backfill-output">// No run yet.</pre>
+            </div>
+
+            <div class="card">
+              <h3>Inspect / requeue</h3>
+              <p class="desc">List / inspect / requeue destinations in <code>crawl_progress</code>.</p>
+              <div class="row-2">
+                <div class="field">
+                  <label for="mg-mode">Mode</label>
+                  <select id="mg-mode">
+                    <option value="list">list — show all entries</option>
+                    <option value="failed">failed — list failed destinations</option>
+                    <option value="requeue">requeue — reset to pending</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="mg-airline">Airline</label>
+                  <select id="mg-airline">
+                    <option value="Ryanair" selected>Ryanair</option>
+                    <option value="EasyJet">EasyJet</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row-3">
+                <div class="field">
+                  <label for="mg-origin">Origin <span class="req">*</span></label>
+                  <input id="mg-origin" type="text" maxlength="3" pattern="[A-Z]{3}" placeholder="MLA" list="dl-iatas" />
+                </div>
+                <div class="field"><label for="mg-from">Date from <span class="req">*</span></label><input id="mg-from" type="date" required /></div>
+                <div class="field"><label for="mg-to">Date to <span class="req">*</span></label><input id="mg-to" type="date" required /></div>
+              </div>
+              <div class="row-2">
+                <div class="field">
+                  <label for="mg-destinations">Destinations filter</label>
+                  <input id="mg-destinations" type="text" placeholder="STN,DUB — empty = all" list="dl-iatas" />
+                </div>
+                <div class="field">
+                  <label for="mg-include-completed">&nbsp;</label>
+                  <label class="check"><input id="mg-include-completed" type="checkbox" /> Include completed (requeue only)</label>
+                </div>
+              </div>
+              <div class="actions"><button id="btn-manage">Run</button></div>
+              <pre class="output" id="manage-output">// No run yet.</pre>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>One-shot scripts</h3>
+            <p class="desc">Maintenance CLI scripts that don't return a Trigger run id.</p>
+            <div class="row-flex">
+              <button class="secondary" id="btn-migrations">Run migrations</button>
+              <button class="secondary" id="btn-smoke">Smoke test observability</button>
+            </div>
+            <pre class="output" id="maintenance-output">// No run yet.</pre>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span id="footer-info">Hackathron Crawler · ClickHouse · Trigger.dev · OTel → HyperDX</span>
+      </footer>
+
+      <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+    </div>
+
+    <script>
+      /* ====================================================== */
+      /* Utilities                                                */
+      /* ====================================================== */
+      const $ = (id) => document.getElementById(id);
+      const escapeHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const fmt = (v) => (typeof v === "string" ? v : JSON.stringify(v, null, 2));
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const IATA_RE = /^[A-Z]{3}$/;
+      const TRACE_RE = /^[a-f0-9]{8,32}$/;
+
+      const fmtTs = (v) => {
+        if (!v) return "—";
+        const d = v instanceof Date ? v : new Date(v);
+        const t = d.getTime();
+        if (!Number.isFinite(t) || t <= 0) return "—";
+        const diff = (Date.now() - t) / 1000;
+        if (diff < 60) return `${Math.max(0, Math.floor(diff))}s ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return d.toLocaleString();
+      };
+      const hasTs = (v) => {
+        if (!v) return false;
+        const t = (v instanceof Date ? v : new Date(v)).getTime();
+        return Number.isFinite(t) && t > 0;
+      };
+
+      function uuid() {
+        return (crypto.randomUUID && crypto.randomUUID()) ||
+          ("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+          }));
+      }
+
+      async function getJson(url) {
+        const r = await fetch(url, { headers: { accept: "application/json" } });
+        const text = await r.text();
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${text}`);
+        return JSON.parse(text);
+      }
+      async function postJson(url, body) {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify(body ?? {}),
+        });
+        const text = await r.text();
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${text}`);
+        return JSON.parse(text);
+      }
+
+      /* ====================================================== */
+      /* Toasts                                                   */
+      /* ====================================================== */
+      const toast = (() => {
+        const stack = $("toast-stack");
+        const make = (kind, title, body) => {
+          const node = document.createElement("div");
+          node.className = "toast " + kind;
+          node.innerHTML = `<div class="toast-title">${escapeHtml(title)}</div>${body ? `<div class="toast-body">${escapeHtml(body)}</div>` : ""}`;
+          stack.appendChild(node);
+          setTimeout(() => { node.style.opacity = "0"; setTimeout(() => node.remove(), 200); }, 4500);
+        };
+        return {
+          success: (t, b) => make("success", t, b),
+          error: (t, b) => make("error", t, b),
+          warn: (t, b) => make("warn", t, b),
+          info: (t, b) => make("", t, b),
+        };
+      })();
+
+      /* ====================================================== */
+      /* Defaults                                                 */
+      /* ====================================================== */
+      const nextStartIso = () => {
+        const d = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1));
+        return d.toISOString().slice(0, 10);
+      };
+      const monthAfterNextIso = () => {
+        const d = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 2, 1));
+        return d.toISOString().slice(0, 10);
+      };
+      const todayIso = () => new Date().toISOString().slice(0, 10);
+
+      // Set default dates to "next outbound month" (matches FARFND window).
+      ["single-from", "single-to", "scan-from", "scan-to", "seed-from", "seed-to", "pi-from", "pi-to", "mg-from", "mg-to"].forEach((id) => {
+        const el = $(id);
+        if (el) el.value = id.endsWith("-to") ? monthAfterNextIso() : nextStartIso();
+      });
+
+      // Auto-uppercase IATA inputs
+      ["single-origin", "pi-origin", "pi-destination", "mg-origin", "queue-filter-origin"].forEach((id) => {
+        const el = $(id);
+        if (el) el.addEventListener("input", () => { el.value = el.value.toUpperCase(); });
+      });
+
+      $("single-run-id-gen")?.addEventListener("click", () => { $("single-run-id").value = uuid(); });
+      $("scan-run-id-gen")?.addEventListener("click", () => { $("scan-run-id").value = uuid(); });
+
+      function syncBackfillMode() {
+        const mode = $("bf-mode").value;
+        $("bf-dry-run").disabled = mode !== "rows";
+        $("bf-error-message").disabled = mode !== "mark-failed";
+      }
+      $("bf-mode")?.addEventListener("change", syncBackfillMode);
+      syncBackfillMode();
+
+      function setOutput(el, value, ok = true) {
+        if (!el) return;
+        const text = typeof value === "string" ? value : fmt(value);
+        el.classList.toggle("err", !ok);
+        el.textContent = text;
+      }
+
+      function iataOk(id) {
+        const v = $(id).value.trim();
+        if (!IATA_RE.test(v.toUpperCase())) return `${id} must be 3 letters`;
+        return null;
+      }
+
+      function validateForm(ids) {
+        let ok = true;
+        ids.forEach((id) => {
+          const el = $(id);
+          if (!el) return;
+          el.classList.remove("invalid");
+          if (el.required && !el.value.trim()) { el.classList.add("invalid"); ok = false; }
+          if (el.pattern && el.value && !new RegExp("^(?:" + el.pattern + ")$").test(el.value)) { el.classList.add("invalid"); ok = false; }
+        });
+        return ok;
+      }
+
+      /* ====================================================== */
+      /* Tabs                                                     */
+      /* ====================================================== */
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const view = btn.dataset.view;
+          document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+          document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
+          if (view === "queue") refreshQueue();
+          if (view === "traces") $("trace-input")?.focus();
+        });
+      });
+
+      document.querySelectorAll(".subtab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const parent = btn.closest("[role='tabpanel']");
+          if (!parent) return;
+          const tablist = btn.parentElement;
+          tablist.querySelectorAll(".subtab").forEach((b) => b.classList.toggle("active", b === btn));
+          parent.querySelectorAll(".subview").forEach((sv) => {
+            const subMatch = btn.dataset.sub !== undefined && sv.dataset.sub === btn.dataset.sub;
+            const queueMatch = btn.dataset.queueStatus !== undefined && sv.dataset.queueStatus === btn.dataset.queueStatus;
+            sv.classList.toggle("active", subMatch || queueMatch);
+          });
+          if (btn.dataset.queueStatus) refreshQueue();
+        });
+      });
+
+      /* ====================================================== */
+      /* Config + datalists                                       */
+      /* ====================================================== */
+      let AppConfig = { crawl: { ryanair: {}, easyjet: {} }, hyperdx: { url: "http://localhost:8090" }, ryanair: { defaultBases: [] } };
+
+      async function loadConfig() {
+        try {
+          const r = await getJson("/api/config");
+          if (r?.ok) AppConfig = r;
+        } catch (e) { console.warn("loadConfig:", e); }
+        applyConfigToInputs();
+      }
+
+      function applyConfigToInputs() {
+        const ry = AppConfig.crawl?.ryanair || {};
+        const ids = {
+          "single-delay": ry.requestDelayMs, "single-jitter": ry.requestJitterMs, "single-cooldown": ry.cooldownMs, "single-adults": ry.adults,
+          "scan-delay": ry.requestDelayMs, "scan-jitter": ry.requestJitterMs, "scan-cooldown": ry.cooldownMs, "scan-adults": ry.adults,
+          "seed-adults": ry.adults, "seed-iter": 100,
+          "pi-" : null,
+        };
+        for (const [id, v] of Object.entries(ids)) {
+          if (v == null) continue;
+          const el = $(id);
+          if (el && el.value == null || el && Number(el.value) === 0) el.value = v;
+        }
+        // Set default scan/single seed adults if currently default
+        if ($("single-adults")?.value === "1") $("single-adults").value = ry.adults ?? 1;
+        if ($("scan-adults")?.value === "1") $("scan-adults").value = ry.adults ?? 1;
+        if ($("seed-adults")?.value === "1") $("seed-adults").value = ry.adults ?? 1;
+
+        const hyperdxLink = $("hyperdx-home");
+        if (hyperdxLink && AppConfig.hyperdx?.url) hyperdxLink.href = AppConfig.hyperdx.url;
+
+        const footer = $("footer-info");
+        if (footer) {
+          footer.innerHTML = `Hackathron Crawler · ClickHouse · Trigger.dev · OTel → <a href="${AppConfig.hyperdx?.url ?? '#'}" target="_blank" rel="noopener">HyperDX</a> · v${AppConfig.server?.version ?? '?'}`;
+        }
+      }
+
+      async function loadOriginsDatalist(airline = "Ryanair") {
+        try {
+          const r = await getJson(`/api/origins?airline=${airline}`);
+          const list = $("dl-origins");
+          const scanSelect = $("scan-origins");
+          const seedSelect = $("seed-origins");
+          if (list) list.innerHTML = r.origins.map((o) => `<option value="${o.iata}">${o.iata} — ${o.destinations} destinations</option>`).join("");
+          if (scanSelect) scanSelect.innerHTML = r.origins.map((o) => `<option value="${o.iata}">${o.iata} (${o.destinations})</option>`).join("");
+          if (seedSelect) seedSelect.innerHTML = r.origins.map((o) => `<option value="${o.iata}">${o.iata} (${o.destinations})</option>`).join("");
+        } catch (e) { console.warn("loadOrigins:", e); }
+      }
+
+      async function loadIatasDatalist() {
+        try {
+          const r = await getJson("/api/iatas");
+          const list = $("dl-iatas");
+          if (list) list.innerHTML = r.iatas.map((i) => `<option value="${i}">`).join("");
+        } catch (e) { console.warn("loadIatas:", e); }
+      }
+
+      /* ====================================================== */
+      /* Task descriptions                                        */
+      /* ====================================================== */
+      async function loadTaskDescriptions() {
+        try {
+          const r = await getJson("/api/tasks");
+          const byId = Object.fromEntries((r.tasks || []).map((t) => [t.id, t]));
+          document.querySelectorAll("[data-task]").forEach(() => {});
+          // Map by panel
+          const mapping = {
+            "crawl-ryanair-range-route": "#trigger [data-sub='single'] [data-desc]",
+            "crawl-ryanair-range": "#trigger [data-sub='full'] [data-desc]",
+            "crawl-queue-worker": "#trigger [data-sub='queue'] [data-desc]",
+            "crawl-pending-item": "#trigger [data-sub='item'] [data-desc]",
+            "sync-ryanair-routes": "#trigger [data-sub='sync'] [data-desc]",
+          };
+          for (const [taskId, sel] of Object.entries(mapping)) {
+            const slot = document.querySelector(sel);
+            const t = byId[taskId];
+            if (!slot) continue;
+            if (!t) { slot.textContent = "No description registered."; continue; }
+            slot.innerHTML = `
+              <span>${escapeHtml(t.summary)}</span><br/>
+              <span class="muted" style="font-size:12px">Params: ${escapeHtml((t.params || []).join(", ") || "—")} · ETA: ${escapeHtml(t.eta || "—")}</span>
+            `;
+          }
+        } catch (e) { console.warn("loadTaskDescriptions:", e); }
+      }
+
+      /* ====================================================== */
+      /* Dashboard                                                */
+      /* ====================================================== */
+      async function refreshHealth() {
+        const pill = $("health-pill");
+        try {
+          const r = await getJson("/api/health");
+          if (r.ok) {
+            const okCh = r.clickhouse?.flights && r.clickhouse?.otel;
+            pill.className = "pill " + (okCh ? "ok" : "warn");
+            pill.innerHTML = `<span class="dot"></span><span>${okCh ? "all services" : "partial"}</span>`;
+            $("dash-ch-flights").textContent = r.clickhouse?.flights ? "reachable" : "unreachable";
+            $("dash-ch-otel").textContent = r.clickhouse?.otel ? "reachable" : "unreachable";
+            $("dash-hyperdx").href = r.hyperdx?.url ?? "#";
+            $("dash-hyperdx").textContent = r.hyperdx?.url ?? "—";
+            $("dash-trigger").textContent = "linked";
+            $("dash-server").textContent = "v" + (AppConfig.server?.version ?? "?");
+            $("dash-updated").textContent = "updated " + new Date().toLocaleTimeString();
+          }
+        } catch (e) {
+          pill.className = "pill err";
+          pill.innerHTML = `<span class="dot"></span><span>backend unreachable</span>`;
+        }
+      }
+
+      function renderRunsTable(runs) {
+        const tbody = $("dash-runs-tbody");
+        if (!tbody) return;
+        if (!runs || runs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="empty-row">No runs yet.</td></tr>`;
+          return;
+        }
+        const expanded = getExpandedRunIds();
+        tbody.innerHTML = runs.map((r) => {
+          const runId = r.crawlRunId || r.runId || r.id;
+          const isExpanded = expanded.has(r.id);
+          return `
+            <tr class="js-run-row${isExpanded ? " row-expanded" : ""}" data-runid="${escapeHtml(r.id)}" data-crawlrunid="${escapeHtml(runId)}">
+              <td><code>${escapeHtml(r.taskIdentifier || "—")}</code></td>
+              <td><span class="status ${escapeHtml(r.status || "queued").toLowerCase()}">${escapeHtml(r.status || "—")}</span></td>
+              <td class="muted">${escapeHtml(fmtTs(r.startedAt || r.createdAt))}</td>
+              <td>${escapeHtml(r.currentOrigin ? r.currentOrigin + (r.currentDestination ? "→" + r.currentDestination : "") : "—")}</td>
+              <td class="actions">
+                <button class="ghost small js-open-trace" title="Resolve trace">Trace</button>
+                ${["QUEUED","EXECUTING"].includes((r.status || "").toUpperCase()) ? `<button class="danger small js-cancel-run" title="Cancel this run" data-runid="${escapeHtml(r.id)}">Cancel</button>` : ""}
+              </td>
+            </tr>
+            <tr class="js-run-detail" data-runid="${escapeHtml(r.id)}"${isExpanded ? "" : " hidden"}>
+              <td colspan="5">${isExpanded ? `<div class="run-detail-loading">Refreshing…</div>` : `<div class="run-detail-loading">Click row to load run details…</div>`}</td>
+            </tr>`;
+        }).join("");
+        tbody.querySelectorAll(".js-open-trace").forEach((b) => {
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const row = ev.target.closest("tr");
+            const runId = row.dataset.crawlrunid || row.dataset.runid;
+            openTraceFor(runId);
+          });
+        });
+        tbody.querySelectorAll(".js-cancel-run").forEach((b) => {
+          b.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            const btn = ev.currentTarget;
+            const runId = btn.dataset.runid;
+            if (!runId) return;
+            if (!confirm(`Cancel run ${runId}?`)) return;
+            btn.disabled = true;
+            btn.textContent = "Cancelling…";
+            try {
+              const r = await postJson(`/api/runs/${encodeURIComponent(runId)}/cancel`, {});
+              if (r.ok) {
+                toast.success("Run cancelled", runId);
+                refreshDashboard();
+              } else {
+                toast.error("Cancel failed", String(r.error || "unknown"));
+                btn.disabled = false;
+                btn.textContent = "Cancel";
+              }
+            } catch (e) {
+              toast.error("Cancel failed", String(e));
+              btn.disabled = false;
+              btn.textContent = "Cancel";
+            }
+          });
+        });
+        tbody.querySelectorAll(".js-run-row").forEach((row) => {
+          row.addEventListener("click", async () => {
+            const runId = row.dataset.runid;
+            const detail = tbody.querySelector(`.js-run-detail[data-runid="${runId}"]`);
+            if (!detail) return;
+            const expanded = !detail.hasAttribute("hidden");
+            if (expanded) {
+              detail.setAttribute("hidden", "");
+              row.classList.remove("row-expanded");
+              removeExpandedRunId(runId);
+              return;
+            }
+            detail.removeAttribute("hidden");
+            row.classList.add("row-expanded");
+            addExpandedRunId(runId);
+            if (detail.dataset.loaded === "1") return;
+            const cell = detail.querySelector("td");
+            cell.innerHTML = `<div class="run-detail-loading">Loading run details…</div>`;
+            try {
+              const r = await getJson(`/api/runs/${encodeURIComponent(runId)}`);
+              renderRunDetail(cell, r.run);
+              detail.dataset.loaded = "1";
+            } catch (e) {
+              cell.innerHTML = `<div class="run-detail-error">Failed to load: ${escapeHtml(String(e))}</div>`;
+            }
+          });
+        });
+        // Restore expanded rows: re-fetch details if not yet loaded
+        expanded.forEach(async (runId) => {
+          const row = tbody.querySelector(`tr.js-run-row[data-runid="${runId}"]`);
+          const detail = tbody.querySelector(`tr.js-run-detail[data-runid="${runId}"]`);
+          if (!row || !detail) return;
+          row.classList.add("row-expanded");
+          detail.removeAttribute("hidden");
+          if (detail.dataset.loaded === "1") return;
+          const cell = detail.querySelector("td");
+          try {
+            const r = await getJson(`/api/runs/${encodeURIComponent(runId)}`);
+            renderRunDetail(cell, r.run);
+            detail.dataset.loaded = "1";
+          } catch (e) {
+            cell.innerHTML = `<div class="run-detail-error">Failed to load: ${escapeHtml(String(e))}</div>`;
+          }
+        });
+      }
+
+      const _expandedRunIds = new Set();
+      function addExpandedRunId(id) { _expandedRunIds.add(id); }
+      function removeExpandedRunId(id) { _expandedRunIds.delete(id); }
+      function getExpandedRunIds() { return new Set(_expandedRunIds); }
+
+      function renderRunDetail(cell, run) {
+        if (!run) {
+          cell.innerHTML = `<div class="run-detail-error">No run data returned.</div>`;
+          return;
+        }
+        const cost =
+          run.costInCents != null
+            ? "$" + (Number(run.costInCents) / 100).toFixed(4)
+            : "—";
+        const duration =
+          run.durationMs != null ? Math.round(Number(run.durationMs) / 1000) + "s" : "—";
+        const payload = (run.payload && typeof run.payload === "object") ? run.payload : {};
+        const meta = (run.metadata && typeof run.metadata === "object") ? run.metadata : {};
+        const iataList = (v) => Array.isArray(v) ? v.join(", ") : (v != null && v !== "" ? String(v) : null);
+        const origin =
+          iataList(payload.originIata) ||
+          iataList(payload.origin) ||
+          iataList(meta.origin) ||
+          iataList(run.currentOrigin) ||
+          null;
+        const destinations =
+          iataList(payload.destinationIata) ||
+          iataList(payload.destination) ||
+          iataList(payload.destinations) ||
+          iataList(payload.destinationFilter) ||
+          iataList(meta.destination) ||
+          (run.currentDestination ? `${run.currentOrigin || ""}${run.currentDestination ? "→" + run.currentDestination : ""}` : null) ||
+          null;
+        const dateRange = (payload.dateFrom || payload.date_to || meta.dateFrom)
+          ? `${payload.dateFrom || meta.dateFrom || "?"} → ${payload.dateTo || meta.dateTo || "?"}`
+          : null;
+        const sections = [
+          { label: "Payload", value: run.payload ?? null },
+          { label: "Output", value: run.output ?? null },
+          { label: "Metadata", value: run.metadata ?? null },
+          { label: "Error", value: run.error ?? null, mono: true },
+        ];
+        cell.innerHTML = `
+          <div class="run-detail">
+            <dl class="run-detail-meta">
+              <dt>ID</dt><dd class="mono">${escapeHtml(run.id ?? "—")}</dd>
+              <dt>Task</dt><dd class="mono">${escapeHtml(run.taskIdentifier ?? "—")}</dd>
+              <dt>Version</dt><dd class="mono">${escapeHtml(run.version ?? "—")}</dd>
+              <dt>Status</dt><dd>${escapeHtml(run.status ?? "—")}</dd>
+              ${origin ? `<dt>Origin</dt><dd class="mono">${escapeHtml(origin)}</dd>` : ""}
+              ${destinations ? `<dt>Destination${Array.isArray(payload.destinationFilter) || Array.isArray(payload.destinations) || Array.isArray(payload.destinationIata) ? "s" : ""}</dt><dd class="mono">${escapeHtml(destinations)}</dd>` : ""}
+              ${dateRange ? `<dt>Date range</dt><dd class="mono">${escapeHtml(dateRange)}</dd>` : ""}
+              <dt>Created</dt><dd class="mono">${escapeHtml(fmtTs(run.createdAt) || "—")}</dd>
+              <dt>Started</dt><dd class="mono">${escapeHtml(fmtTs(run.startedAt) || "—")}</dd>
+              <dt>Finished</dt><dd class="mono">${escapeHtml(fmtTs(run.finishedAt) || "—")}</dd>
+              <dt>Duration</dt><dd class="mono">${escapeHtml(duration)}</dd>
+              <dt>Cost</dt><dd class="mono">${escapeHtml(cost)}</dd>
+              ${run.crawlRunId ? `<dt>Crawl run</dt><dd class="mono">${escapeHtml(run.crawlRunId)}</dd>` : ""}
+              ${run.queueName ? `<dt>Queue</dt><dd class="mono">${escapeHtml(run.queueName)}</dd>` : ""}
+            </dl>
+            ${sections
+              .map(
+                (s) => `
+              <details class="run-detail-section"${s.value != null ? " open" : ""}>
+                <summary>${escapeHtml(s.label)}${s.value == null ? " (none)" : ""}</summary>
+                ${
+                  s.value != null
+                    ? `<pre class="run-detail-json">${escapeHtml(JSON.stringify(s.value, null, 2))}</pre>`
+                    : ""
+                }
+              </details>`,
+              )
+              .join("")}
+          </div>`;
+      }
+
+      async function refreshDashboard() {
+        try {
+          const airline = $("queue-airline").value || "Ryanair";
+          const [statsR, runsR, queueR] = await Promise.all([
+            getJson(`/api/queue/stats?airline=${airline}`),
+            getJson(`/api/runs/recent?limit=15`),
+            getJson(`/api/runs/active`).catch(() => ({ ok: false, executing: [], queued: [], totals: { executing: 0, queued: 0 } })),
+          ]);
+          $("kpi-pending").querySelector(".value").textContent = statsR.pending ?? 0;
+          $("kpi-processing").querySelector(".value").textContent = statsR.processing ?? 0;
+          $("kpi-completed").querySelector(".value").textContent = statsR.completed ?? 0;
+          $("kpi-failed").querySelector(".value").textContent = statsR.failed ?? 0;
+          $("nav-queue-count").textContent = (statsR.pending ?? 0) + (statsR.processing ?? 0);
+
+          renderRunsTable(runsR.runs || []);
+          renderRunQueue(queueR.executing || [], queueR.queued || []);
+          $("dash-updated").textContent = "updated " + new Date().toLocaleTimeString();
+        } catch (e) {
+          console.warn("refreshDashboard:", e);
+        }
+      }
+
+      function renderRunQueue(executing, queued) {
+        const tbody = $("dash-queue-tbody");
+        const summary = $("queue-summary");
+        if (!tbody) return;
+        const total = executing.length + queued.length;
+        if (summary) summary.textContent = total > 0 ? `(${executing.length} running · ${queued.length} queued)` : "(idle)";
+        if (total === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Queue is idle — no EXECUTING or QUEUED runs.</td></tr>`;
+          return;
+        }
+        const rows = [];
+        executing.forEach((r, idx) => {
+          const isOnly = executing.length === 1 && queued.length === 0;
+          rows.push({ run: r, badge: isOnly ? "RUN" : "RUN #" + (idx + 1), badgeClass: "running", rowClass: "queue-row-running" });
+        });
+        queued.forEach((r, idx) => {
+          const isNext = idx === 0;
+          rows.push({ run: r, badge: isNext ? "NEXT" : `#${idx + 1}`, badgeClass: isNext ? "next" : "", rowClass: isNext ? "queue-row-next" : "" });
+        });
+        tbody.innerHTML = rows.map(({ run: r, badge, badgeClass, rowClass }) => {
+          const crawlRunId = r.crawlRunId || r.runId || r.id;
+          const origin = r.currentOrigin ? r.currentOrigin + (r.currentDestination ? "→" + r.currentDestination : "") : "—";
+          return `
+            <tr class="js-run-row queue-row ${rowClass}" data-runid="${escapeHtml(r.id)}" data-crawlrunid="${escapeHtml(crawlRunId)}">
+              <td><span class="queue-position ${badgeClass}">${escapeHtml(badge)}</span></td>
+              <td><code>${escapeHtml(r.taskIdentifier || "—")}</code></td>
+              <td><span class="status ${escapeHtml(r.status || "queued").toLowerCase()}">${escapeHtml(r.status || "—")}</span></td>
+              <td class="muted">${escapeHtml(fmtTs(r.createdAt))}</td>
+              <td class="muted">${escapeHtml(fmtTs(r.startedAt))}</td>
+              <td>${escapeHtml(origin)}</td>
+              <td class="actions">
+                <button class="ghost small js-open-trace" title="Resolve trace">Trace</button>
+                <button class="danger small js-cancel-run" title="Cancel this run" data-runid="${escapeHtml(r.id)}">Cancel</button>
+              </td>
+            </tr>
+            <tr class="js-run-detail" data-runid="${escapeHtml(r.id)}" hidden>
+              <td colspan="7"><div class="run-detail-loading">Click row to load run details…</div></td>
+            </tr>`;
+        }).join("");
+        tbody.querySelectorAll(".js-open-trace").forEach((b) => {
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const row = ev.target.closest("tr");
+            const runId = row.dataset.crawlrunid || row.dataset.runid;
+            openTraceFor(runId);
+          });
+        });
+        tbody.querySelectorAll(".js-cancel-run").forEach((b) => {
+          b.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            const btn = ev.currentTarget;
+            const runId = btn.dataset.runid;
+            if (!runId) return;
+            if (!confirm(`Cancel run ${runId}?`)) return;
+            btn.disabled = true;
+            btn.textContent = "Cancelling…";
+            try {
+              const r = await postJson(`/api/runs/${encodeURIComponent(runId)}/cancel`, {});
+              if (r.ok) {
+                toast.success("Run cancelled", runId);
+                refreshDashboard();
+              } else {
+                toast.error("Cancel failed", String(r.error || "unknown"));
+                btn.disabled = false;
+                btn.textContent = "Cancel";
+              }
+            } catch (e) {
+              toast.error("Cancel failed", String(e));
+              btn.disabled = false;
+              btn.textContent = "Cancel";
+            }
+          });
+        });
+        tbody.querySelectorAll("tr.js-run-row").forEach((row) => {
+          row.addEventListener("click", async () => {
+            const runId = row.dataset.runid;
+            const detail = tbody.querySelector(`.js-run-detail[data-runid="${runId}"]`);
+            if (!detail) return;
+            const expanded = !detail.hasAttribute("hidden");
+            if (expanded) {
+              detail.setAttribute("hidden", "");
+              row.classList.remove("row-expanded");
+              return;
+            }
+            detail.removeAttribute("hidden");
+            row.classList.add("row-expanded");
+            if (detail.dataset.loaded === "1") return;
+            const cell = detail.querySelector("td");
+            cell.innerHTML = `<div class="run-detail-loading">Loading run details…</div>`;
+            try {
+              const r = await getJson(`/api/runs/${encodeURIComponent(runId)}`);
+              renderRunDetail(cell, r.run);
+              detail.dataset.loaded = "1";
+            } catch (e) {
+              cell.innerHTML = `<div class="run-detail-error">Failed to load: ${escapeHtml(String(e))}</div>`;
+            }
+          });
+        });
+      }
+
+
+      $("btn-dash-refresh")?.addEventListener("click", () => { refreshDashboard(); refreshHealth(); });
+
+      /* ====================================================== */
+      /* Trigger buttons                                          */
+      /* ====================================================== */
+      $("btn-sync")?.addEventListener("click", async () => {
+        const source = $("sync-source").value;
+        const concurrency = Number($("sync-concurrency").value || 1);
+        const origins = $("sync-origins").value.split(",").map((s) => s.trim().toUpperCase()).filter((s) => IATA_RE.test(s));
+        const body = { source, concurrency };
+        if (origins.length) body.origins = origins;
+        if (source === "bases" && origins.length === 0) {
+          if (!window.confirm(`Sync from static RYANAIR_DEFAULT_BASES (~${AppConfig.ryanair?.defaultBasesCount ?? 199} origins) can take 5+ minutes. Continue?`)) return;
+        }
+        setOutput($("sync-output"), source === "bases" ? "Running (this can take several minutes)…" : null);
+        try {
+          const r = await postJson("/api/trigger/sync-ryanair-routes", body);
+          setOutput($("sync-output"), r, r.ok !== false);
+          toast.success("Sync triggered", `Source=${source}`);
+          loadOriginsDatalist();
+        } catch (e) { setOutput($("sync-output"), String(e), false); toast.error("Sync failed", String(e)); }
+      });
+
+      $("btn-single")?.addEventListener("click", async () => {
+        if (!validateForm(["single-origin", "single-from", "single-to"])) { toast.warn("Check form", "Some required fields are missing or invalid."); return; }
+        const destinations = $("single-destinations").value.split(",").map((s) => s.trim().toUpperCase()).filter((s) => IATA_RE.test(s));
+        const runId = $("single-run-id").value.trim();
+        const body = {
+          origin: $("single-origin").value.trim().toUpperCase(),
+          dateFrom: $("single-from").value,
+          dateTo: $("single-to").value,
+          destinations: destinations.length ? destinations : undefined,
+          adults: Number($("single-adults").value || 1),
+          requestDelayMs: Number($("single-delay").value || 20000),
+          requestJitterMs: Number($("single-jitter").value || 10000),
+          cooldownMs: Number($("single-cooldown").value || 0),
+        };
+        if (runId && UUID_RE.test(runId)) body.runId = runId;
+        setOutput($("single-output"), `Triggering ${body.origin}…`);
+        try {
+          const r = await postJson("/api/trigger/single-origin", body);
+          setOutput($("single-output"), r, r.ok);
+          toast.success(`Run triggered for ${body.origin}`, `crawl_run_id=${r.crawlRunId}`);
+          if (r.crawlRunId) {
+            const link = $(`single-output-hint`);
+            link.innerHTML = `<a class="muted" href="#" id="single-open-trace">View trace →</a>`;
+            link.querySelector("#single-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+          }
+        } catch (e) { setOutput($("single-output"), String(e), false); toast.error("Run failed", String(e)); }
+      });
+
+      $("btn-single-reset")?.addEventListener("click", () => {
+        ["single-origin","single-destinations","single-run-id"].forEach((id) => { const el = $(id); if (el) el.value = ""; });
+        $("single-origin").value = "MLA";
+        $("single-output").textContent = "// Reset.";
+      });
+
+      $("btn-scan")?.addEventListener("click", async () => {
+        if (!validateForm(["scan-from", "scan-to"])) { toast.warn("Check form", "Both dates are required."); return; }
+        const origins = Array.from($("scan-origins").selectedOptions).map((o) => o.value);
+        const destinations = $("scan-destinations").value.split(",").map((s) => s.trim().toUpperCase()).filter((s) => IATA_RE.test(s));
+        const runId = $("scan-run-id").value.trim();
+        const body = {
+          origins,
+          dateFrom: $("scan-from").value,
+          dateTo: $("scan-to").value,
+          destinationFilter: destinations.length ? destinations : undefined,
+          adults: Number($("scan-adults").value || 1),
+          requestDelayMs: Number($("scan-delay").value || 20000),
+          requestJitterMs: Number($("scan-jitter").value || 10000),
+          cooldownMs: Number($("scan-cooldown").value || 0),
+        };
+        if (runId && UUID_RE.test(runId)) body.runId = runId;
+        setOutput($("scan-output"), `Triggering scan (origins=${origins.length || "all"})…`);
+        try {
+          const r = await postJson("/api/trigger/full-scan", body);
+          setOutput($("scan-output"), r, r.ok);
+          toast.success(`Scan triggered`, `${origins.length || "all"} origins`);
+          if (r.crawlRunId) {
+            $("scan-output-hint").innerHTML = `<a class="muted" href="#" id="scan-open-trace">View trace →</a>`;
+            $("scan-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+          }
+        } catch (e) { setOutput($("scan-output"), String(e), false); toast.error("Scan failed", String(e)); }
+      });
+
+      $("btn-seed-queue")?.addEventListener("click", async () => {
+        if (!validateForm(["seed-from", "seed-to"])) { toast.warn("Check form", "Both dates are required."); return; }
+        const origins = Array.from($("seed-origins").selectedOptions).map((o) => o.value);
+        if (origins.length === 0) { toast.warn("Origins required", "Pick at least one origin."); return; }
+        const body = {
+          airline: $("seed-airline").value,
+          origins,
+          dateFrom: $("seed-from").value,
+          dateTo: $("seed-to").value,
+          maxIterations: Number($("seed-iter").value || 100),
+          adults: Number($("seed-adults").value || 1),
+          requestDelayMs: Number(AppConfig.crawl?.ryanair?.requestDelayMs ?? 20000),
+          requestJitterMs: Number(AppConfig.crawl?.ryanair?.requestJitterMs ?? 10000),
+          cooldownMs: Number(AppConfig.crawl?.ryanair?.cooldownMs ?? 0),
+        };
+        setOutput($("seed-queue-output"), `Seeding ${origins.length} origin(s) and triggering worker…`);
+        try {
+          const r = await postJson("/api/trigger/seed-queue", body);
+          setOutput($("seed-queue-output"), r, r.ok);
+          toast.success("Queue seeded", `Worker started — crawl_run_id=${r.crawlRunId}`);
+          if (r.crawlRunId) {
+            $("seed-output-hint").innerHTML = `<a class="muted" href="#" id="seed-open-trace">View trace →</a>`;
+            $("seed-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+          }
+          refreshQueue();
+        } catch (e) { setOutput($("seed-queue-output"), String(e), false); toast.error("Seed failed", String(e)); }
+      });
+
+      $("btn-pi-load")?.addEventListener("click", () => loadPendingItems());
+      async function loadPendingItems() {
+        const airline = $("pi-airline").value;
+        const origin = $("pi-origin").value.trim().toUpperCase();
+        const qs = new URLSearchParams({ airline, limit: 200 });
+        if (IATA_RE.test(origin)) qs.set("origin", origin);
+        const tbody = $("pi-tbody");
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Loading…</td></tr>`;
+        try {
+          const r = await getJson(`/api/queue/items?${qs.toString()}`);
+          $("pi-count").textContent = `${r.count} item${r.count === 1 ? "" : "s"} loaded`;
+          if (r.items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-row">No pending items.</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = r.items.map((it) => `
+            <tr data-row='${escapeHtml(JSON.stringify(it))}' class="js-pick">
+              <td class="mono">${escapeHtml(it.origin)}</td>
+              <td class="mono">${escapeHtml(it.destination)}</td>
+              <td class="mono">${escapeHtml(it.dateFrom)}</td>
+              <td class="mono">${escapeHtml(it.dateTo)}</td>
+              <td class="actions"><button class="ghost small js-pick-btn">Use</button></td>
+            </tr>`).join("");
+          tbody.querySelectorAll(".js-pick, .js-pick-btn").forEach((el) => {
+            el.addEventListener("click", () => {
+              const row = el.closest("tr");
+              const data = JSON.parse(row.dataset.row);
+              $("pi-origin").value = data.origin;
+              $("pi-destination").value = data.destination;
+              $("pi-from").value = data.dateFrom;
+              $("pi-to").value = data.dateTo;
+              window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            });
+          });
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="5" class="empty-row">${escapeHtml(String(e))}</td></tr>`;
+          toast.error("Failed to load items", String(e));
+        }
+      }
+
+      $("btn-pi-run")?.addEventListener("click", async () => {
+        if (!validateForm(["pi-origin", "pi-destination", "pi-from", "pi-to"])) { toast.warn("Check form", "All four fields are required."); return; }
+        const body = {
+          airline: $("pi-airline").value,
+          origin: $("pi-origin").value.trim().toUpperCase(),
+          destination: $("pi-destination").value.trim().toUpperCase(),
+          dateFrom: $("pi-from").value,
+          dateTo: $("pi-to").value,
+          force: $("pi-force").checked,
+        };
+        setOutput($("pi-output"), `Triggering ${body.airline} ${body.origin}→${body.destination}…`);
+        try {
+          const r = await postJson("/api/trigger/crawl-pending-item", body);
+          setOutput($("pi-output"), r, r.ok);
+          toast.success("Item triggered", `crawl_run_id=${r.crawlRunId}`);
+          if (r.crawlRunId) {
+            const hint = $("pi-output");
+            const link = document.createElement("div");
+            link.className = "muted";
+            link.style.marginTop = "6px";
+            link.innerHTML = `<a href="#" id="pi-open-trace">View trace →</a>`;
+            hint.parentNode.insertBefore(link, hint.nextSibling);
+            link.querySelector("#pi-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+          }
+        } catch (e) {
+          setOutput($("pi-output"), String(e), false);
+          toast.error("Run failed", String(e));
+          if (!body.force && /processing=/.test(String(e))) {
+            $("pi-force").checked = true;
+            toast.warn("Row is in flight", "Enable Force and retry to take it over.");
+          }
+        }
+      });
+
+      $("seed-airline")?.addEventListener("change", () => loadOriginsDatalist($("seed-airline").value));
+
+      /* ====================================================== */
+      /* Maintenance buttons                                      */
+      /* ====================================================== */
+      $("btn-backfill")?.addEventListener("click", async () => {
+        const body = {
+          mode: $("bf-mode").value,
+          dryRun: $("bf-dry-run").checked,
+          errorMessage: $("bf-error-message").value,
+        };
+        setOutput($("backfill-output"), `Running backfill (mode=${body.mode})…`);
+        try {
+          const r = await postJson("/api/scripts/backfill-crawl-progress", body);
+          setOutput($("backfill-output"), r, r.ok);
+          toast[body.mode === "mark-failed" ? "warn" : "success"](`Backfill ${body.mode}`, r.ok ? "completed" : "failed");
+        } catch (e) { setOutput($("backfill-output"), String(e), false); toast.error("Backfill failed", String(e)); }
+      });
+
+      $("btn-manage")?.addEventListener("click", async () => {
+        if (!validateForm(["mg-origin", "mg-from", "mg-to"])) { toast.warn("Check form", "Origin and dates are required."); return; }
+        const destinations = $("mg-destinations").value.split(",").map((s) => s.trim().toUpperCase()).filter((s) => IATA_RE.test(s));
+        const body = {
+          mode: $("mg-mode").value,
+          airline: $("mg-airline").value,
+          origin: $("mg-origin").value.trim().toUpperCase(),
+          dateFrom: $("mg-from").value,
+          dateTo: $("mg-to").value,
+          destinations: destinations.length ? destinations : undefined,
+          includeCompleted: $("mg-include-completed").checked,
+        };
+        setOutput($("manage-output"), `Running manage (${body.mode})…`);
+        try {
+          const r = await postJson("/api/scripts/manage-crawl-progress", body);
+          setOutput($("manage-output"), r, r.ok);
+          toast.success("Manage complete", `mode=${body.mode}`);
+          if (body.mode === "requeue" || body.mode === "list") refreshQueue();
+        } catch (e) { setOutput($("manage-output"), String(e), false); toast.error("Manage failed", String(e)); }
+      });
+
+      $("btn-migrations")?.addEventListener("click", async () => {
+        setOutput($("maintenance-output"), "Running migrations…");
+        try { const r = await postJson("/api/scripts/run-migrations", {}); setOutput($("maintenance-output"), r, r.ok); toast.success("Migrations done"); }
+        catch (e) { setOutput($("maintenance-output"), String(e), false); toast.error("Migrations failed", String(e)); }
+      });
+      $("btn-smoke")?.addEventListener("click", async () => {
+        setOutput($("maintenance-output"), "Smoke test running…");
+        try { const r = await postJson("/api/scripts/smoke-observability", {}); setOutput($("maintenance-output"), r, r.ok); toast[(""+r.ok) === "true" ? "success" : "error"](`Smoke test ${r.ok ? "passed" : "failed"}`); }
+        catch (e) { setOutput($("maintenance-output"), String(e), false); toast.error("Smoke failed", String(e)); }
+      });
+
+      /* ====================================================== */
+      /* Queue                                                    */
+      /* ====================================================== */
+      async function refreshQueue() {
+        try {
+          const airline = $("queue-airline").value || "Ryanair";
+          const stats = await getJson(`/api/queue/stats?airline=${airline}`);
+          const kpis = $("queue-kpis");
+          kpis.innerHTML = [
+            { label: "Pending", value: stats.pending, cls: "warn" },
+            { label: "Processing", value: stats.processing, cls: "running" },
+            { label: "Completed", value: stats.completed, cls: "ok" },
+            { label: "Failed", value: stats.failed, cls: "err" },
+          ].map((k) => `
+            <div class="kpi ${k.cls}">
+              <span class="label">${k.label}</span>
+              <span class="value">${k.value ?? 0}</span>
+              <span class="sub">${airline}</span>
+            </div>`).join("");
+          await loadQueueItems();
+        } catch (e) { console.warn("refreshQueue:", e); }
+      }
+
+      async function loadQueueItems() {
+        const airline = $("queue-airline").value || "Ryanair";
+        const status = document.querySelector(".subtab.active[data-queue-status]")?.dataset.queueStatus || "pending";
+        const origin = $("queue-filter-origin").value.trim().toUpperCase();
+        const dateFrom = $("queue-filter-date-from").value;
+        const dateTo = $("queue-filter-date-to").value;
+        const qs = new URLSearchParams({ airline, status, limit: 200 });
+        if (IATA_RE.test(origin)) qs.set("origin", origin);
+        if (dateFrom) qs.set("dateFrom", dateFrom);
+        if (dateTo) qs.set("dateTo", dateTo);
+        const tbody = $("queue-tbody");
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Loading…</td></tr>`;
+        try {
+          const r = await getJson(`/api/queue/items?${qs.toString()}`);
+          $("queue-count").textContent = `${r.count} ${status} item${r.count === 1 ? "" : "s"}`;
+          if (r.items.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No items.</td></tr>`; return; }
+          tbody.innerHTML = r.items.map((it) => {
+            const hyperdx = it.traceId ? `?runId=${encodeURIComponent(it.crawlRunId || "")}` : "";
+            const isCompleted = it.status === "completed";
+            const resumeForce = (it.status === "pending") ? false : true;
+            return `
+              <tr data-row='${escapeHtml(JSON.stringify(it))}'>
+                <td class="mono">${escapeHtml(it.origin)}</td>
+                <td class="mono">${escapeHtml(it.destination)}</td>
+                <td class="mono">${escapeHtml(it.dateFrom)}</td>
+                <td class="mono">${escapeHtml(it.dateTo)}</td>
+                <td class="muted">
+                  ${hasTs(it.insertedAt) ? `i ${escapeHtml(fmtTs(it.insertedAt))}` : ""}
+                  ${hasTs(it.startedAt) ? `<br/>s ${escapeHtml(fmtTs(it.startedAt))}` : ""}
+                  ${hasTs(it.completedAt) ? `<br/>c ${escapeHtml(fmtTs(it.completedAt))}` : ""}
+                </td>
+                <td>${it.rowsInserted ?? 0}</td>
+                <td class="actions">
+                  ${isCompleted
+                    ? (it.traceId ? `<button class="ghost small js-trace">Trace</button>` : "—")
+                    : `<button class="primary small js-resume" data-force="${resumeForce}">Resume</button>`}
+                  ${!isCompleted && it.traceId ? `<button class="ghost small js-trace">Trace</button>` : ""}
+                </td>
+              </tr>`;
+          }).join("");
+          tbody.querySelectorAll(".js-resume").forEach((b) => {
+            b.addEventListener("click", async (ev) => {
+              const btn = ev.currentTarget;
+              const row = ev.target.closest("tr");
+              const it = JSON.parse(row.dataset.row);
+              const force = btn.dataset.force === "true";
+              console.log("[resume] clicking", { it, force });
+              btn.disabled = true;
+              btn.textContent = "…";
+              try {
+                const r = await postJson("/api/trigger/crawl-pending-item", {
+                  airline: it.airline,
+                  origin: it.origin,
+                  destination: it.destination,
+                  dateFrom: it.dateFrom,
+                  dateTo: it.dateTo,
+                  force,
+                });
+                console.log("[resume] response", r);
+                if (r.ok) {
+                  toast.success("Item resumed", `${it.airline} ${it.origin}→${it.destination}`);
+                  refreshQueue();
+                } else {
+                  toast.error("Resume failed", r.error);
+                }
+              } catch (e) {
+                console.error("[resume] error", e);
+                toast.error("Resume failed", String(e));
+              } finally {
+                btn.disabled = false;
+                btn.textContent = "Resume";
+              }
+            });
+          });
+          tbody.querySelectorAll(".js-trace").forEach((b) => {
+            b.addEventListener("click", (ev) => {
+              const row = ev.target.closest("tr");
+              const it = JSON.parse(row.dataset.row);
+              openTraceFor(it.crawlRunId);
+            });
+          });
+        } catch (e) { tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${escapeHtml(String(e))}</td></tr>`; }
+      }
+
+      $("btn-queue-refresh")?.addEventListener("click", refreshQueue);
+      $("queue-airline")?.addEventListener("change", refreshQueue);
+      ["queue-filter-origin","queue-filter-date-from","queue-filter-date-to"].forEach((id) => {
+        $(id)?.addEventListener("change", loadQueueItems);
+      });
+
+      /* ====================================================== */
+      /* Traces                                                   */
+      /* ====================================================== */
+      async function openTraceFor(runId) {
+        if (!runId) return;
+        document.querySelector(".tab-btn[data-view='traces']")?.click();
+        $("trace-input").value = runId;
+        await resolveTrace();
+      }
+
+      async function resolveTrace() {
+        const raw = $("trace-input").value.trim();
+        if (!raw) { toast.warn("Provide a run id"); return; }
+        let runId = null, traceIdHint = null;
+        if (UUID_RE.test(raw)) { runId = raw; }
+        else if (TRACE_RE.test(raw)) { traceIdHint = raw; }
+        else { toast.warn("Unknown format", "Paste a UUID or a 32-char hex trace id."); return; }
+        const windowMin = Number($("trace-window").value || 1440);
+        const qs = new URLSearchParams({ windowMinutes: String(windowMin) });
+        if (runId) qs.set("runId", runId);
+        if (traceIdHint) qs.set("traceId", traceIdHint);
+        try {
+          const r = await getJson(`/api/otel/trace?${qs.toString()}`);
+          renderTrace(r);
+          toast.success(`Resolved ${r.traceId.slice(0, 12)}…`, `${r.counts.spans} spans · ${r.counts.logs} logs`);
+        } catch (e) {
+          toast.error("Could not resolve trace", String(e));
+        }
+      }
+
+      function renderTrace(r) {
+        $("trace-result").classList.remove("hidden");
+        $("trace-id").textContent = r.traceId;
+        $("trace-id-meta").textContent = `${r.counts.spans} spans · ${r.counts.logs} logs`;
+        $("trace-runid").textContent = r.runId ?? "—";
+        $("trace-span-count").textContent = r.counts.spans;
+        $("trace-log-count").textContent = r.counts.logs;
+
+        const link = $("trace-hyperdx-link");
+        link.href = r.hyperdx?.search || "#";
+
+        const spansTbody = $("trace-spans-tbody");
+        if (!r.spans.length) {
+          spansTbody.innerHTML = `<tr><td colspan="4" class="empty-row">No spans found.</td></tr>`;
+        } else {
+          spansTbody.innerHTML = r.spans.map((s) => `
+            <tr>
+              <td class="mono truncate" title="${escapeHtml(s.SpanName || "")}">${escapeHtml(s.SpanName || "")}</td>
+              <td><span class="status queued">${escapeHtml(s.SpanKind || "")}</span></td>
+              <td class="mono">${(Number(s.Duration || 0) / 1000).toFixed(1)} ms</td>
+              <td><span class="status ${escapeHtml(String(s.StatusCode || 'unset').toLowerCase())}">${escapeHtml(s.StatusCode || "—")}</span></td>
+            </tr>`).join("");
+        }
+
+        const tl = $("trace-logs-timeline");
+        if (!r.logs.length) {
+          tl.innerHTML = `<div class="empty-row">No logs found.</div>`;
+        } else {
+          tl.innerHTML = r.logs.map((l) => {
+            const sev = String(l.SeverityText || "INFO").toLowerCase();
+            const ts = l.Timestamp ? new Date(l.Timestamp).toLocaleTimeString() : "";
+            const eventName = l.EventName ? ` · ${escapeHtml(l.EventName)}` : "";
+            return `
+              <div class="timeline-item severity-${escapeHtml(String(l.SeverityText || "INFO"))}">
+                <div class="timeline-meta"><span>${escapeHtml(ts)}</span><span class="status ${sev}">${escapeHtml(l.SeverityText || "INFO")}</span><span class="muted">${escapeHtml(l.ServiceName || "")}${eventName}</span></div>
+                <div class="timeline-body">${escapeHtml(l.Body || "")}</div>
+              </div>`;
+          }).join("");
+        }
+      }
+
+      async function loadRecentTraces() {
+        const tbody = $("traces-recent-tbody");
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Loading…</td></tr>`;
+        try {
+          const r = await getJson("/api/otel/recent-traces");
+          if (!r.traces.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-row">No traces yet.</td></tr>`; return; }
+          tbody.innerHTML = r.traces.map((t) => `
+            <tr data-trace='${escapeHtml(t.traceId)}'>
+              <td class="muted">${escapeHtml(fmtTs(t.started))}</td>
+              <td>${t.spanCount}</td>
+              <td class="mono truncate" title="${escapeHtml(t.rootSpan || "")}">${escapeHtml(t.rootSpan || "—")}</td>
+              <td>${escapeHtml(t.service || "—")}</td>
+              <td class="mono truncate" title="${escapeHtml(t.traceId)}">${escapeHtml(t.traceId.slice(0, 16))}…</td>
+              <td class="actions">
+                <button class="ghost small js-load-trace">Load</button>
+                <a class="ghost small" href="${t.hyperdx?.search || '#'}" target="_blank" rel="noopener">HyperDX ↗</a>
+              </td>
+            </tr>`).join("");
+          tbody.querySelectorAll(".js-load-trace").forEach((b) => {
+            b.addEventListener("click", (ev) => {
+              const row = ev.target.closest("tr");
+              $("trace-input").value = row.dataset.trace;
+              resolveTrace();
+            });
+          });
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${escapeHtml(String(e))}</td></tr>`;
+        }
+      }
+
+      $("btn-trace-resolve")?.addEventListener("click", resolveTrace);
+      $("btn-trace-recent")?.addEventListener("click", loadRecentTraces);
+      $("btn-trace-copy")?.addEventListener("click", async () => {
+        const id = $("trace-id").textContent;
+        try { await navigator.clipboard.writeText(id); toast.success("Copied", id); }
+        catch { toast.warn("Clipboard blocked", "Long-press to copy."); }
+      });
+
+      $("refresh-now")?.addEventListener("click", () => {
+        refreshDashboard();
+        refreshHealth();
+      });
+
+      /* ====================================================== */
+      /* Boot                                                     */
+      /* ====================================================== */
+      async function boot() {
+        await Promise.all([loadConfig(), loadIatasDatalist(), loadOriginsDatalist(), loadTaskDescriptions(), refreshHealth()]);
+        await refreshDashboard();
+      }
+
+      boot().catch((e) => toast.error("Boot failed", String(e)));
+
+      // Periodic dashboard refresh (5s)
+      setInterval(() => { if (document.getElementById("view-dashboard").classList.contains("active")) { refreshDashboard(); refreshHealth(); } }, 5000);
+
+      // Pause queue polling; let user manually refresh.
+    </script>
+  </body>
+</html>

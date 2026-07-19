@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  hyperdx-mongo:
+    image: mongo:8
+    container_name: hyperdx-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - hyperdx-mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: hyperdx
+      MONGO_INITDB_ROOT_PASSWORD: replace-with-a-long-random-password
+    networks:
+      - hyperdx-net
+
+  hyperdx:
+    image: docker.hyperdx.io/hyperdx/hyperdx:2-beta
+    container_name: hyperdx
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      MONGO_URI: mongodb://hyperdx:replace-with-a-long-random-password@hyperdx-mongo:27017/hyperdx?authSource=admin
+      EXPRESS_SESSION_SECRET: ${EXPRESS_SESSION_SECRET}
+      FRONTEND_URL: http://localhost:8090
+    depends_on:
+      - hyperdx-mongo
+    networks:
+      - hyperdx-net
+
+volumes:
+  hyperdx-mongo-data:
+
+networks:
+  hyperdx-net:
+    driver: bridge
