@@ -1,0 +1,303 @@
+- generic [ref=f2e2]:
+  - banner [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - generic [ref=f2e5]: H
+      - text: Hackathron
+      - generic [ref=f2e6]: control center
+    - tablist [ref=f2e7]:
+      - tab "Dashboard" [ref=f2e8] [cursor=pointer]
+      - tab "Trigger" [ref=f2e9] [cursor=pointer]
+      - tab "Queue 0" [ref=f2e82] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f2e11]: "0"
+      - tab "Traces" [ref=f2e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f2e13] [cursor=pointer]
+    - generic [ref=f2e14]:
+      - generic [ref=f2e15]: all services
+      - button "↻" [ref=f2e18] [cursor=pointer]
+  - main [ref=f2e19]:
+    - tabpanel [ref=f2e85]:
+      - generic [ref=f2e87]:
+        - heading "Trigger" [level=1] [ref=f2e88]
+        - paragraph [ref=f2e89]: Fire a Trigger.dev task or kick off the queue worker. All inputs are validated against the DB and config.
+      - tablist [ref=f2e90]:
+        - button "Single origin" [ref=f2e91] [cursor=pointer]
+        - button "Full scan" [active] [ref=f2e92] [cursor=pointer]
+        - button "Seed & run queue" [ref=f2e93] [cursor=pointer]
+        - button "Run one pending item" [ref=f2e94] [cursor=pointer]
+        - button "Sync Ryanair routes" [ref=f2e95] [cursor=pointer]
+      - text: ▸
+      - generic [ref=f2e134]:
+        - heading "Full Ryanair scan Trigger.dev" [level=3] [ref=f2e135]:
+          - text: Full Ryanair scan
+          - generic [ref=f2e136]: Trigger.dev
+        - paragraph [ref=f2e137]: Loading…
+        - generic [ref=f2e138]:
+          - text: Fan-out across every origin in
+          - code [ref=f2e139]: airline_routes
+          - text: (or a subset you pick). Uses the FARFND
+          - code [ref=f2e140]: /cheapestPerDay
+          - text: endpoint —
+          - strong [ref=f2e141]: 1 HTTP call per (origin, destination)
+          - text: .
+        - generic [ref=f2e142]:
+          - generic [ref=f2e143]:
+            - generic [ref=f2e144]: Date from *
+            - textbox "Date from *" [ref=f2e145]: 2026-08-01
+          - generic [ref=f2e146]:
+            - generic [ref=f2e147]: Date to *
+            - textbox "Date to *" [ref=f2e148]: 2026-09-01
+          - generic [ref=f2e149]:
+            - generic [ref=f2e150]: Adults
+            - spinbutton "Adults" [ref=f2e151]: "1"
+          - generic [ref=f2e152]:
+            - generic [ref=f2e153]: Run ID
+            - generic [ref=f2e154]:
+              - textbox "Run ID" [ref=f2e155]:
+                - /placeholder: auto-generated UUID
+              - button "Generate" [ref=f2e156] [cursor=pointer]
+        - generic [ref=f2e157]:
+          - generic [ref=f2e158]:
+            - generic [ref=f2e159]: Origins override
+            - listbox "Origins override" [ref=f2e160]:
+              - option "AAR (8)" [ref=f2e161]
+              - option "ABZ (4)" [ref=f2e162]
+              - option "ACE (34)" [ref=f2e163]
+              - option "AGA (28)" [ref=f2e164]
+              - option "AGP (94)" [ref=f2e165]
+              - option "AHO (23)" [ref=f2e166]
+              - option "ALC (91)" [ref=f2e167]
+              - option "AMM (18)" [ref=f2e168]
+              - option "AMS (2)" [ref=f2e169]
+              - option "AOI (5)" [ref=f2e170]
+              - option "ARN (48)" [ref=f2e171]
+              - option "ATH (26)" [ref=f2e172]
+              - option "BBU (5)" [ref=f2e173]
+              - option "BCN (64)" [ref=f2e174]
+              - option "BDS (23)" [ref=f2e175]
+              - option "BEM (3)" [ref=f2e176]
+              - option "BER (48)" [ref=f2e177]
+              - option "BFS (16)" [ref=f2e178]
+              - option "BGY (108)" [ref=f2e179]
+              - option "BHX (56)" [ref=f2e180]
+              - option "BIQ (5)" [ref=f2e181]
+              - option "BJV (2)" [ref=f2e182]
+              - option "BLQ (64)" [ref=f2e183]
+              - option "BNX (6)" [ref=f2e184]
+              - option "BOH (21)" [ref=f2e185]
+              - option "BOJ (11)" [ref=f2e186]
+              - option "BRE (5)" [ref=f2e187]
+              - option "BRI (61)" [ref=f2e188]
+              - option "BRQ (3)" [ref=f2e189]
+              - option "BRS (40)" [ref=f2e190]
+              - option "BRU (11)" [ref=f2e191]
+              - option "BSL (3)" [ref=f2e192]
+              - option "BTS (34)" [ref=f2e193]
+              - option "BUD (70)" [ref=f2e194]
+              - option "BVA (69)" [ref=f2e195]
+              - option "BVE (1)" [ref=f2e196]
+              - option "BZG (6)" [ref=f2e197]
+              - option "BZR (9)" [ref=f2e198]
+              - option "CAG (42)" [ref=f2e199]
+              - option "CCF (10)" [ref=f2e200]
+              - option "CDT (10)" [ref=f2e201]
+              - option "CFU (46)" [ref=f2e202]
+              - option "CGN (35)" [ref=f2e203]
+              - option "CHQ (35)" [ref=f2e204]
+              - option "CIA (25)" [ref=f2e205]
+              - option "CLJ (5)" [ref=f2e206]
+              - option "CPH (34)" [ref=f2e207]
+              - option "CRL (114)" [ref=f2e208]
+              - option "CRV (5)" [ref=f2e209]
+              - option "CTA (47)" [ref=f2e210]
+              - option "CUF (2)" [ref=f2e211]
+              - option "CWL (5)" [ref=f2e212]
+              - option "DBV (24)" [ref=f2e213]
+              - option "DLE (3)" [ref=f2e214]
+              - option "DLM (3)" [ref=f2e215]
+              - option "DUB (122)" [ref=f2e216]
+              - option "EDI (68)" [ref=f2e217]
+              - option "EFL (5)" [ref=f2e218]
+              - option "EGC (6)" [ref=f2e219]
+              - option "EIN (38)" [ref=f2e220]
+              - option "EMA (33)" [ref=f2e221]
+              - option "ERH (1)" [ref=f2e222]
+              - option "ESU (6)" [ref=f2e223]
+              - option "EXT (4)" [ref=f2e224]
+              - option "FAO (47)" [ref=f2e225]
+              - option "FCO (58)" [ref=f2e226]
+              - option "FDH (2)" [ref=f2e227]
+              - option "FEZ (23)" [ref=f2e228]
+              - option "FKB (33)" [ref=f2e229]
+              - option "FMM (38)" [ref=f2e230]
+              - option "FMO (6)" [ref=f2e231]
+              - option "FNC (10)" [ref=f2e232]
+              - option "FNI (6)" [ref=f2e233]
+              - option "FRL (3)" [ref=f2e234]
+              - option "FSC (2)" [ref=f2e235]
+              - option "FUE (26)" [ref=f2e236]
+              - option "GDN (51)" [ref=f2e237]
+              - option "GLA (8)" [ref=f2e238]
+              - option "GNB (6)" [ref=f2e239]
+              - option "GOA (12)" [ref=f2e240]
+              - option "GOT (25)" [ref=f2e241]
+              - option "GRO (35)" [ref=f2e242]
+              - option "HAM (7)" [ref=f2e243]
+              - option "HEL (10)" [ref=f2e244]
+              - option "HER (8)" [ref=f2e245]
+              - option "HHN (31)" [ref=f2e246]
+              - option "IAS (4)" [ref=f2e247]
+              - option "IBZ (33)" [ref=f2e248]
+              - option "INI (4)" [ref=f2e249]
+              - option "JMK (5)" [ref=f2e250]
+              - option "JSI (9)" [ref=f2e251]
+              - option "JTR (11)" [ref=f2e252]
+              - option "KGS (13)" [ref=f2e253]
+              - option "KIR (7)" [ref=f2e254]
+              - option "KLU (2)" [ref=f2e255]
+              - option "KLX (2)" [ref=f2e256]
+              - option "KRK (88)" [ref=f2e257]
+              - option "KSC (6)" [ref=f2e258]
+              - option "KTW (27)" [ref=f2e259]
+              - option "KUN (26)" [ref=f2e260]
+              - option "LBA (25)" [ref=f2e261]
+              - option "LBC (3)" [ref=f2e262]
+              - option "LCA (1)" [ref=f2e263]
+              - option "LCJ (7)" [ref=f2e264]
+              - option "LDE (7)" [ref=f2e265]
+              - option "LDY (1)" [ref=f2e266]
+              - option "LEI (3)" [ref=f2e267]
+              - option "LGW (4)" [ref=f2e268]
+              - option "LIG (6)" [ref=f2e269]
+              - option "LIL (3)" [ref=f2e270]
+              - option "LIS (38)" [ref=f2e271]
+              - option "LNZ (3)" [ref=f2e272]
+              - option "LPA (31)" [ref=f2e273]
+              - option "LPL (39)" [ref=f2e274]
+              - option "LRH (7)" [ref=f2e275]
+              - option "LTN (33)" [ref=f2e276]
+              - option "LUX (12)" [ref=f2e277]
+              - option "LUZ (6)" [ref=f2e278]
+              - option "LXS (1)" [ref=f2e279]
+              - option "MAD (65)" [ref=f2e280]
+              - option "MAH (18)" [ref=f2e281]
+              - option "MAN (90)" [ref=f2e282]
+              - option "MLA (70)" [ref=f2e283]
+              - option "MME (5)" [ref=f2e284]
+              - option "MMX (3)" [ref=f2e285]
+              - option "MRS (58)" [ref=f2e286]
+              - option "MXP (52)" [ref=f2e287]
+              - option "NAP (59)" [ref=f2e288]
+              - option "NCE (2)" [ref=f2e289]
+              - option "NCL (22)" [ref=f2e290]
+              - option "NDR (8)" [ref=f2e291]
+              - option "NOC (17)" [ref=f2e292]
+              - option "NQY (6)" [ref=f2e293]
+              - option "NRN (49)" [ref=f2e294]
+              - option "NTE (10)" [ref=f2e295]
+              - option "NUE (23)" [ref=f2e296]
+              - option "NWI (3)" [ref=f2e297]
+              - option "OLB (10)" [ref=f2e298]
+              - option "OPO (74)" [ref=f2e299]
+              - option "ORK (31)" [ref=f2e300]
+              - option "OSI (1)" [ref=f2e301]
+              - option "OSL (3)" [ref=f2e302]
+              - option "OSR (3)" [ref=f2e303]
+              - option "OTP (43)" [ref=f2e304]
+              - option "OUD (9)" [ref=f2e305]
+              - option "OZZ (2)" [ref=f2e306]
+              - option "PAD (3)" [ref=f2e307]
+              - option "PDV (4)" [ref=f2e308]
+              - option "PED (4)" [ref=f2e309]
+              - option "PEG (10)" [ref=f2e310]
+              - option "PFO (39)" [ref=f2e311]
+              - option "PGF (11)" [ref=f2e312]
+              - option "PIK (11)" [ref=f2e313]
+              - option "PIS (2)" [ref=f2e314]
+              - option "PLQ (1)" [ref=f2e315]
+              - option "PMF (5)" [ref=f2e316]
+              - option "PMI (79)" [ref=f2e317]
+              - option "PMO (47)" [ref=f2e318]
+              - option "POZ (41)" [ref=f2e319]
+              - option "PRG (40)" [ref=f2e320]
+              - option "PSA (60)" [ref=f2e321]
+              - option "PSR (21)" [ref=f2e322]
+              - option "PUY (8)" [ref=f2e323]
+              - option "PVK (7)" [ref=f2e324]
+              - option "QSR (4)" [ref=f2e325]
+              - option "RAK (55)" [ref=f2e326]
+              - option "RBA (20)" [ref=f2e327]
+              - option "RDZ (2)" [ref=f2e328]
+              - option "REG (13)" [ref=f2e329]
+              - option "REU (12)" [ref=f2e330]
+              - option "RHO (27)" [ref=f2e331]
+              - option "RIX (21)" [ref=f2e332]
+              - option "RJK (5)" [ref=f2e333]
+              - option "RMI (13)" [ref=f2e334]
+              - option "RMU (8)" [ref=f2e335]
+              - option "RVN (10)" [ref=f2e336]
+              - option "RZE (10)" [ref=f2e337]
+              - option "SCN (3)" [ref=f2e338]
+              - option "SCQ (8)" [ref=f2e339]
+              - option "SDR (9)" [ref=f2e340]
+              - option "SFT (1)" [ref=f2e341]
+              - option "SJJ (11)" [ref=f2e342]
+              - option "SKG (33)" [ref=f2e343]
+              - option "SNN (32)" [ref=f2e344]
+              - option "SOF (46)" [ref=f2e345]
+              - option "SPU (2)" [ref=f2e346]
+              - option "STN (162)" [ref=f2e347]
+              - option "SUF (28)" [ref=f2e348]
+              - option "SVQ (52)" [ref=f2e349]
+              - option "SZG (5)" [ref=f2e350]
+              - option "SZY (2)" [ref=f2e351]
+              - option "SZZ (4)" [ref=f2e352]
+              - option "TFS (47)" [ref=f2e353]
+              - option "TGD (7)" [ref=f2e354]
+              - option "TIA (47)" [ref=f2e355]
+              - option "TLL (6)" [ref=f2e356]
+              - option "TLS (34)" [ref=f2e357]
+              - option "TNG (23)" [ref=f2e358]
+              - option "TPS (24)" [ref=f2e359]
+              - option "TRF (13)" [ref=f2e360]
+              - option "TRN (44)" [ref=f2e361]
+              - option "TRS (22)" [ref=f2e362]
+              - option "TSF (42)" [ref=f2e363]
+              - option "TTU (6)" [ref=f2e364]
+              - option "TUF (4)" [ref=f2e365]
+              - option "VAR (2)" [ref=f2e366]
+              - option "VCE (31)" [ref=f2e367]
+              - option "VIE (70)" [ref=f2e368]
+              - option "VIL (1)" [ref=f2e369]
+              - option "VIT (6)" [ref=f2e370]
+              - option "VLC (61)" [ref=f2e371]
+              - option "VNO (19)" [ref=f2e372]
+              - option "VOL (1)" [ref=f2e373]
+              - option "VRN (19)" [ref=f2e374]
+              - option "VST (3)" [ref=f2e375]
+              - option "VXO (3)" [ref=f2e376]
+              - option "WAW (19)" [ref=f2e377]
+              - option "WMI (52)" [ref=f2e378]
+              - option "WRO (51)" [ref=f2e379]
+              - option "XCR (2)" [ref=f2e380]
+              - option "ZAD (50)" [ref=f2e381]
+              - option "ZAG (28)" [ref=f2e382]
+              - option "ZAZ (5)" [ref=f2e383]
+              - option "ZTH (10)" [ref=f2e384]
+            - generic [ref=f2e385]:
+              - text: Empty = every origin in
+              - code [ref=f2e386]: airline_routes
+              - text: . Ctrl/Cmd-click to pick specific ones.
+          - generic [ref=f2e387]:
+            - generic [ref=f2e388]: Destinations filter
+            - combobox "Destinations filter" [ref=f2e389]
+        - group [ref=f2e390]:
+          - generic "▸ Pacing" [ref=f2e391] [cursor=pointer]
+        - button "Run scan" [ref=f2e393] [cursor=pointer]
+        - generic [ref=f2e394]: // No run yet.
+  - contentinfo [ref=f2e79]:
+    - generic [ref=f2e80]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f2e81] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

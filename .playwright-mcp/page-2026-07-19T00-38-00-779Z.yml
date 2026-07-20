@@ -1,0 +1,934 @@
+- generic [ref=f7e2]:
+  - banner [ref=f7e3]:
+    - generic [ref=f7e4]:
+      - generic [ref=f7e5]: H
+      - text: Hackathron
+      - generic [ref=f7e6]: control center
+    - tablist [ref=f7e7]:
+      - tab "Dashboard" [ref=f7e8] [cursor=pointer]
+      - tab "Trigger" [ref=f7e9] [cursor=pointer]
+      - tab "Queue 0" [ref=f7e101] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f7e11]: "0"
+      - tab "Traces" [ref=f7e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f7e13] [cursor=pointer]
+    - generic [ref=f7e14]:
+      - generic [ref=f7e15]: all services
+      - button "↻" [ref=f7e18] [cursor=pointer]
+  - main [ref=f7e19]:
+    - tabpanel [ref=f7e20]:
+      - generic [ref=f7e21]:
+        - generic [ref=f7e22]:
+          - heading "Dashboard" [level=1] [ref=f7e23]
+          - paragraph [ref=f7e24]: Live overview of crawl progress, queue health and latest activity.
+        - generic [ref=f7e25]:
+          - generic [ref=f7e26]: updated 02:37:58
+          - button "Refresh now" [ref=f7e27] [cursor=pointer]
+      - generic [ref=f7e28]:
+        - generic [ref=f7e29]:
+          - generic [ref=f7e30]: Pending
+          - generic [ref=f7e31]: "0"
+          - generic [ref=f7e32]: awaiting claim
+        - generic [ref=f7e33]:
+          - generic [ref=f7e34]: Processing
+          - generic [ref=f7e35]: "0"
+          - generic [ref=f7e36]: in flight
+        - generic [ref=f7e37]:
+          - generic [ref=f7e38]: Completed
+          - generic [ref=f7e39]: "576"
+          - generic [ref=f7e40]: rows_inserted > 0
+        - generic [ref=f7e41]:
+          - generic [ref=f7e42]: Failed
+          - generic [ref=f7e43]: "0"
+          - generic [ref=f7e44]: terminal error
+      - generic [ref=f7e45]:
+        - heading "Run queue (0 running · 50 queued)" [level=3] [ref=f7e104]:
+          - text: Run queue
+          - generic [ref=f7e105]: (0 running · 50 queued)
+        - paragraph [ref=f7e47]:
+          - text: Live Trigger.dev queue —
+          - strong [ref=f7e48]: EXECUTING
+          - text: at the top,
+          - strong [ref=f7e49]: QUEUED
+          - text: below in pickup order (oldest first, since concurrencyLimit = 1).
+        - table [ref=f7e51]:
+          - rowgroup [ref=f7e52]:
+            - row [ref=f7e53]:
+              - columnheader "#" [ref=f7e54]
+              - columnheader "Task" [ref=f7e55]
+              - columnheader "Status" [ref=f7e56]
+              - columnheader "Queued at" [ref=f7e57]
+              - columnheader "Started" [ref=f7e58]
+              - columnheader "Origin" [ref=f7e59]
+              - columnheader [ref=f7e60]
+          - rowgroup [ref=f7e61]:
+            - row [ref=f7e908] [cursor=pointer]:
+              - cell "▾ NEXT" [ref=f7e909]:
+                - text: ▾
+                - generic [ref=f7e910]: NEXT
+              - cell [ref=f7e911]:
+                - code [ref=f7e912]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e913]
+              - cell "7m ago" [ref=f7e915]
+              - cell "—" [ref=f7e916]
+              - cell "—" [ref=f7e917]
+              - cell [ref=f7e918]:
+                - button "Trace" [ref=f7e919]
+                - button "Cancel" [ref=f7e920]
+            - row [ref=f7e921]:
+              - cell [ref=f7e922]:
+                - generic [ref=f7e923]:
+                  - generic [ref=f7e924]:
+                    - term [ref=f7e925]: ID
+                    - definition [ref=f7e926]: run_cmrr2840xp8lp0ana4h9tprcn
+                    - term [ref=f7e927]: Task
+                    - definition [ref=f7e928]: crawl-ryanair-range-route
+                    - term [ref=f7e929]: Version
+                    - definition [ref=f7e930]: "20260718.84"
+                    - term [ref=f7e931]: Status
+                    - definition [ref=f7e932]: QUEUED
+                    - term [ref=f7e933]: Created
+                    - definition [ref=f7e934]: 7m ago
+                    - term [ref=f7e935]: Started
+                    - definition [ref=f7e936]: —
+                    - term [ref=f7e937]: Finished
+                    - definition [ref=f7e938]: —
+                    - term [ref=f7e939]: Duration
+                    - definition [ref=f7e940]: 0s
+                    - term [ref=f7e941]: Cost
+                    - definition [ref=f7e942]: $0.0000
+                  - group [ref=f7e943]:
+                    - generic "Payload" [ref=f7e944] [cursor=pointer]
+                    - generic [ref=f7e945]: "{ \"crawlRunId\": \"25ec0545-9f4c-4542-acdb-cd0e2fce3233\", \"originIata\": \"BRI\", \"dateFrom\": \"2026-08-01\", \"dateTo\": \"2026-09-01\", \"destinationFilter\": null, \"adults\": 1, \"requestDelayMs\": 20000, \"requestJitterMs\": 10000, \"cooldownMs\": 0 }"
+                  - group [ref=f7e946]:
+                    - generic "Output (none)" [ref=f7e947] [cursor=pointer]
+                  - group [ref=f7e948]:
+                    - generic "Metadata (none)" [ref=f7e949] [cursor=pointer]
+                  - group [ref=f7e950]:
+                    - generic "Error (none)" [ref=f7e951] [cursor=pointer]
+            - row [ref=f7e952] [cursor=pointer]:
+              - 'cell "▸ #2" [ref=f7e953]':
+                - text: ▸
+                - generic [ref=f7e954]: "#2"
+              - cell [ref=f7e955]:
+                - code [ref=f7e956]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e957]
+              - cell "7m ago" [ref=f7e959]
+              - cell "—" [ref=f7e960]
+              - cell "—" [ref=f7e961]
+              - cell [ref=f7e962]:
+                - button "Trace" [ref=f7e963]
+                - button "Cancel" [ref=f7e964]
+            - row [ref=f7e965] [cursor=pointer]:
+              - 'cell "▸ #3" [ref=f7e966]':
+                - text: ▸
+                - generic [ref=f7e967]: "#3"
+              - cell [ref=f7e968]:
+                - code [ref=f7e969]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e970]
+              - cell "7m ago" [ref=f7e972]
+              - cell "—" [ref=f7e973]
+              - cell "—" [ref=f7e974]
+              - cell [ref=f7e975]:
+                - button "Trace" [ref=f7e976]
+                - button "Cancel" [ref=f7e977]
+            - row [ref=f7e978] [cursor=pointer]:
+              - 'cell "▸ #4" [ref=f7e979]':
+                - text: ▸
+                - generic [ref=f7e980]: "#4"
+              - cell [ref=f7e981]:
+                - code [ref=f7e982]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e983]
+              - cell "7m ago" [ref=f7e985]
+              - cell "—" [ref=f7e986]
+              - cell "—" [ref=f7e987]
+              - cell [ref=f7e988]:
+                - button "Trace" [ref=f7e989]
+                - button "Cancel" [ref=f7e990]
+            - row [ref=f7e991] [cursor=pointer]:
+              - 'cell "▸ #5" [ref=f7e992]':
+                - text: ▸
+                - generic [ref=f7e993]: "#5"
+              - cell [ref=f7e994]:
+                - code [ref=f7e995]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e996]
+              - cell "7m ago" [ref=f7e998]
+              - cell "—" [ref=f7e999]
+              - cell "—" [ref=f7e1000]
+              - cell [ref=f7e1001]:
+                - button "Trace" [ref=f7e1002]
+                - button "Cancel" [ref=f7e1003]
+            - row [ref=f7e1004] [cursor=pointer]:
+              - 'cell "▸ #6" [ref=f7e1005]':
+                - text: ▸
+                - generic [ref=f7e1006]: "#6"
+              - cell [ref=f7e1007]:
+                - code [ref=f7e1008]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1009]
+              - cell "7m ago" [ref=f7e1011]
+              - cell "—" [ref=f7e1012]
+              - cell "—" [ref=f7e1013]
+              - cell [ref=f7e1014]:
+                - button "Trace" [ref=f7e1015]
+                - button "Cancel" [ref=f7e1016]
+            - row [ref=f7e1017] [cursor=pointer]:
+              - 'cell "▸ #7" [ref=f7e1018]':
+                - text: ▸
+                - generic [ref=f7e1019]: "#7"
+              - cell [ref=f7e1020]:
+                - code [ref=f7e1021]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1022]
+              - cell "7m ago" [ref=f7e1024]
+              - cell "—" [ref=f7e1025]
+              - cell "—" [ref=f7e1026]
+              - cell [ref=f7e1027]:
+                - button "Trace" [ref=f7e1028]
+                - button "Cancel" [ref=f7e1029]
+            - row [ref=f7e1030] [cursor=pointer]:
+              - 'cell "▸ #8" [ref=f7e1031]':
+                - text: ▸
+                - generic [ref=f7e1032]: "#8"
+              - cell [ref=f7e1033]:
+                - code [ref=f7e1034]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1035]
+              - cell "7m ago" [ref=f7e1037]
+              - cell "—" [ref=f7e1038]
+              - cell "—" [ref=f7e1039]
+              - cell [ref=f7e1040]:
+                - button "Trace" [ref=f7e1041]
+                - button "Cancel" [ref=f7e1042]
+            - row [ref=f7e1043] [cursor=pointer]:
+              - 'cell "▸ #9" [ref=f7e1044]':
+                - text: ▸
+                - generic [ref=f7e1045]: "#9"
+              - cell [ref=f7e1046]:
+                - code [ref=f7e1047]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1048]
+              - cell "7m ago" [ref=f7e1050]
+              - cell "—" [ref=f7e1051]
+              - cell "—" [ref=f7e1052]
+              - cell [ref=f7e1053]:
+                - button "Trace" [ref=f7e1054]
+                - button "Cancel" [ref=f7e1055]
+            - row [ref=f7e1056] [cursor=pointer]:
+              - 'cell "▸ #10" [ref=f7e1057]':
+                - text: ▸
+                - generic [ref=f7e1058]: "#10"
+              - cell [ref=f7e1059]:
+                - code [ref=f7e1060]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1061]
+              - cell "7m ago" [ref=f7e1063]
+              - cell "—" [ref=f7e1064]
+              - cell "—" [ref=f7e1065]
+              - cell [ref=f7e1066]:
+                - button "Trace" [ref=f7e1067]
+                - button "Cancel" [ref=f7e1068]
+            - row [ref=f7e1069] [cursor=pointer]:
+              - 'cell "▸ #11" [ref=f7e1070]':
+                - text: ▸
+                - generic [ref=f7e1071]: "#11"
+              - cell [ref=f7e1072]:
+                - code [ref=f7e1073]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1074]
+              - cell "7m ago" [ref=f7e1076]
+              - cell "—" [ref=f7e1077]
+              - cell "—" [ref=f7e1078]
+              - cell [ref=f7e1079]:
+                - button "Trace" [ref=f7e1080]
+                - button "Cancel" [ref=f7e1081]
+            - row [ref=f7e1082] [cursor=pointer]:
+              - 'cell "▸ #12" [ref=f7e1083]':
+                - text: ▸
+                - generic [ref=f7e1084]: "#12"
+              - cell [ref=f7e1085]:
+                - code [ref=f7e1086]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1087]
+              - cell "7m ago" [ref=f7e1089]
+              - cell "—" [ref=f7e1090]
+              - cell "—" [ref=f7e1091]
+              - cell [ref=f7e1092]:
+                - button "Trace" [ref=f7e1093]
+                - button "Cancel" [ref=f7e1094]
+            - row [ref=f7e1095] [cursor=pointer]:
+              - 'cell "▸ #13" [ref=f7e1096]':
+                - text: ▸
+                - generic [ref=f7e1097]: "#13"
+              - cell [ref=f7e1098]:
+                - code [ref=f7e1099]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1100]
+              - cell "7m ago" [ref=f7e1102]
+              - cell "—" [ref=f7e1103]
+              - cell "—" [ref=f7e1104]
+              - cell [ref=f7e1105]:
+                - button "Trace" [ref=f7e1106]
+                - button "Cancel" [ref=f7e1107]
+            - row [ref=f7e1108] [cursor=pointer]:
+              - 'cell "▸ #14" [ref=f7e1109]':
+                - text: ▸
+                - generic [ref=f7e1110]: "#14"
+              - cell [ref=f7e1111]:
+                - code [ref=f7e1112]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1113]
+              - cell "7m ago" [ref=f7e1115]
+              - cell "—" [ref=f7e1116]
+              - cell "—" [ref=f7e1117]
+              - cell [ref=f7e1118]:
+                - button "Trace" [ref=f7e1119]
+                - button "Cancel" [ref=f7e1120]
+            - row [ref=f7e1121] [cursor=pointer]:
+              - 'cell "▸ #15" [ref=f7e1122]':
+                - text: ▸
+                - generic [ref=f7e1123]: "#15"
+              - cell [ref=f7e1124]:
+                - code [ref=f7e1125]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1126]
+              - cell "7m ago" [ref=f7e1128]
+              - cell "—" [ref=f7e1129]
+              - cell "—" [ref=f7e1130]
+              - cell [ref=f7e1131]:
+                - button "Trace" [ref=f7e1132]
+                - button "Cancel" [ref=f7e1133]
+            - row [ref=f7e1134] [cursor=pointer]:
+              - 'cell "▸ #16" [ref=f7e1135]':
+                - text: ▸
+                - generic [ref=f7e1136]: "#16"
+              - cell [ref=f7e1137]:
+                - code [ref=f7e1138]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1139]
+              - cell "7m ago" [ref=f7e1141]
+              - cell "—" [ref=f7e1142]
+              - cell "—" [ref=f7e1143]
+              - cell [ref=f7e1144]:
+                - button "Trace" [ref=f7e1145]
+                - button "Cancel" [ref=f7e1146]
+            - row [ref=f7e1147] [cursor=pointer]:
+              - 'cell "▸ #17" [ref=f7e1148]':
+                - text: ▸
+                - generic [ref=f7e1149]: "#17"
+              - cell [ref=f7e1150]:
+                - code [ref=f7e1151]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1152]
+              - cell "7m ago" [ref=f7e1154]
+              - cell "—" [ref=f7e1155]
+              - cell "—" [ref=f7e1156]
+              - cell [ref=f7e1157]:
+                - button "Trace" [ref=f7e1158]
+                - button "Cancel" [ref=f7e1159]
+            - row [ref=f7e1160] [cursor=pointer]:
+              - 'cell "▸ #18" [ref=f7e1161]':
+                - text: ▸
+                - generic [ref=f7e1162]: "#18"
+              - cell [ref=f7e1163]:
+                - code [ref=f7e1164]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1165]
+              - cell "7m ago" [ref=f7e1167]
+              - cell "—" [ref=f7e1168]
+              - cell "—" [ref=f7e1169]
+              - cell [ref=f7e1170]:
+                - button "Trace" [ref=f7e1171]
+                - button "Cancel" [ref=f7e1172]
+            - row [ref=f7e1173] [cursor=pointer]:
+              - 'cell "▸ #19" [ref=f7e1174]':
+                - text: ▸
+                - generic [ref=f7e1175]: "#19"
+              - cell [ref=f7e1176]:
+                - code [ref=f7e1177]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1178]
+              - cell "7m ago" [ref=f7e1180]
+              - cell "—" [ref=f7e1181]
+              - cell "—" [ref=f7e1182]
+              - cell [ref=f7e1183]:
+                - button "Trace" [ref=f7e1184]
+                - button "Cancel" [ref=f7e1185]
+            - row [ref=f7e1186] [cursor=pointer]:
+              - 'cell "▸ #20" [ref=f7e1187]':
+                - text: ▸
+                - generic [ref=f7e1188]: "#20"
+              - cell [ref=f7e1189]:
+                - code [ref=f7e1190]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1191]
+              - cell "7m ago" [ref=f7e1193]
+              - cell "—" [ref=f7e1194]
+              - cell "—" [ref=f7e1195]
+              - cell [ref=f7e1196]:
+                - button "Trace" [ref=f7e1197]
+                - button "Cancel" [ref=f7e1198]
+            - row [ref=f7e1199] [cursor=pointer]:
+              - 'cell "▸ #21" [ref=f7e1200]':
+                - text: ▸
+                - generic [ref=f7e1201]: "#21"
+              - cell [ref=f7e1202]:
+                - code [ref=f7e1203]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1204]
+              - cell "7m ago" [ref=f7e1206]
+              - cell "—" [ref=f7e1207]
+              - cell "—" [ref=f7e1208]
+              - cell [ref=f7e1209]:
+                - button "Trace" [ref=f7e1210]
+                - button "Cancel" [ref=f7e1211]
+            - row [ref=f7e1212] [cursor=pointer]:
+              - 'cell "▸ #22" [ref=f7e1213]':
+                - text: ▸
+                - generic [ref=f7e1214]: "#22"
+              - cell [ref=f7e1215]:
+                - code [ref=f7e1216]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1217]
+              - cell "7m ago" [ref=f7e1219]
+              - cell "—" [ref=f7e1220]
+              - cell "—" [ref=f7e1221]
+              - cell [ref=f7e1222]:
+                - button "Trace" [ref=f7e1223]
+                - button "Cancel" [ref=f7e1224]
+            - row [ref=f7e1225] [cursor=pointer]:
+              - 'cell "▸ #23" [ref=f7e1226]':
+                - text: ▸
+                - generic [ref=f7e1227]: "#23"
+              - cell [ref=f7e1228]:
+                - code [ref=f7e1229]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1230]
+              - cell "6m ago" [ref=f7e1232]
+              - cell "—" [ref=f7e1233]
+              - cell "—" [ref=f7e1234]
+              - cell [ref=f7e1235]:
+                - button "Trace" [ref=f7e1236]
+                - button "Cancel" [ref=f7e1237]
+            - row [ref=f7e1238] [cursor=pointer]:
+              - 'cell "▸ #24" [ref=f7e1239]':
+                - text: ▸
+                - generic [ref=f7e1240]: "#24"
+              - cell [ref=f7e1241]:
+                - code [ref=f7e1242]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1243]
+              - cell "6m ago" [ref=f7e1245]
+              - cell "—" [ref=f7e1246]
+              - cell "—" [ref=f7e1247]
+              - cell [ref=f7e1248]:
+                - button "Trace" [ref=f7e1249]
+                - button "Cancel" [ref=f7e1250]
+            - row [ref=f7e1251] [cursor=pointer]:
+              - 'cell "▸ #25" [ref=f7e1252]':
+                - text: ▸
+                - generic [ref=f7e1253]: "#25"
+              - cell [ref=f7e1254]:
+                - code [ref=f7e1255]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1256]
+              - cell "6m ago" [ref=f7e1258]
+              - cell "—" [ref=f7e1259]
+              - cell "—" [ref=f7e1260]
+              - cell [ref=f7e1261]:
+                - button "Trace" [ref=f7e1262]
+                - button "Cancel" [ref=f7e1263]
+            - row [ref=f7e1264] [cursor=pointer]:
+              - 'cell "▸ #26" [ref=f7e1265]':
+                - text: ▸
+                - generic [ref=f7e1266]: "#26"
+              - cell [ref=f7e1267]:
+                - code [ref=f7e1268]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1269]
+              - cell "6m ago" [ref=f7e1271]
+              - cell "—" [ref=f7e1272]
+              - cell "—" [ref=f7e1273]
+              - cell [ref=f7e1274]:
+                - button "Trace" [ref=f7e1275]
+                - button "Cancel" [ref=f7e1276]
+            - row [ref=f7e1277] [cursor=pointer]:
+              - 'cell "▸ #27" [ref=f7e1278]':
+                - text: ▸
+                - generic [ref=f7e1279]: "#27"
+              - cell [ref=f7e1280]:
+                - code [ref=f7e1281]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1282]
+              - cell "6m ago" [ref=f7e1284]
+              - cell "—" [ref=f7e1285]
+              - cell "—" [ref=f7e1286]
+              - cell [ref=f7e1287]:
+                - button "Trace" [ref=f7e1288]
+                - button "Cancel" [ref=f7e1289]
+            - row [ref=f7e1290] [cursor=pointer]:
+              - 'cell "▸ #28" [ref=f7e1291]':
+                - text: ▸
+                - generic [ref=f7e1292]: "#28"
+              - cell [ref=f7e1293]:
+                - code [ref=f7e1294]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1295]
+              - cell "6m ago" [ref=f7e1297]
+              - cell "—" [ref=f7e1298]
+              - cell "—" [ref=f7e1299]
+              - cell [ref=f7e1300]:
+                - button "Trace" [ref=f7e1301]
+                - button "Cancel" [ref=f7e1302]
+            - row [ref=f7e1303] [cursor=pointer]:
+              - 'cell "▸ #29" [ref=f7e1304]':
+                - text: ▸
+                - generic [ref=f7e1305]: "#29"
+              - cell [ref=f7e1306]:
+                - code [ref=f7e1307]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1308]
+              - cell "6m ago" [ref=f7e1310]
+              - cell "—" [ref=f7e1311]
+              - cell "—" [ref=f7e1312]
+              - cell [ref=f7e1313]:
+                - button "Trace" [ref=f7e1314]
+                - button "Cancel" [ref=f7e1315]
+            - row [ref=f7e1316] [cursor=pointer]:
+              - 'cell "▸ #30" [ref=f7e1317]':
+                - text: ▸
+                - generic [ref=f7e1318]: "#30"
+              - cell [ref=f7e1319]:
+                - code [ref=f7e1320]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1321]
+              - cell "6m ago" [ref=f7e1323]
+              - cell "—" [ref=f7e1324]
+              - cell "—" [ref=f7e1325]
+              - cell [ref=f7e1326]:
+                - button "Trace" [ref=f7e1327]
+                - button "Cancel" [ref=f7e1328]
+            - row [ref=f7e1329] [cursor=pointer]:
+              - 'cell "▸ #31" [ref=f7e1330]':
+                - text: ▸
+                - generic [ref=f7e1331]: "#31"
+              - cell [ref=f7e1332]:
+                - code [ref=f7e1333]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1334]
+              - cell "6m ago" [ref=f7e1336]
+              - cell "—" [ref=f7e1337]
+              - cell "—" [ref=f7e1338]
+              - cell [ref=f7e1339]:
+                - button "Trace" [ref=f7e1340]
+                - button "Cancel" [ref=f7e1341]
+            - row [ref=f7e1342] [cursor=pointer]:
+              - 'cell "▸ #32" [ref=f7e1343]':
+                - text: ▸
+                - generic [ref=f7e1344]: "#32"
+              - cell [ref=f7e1345]:
+                - code [ref=f7e1346]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1347]
+              - cell "6m ago" [ref=f7e1349]
+              - cell "—" [ref=f7e1350]
+              - cell "—" [ref=f7e1351]
+              - cell [ref=f7e1352]:
+                - button "Trace" [ref=f7e1353]
+                - button "Cancel" [ref=f7e1354]
+            - row [ref=f7e1355] [cursor=pointer]:
+              - 'cell "▸ #33" [ref=f7e1356]':
+                - text: ▸
+                - generic [ref=f7e1357]: "#33"
+              - cell [ref=f7e1358]:
+                - code [ref=f7e1359]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1360]
+              - cell "6m ago" [ref=f7e1362]
+              - cell "—" [ref=f7e1363]
+              - cell "—" [ref=f7e1364]
+              - cell [ref=f7e1365]:
+                - button "Trace" [ref=f7e1366]
+                - button "Cancel" [ref=f7e1367]
+            - row [ref=f7e1368] [cursor=pointer]:
+              - 'cell "▸ #34" [ref=f7e1369]':
+                - text: ▸
+                - generic [ref=f7e1370]: "#34"
+              - cell [ref=f7e1371]:
+                - code [ref=f7e1372]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1373]
+              - cell "6m ago" [ref=f7e1375]
+              - cell "—" [ref=f7e1376]
+              - cell "—" [ref=f7e1377]
+              - cell [ref=f7e1378]:
+                - button "Trace" [ref=f7e1379]
+                - button "Cancel" [ref=f7e1380]
+            - row [ref=f7e1381] [cursor=pointer]:
+              - 'cell "▸ #35" [ref=f7e1382]':
+                - text: ▸
+                - generic [ref=f7e1383]: "#35"
+              - cell [ref=f7e1384]:
+                - code [ref=f7e1385]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1386]
+              - cell "6m ago" [ref=f7e1388]
+              - cell "—" [ref=f7e1389]
+              - cell "—" [ref=f7e1390]
+              - cell [ref=f7e1391]:
+                - button "Trace" [ref=f7e1392]
+                - button "Cancel" [ref=f7e1393]
+            - row [ref=f7e1394] [cursor=pointer]:
+              - 'cell "▸ #36" [ref=f7e1395]':
+                - text: ▸
+                - generic [ref=f7e1396]: "#36"
+              - cell [ref=f7e1397]:
+                - code [ref=f7e1398]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1399]
+              - cell "6m ago" [ref=f7e1401]
+              - cell "—" [ref=f7e1402]
+              - cell "—" [ref=f7e1403]
+              - cell [ref=f7e1404]:
+                - button "Trace" [ref=f7e1405]
+                - button "Cancel" [ref=f7e1406]
+            - row [ref=f7e1407] [cursor=pointer]:
+              - 'cell "▸ #37" [ref=f7e1408]':
+                - text: ▸
+                - generic [ref=f7e1409]: "#37"
+              - cell [ref=f7e1410]:
+                - code [ref=f7e1411]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1412]
+              - cell "6m ago" [ref=f7e1414]
+              - cell "—" [ref=f7e1415]
+              - cell "—" [ref=f7e1416]
+              - cell [ref=f7e1417]:
+                - button "Trace" [ref=f7e1418]
+                - button "Cancel" [ref=f7e1419]
+            - row [ref=f7e1420] [cursor=pointer]:
+              - 'cell "▸ #38" [ref=f7e1421]':
+                - text: ▸
+                - generic [ref=f7e1422]: "#38"
+              - cell [ref=f7e1423]:
+                - code [ref=f7e1424]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1425]
+              - cell "6m ago" [ref=f7e1427]
+              - cell "—" [ref=f7e1428]
+              - cell "—" [ref=f7e1429]
+              - cell [ref=f7e1430]:
+                - button "Trace" [ref=f7e1431]
+                - button "Cancel" [ref=f7e1432]
+            - row [ref=f7e1433] [cursor=pointer]:
+              - 'cell "▸ #39" [ref=f7e1434]':
+                - text: ▸
+                - generic [ref=f7e1435]: "#39"
+              - cell [ref=f7e1436]:
+                - code [ref=f7e1437]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1438]
+              - cell "6m ago" [ref=f7e1440]
+              - cell "—" [ref=f7e1441]
+              - cell "—" [ref=f7e1442]
+              - cell [ref=f7e1443]:
+                - button "Trace" [ref=f7e1444]
+                - button "Cancel" [ref=f7e1445]
+            - row [ref=f7e1446] [cursor=pointer]:
+              - 'cell "▸ #40" [ref=f7e1447]':
+                - text: ▸
+                - generic [ref=f7e1448]: "#40"
+              - cell [ref=f7e1449]:
+                - code [ref=f7e1450]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1451]
+              - cell "6m ago" [ref=f7e1453]
+              - cell "—" [ref=f7e1454]
+              - cell "—" [ref=f7e1455]
+              - cell [ref=f7e1456]:
+                - button "Trace" [ref=f7e1457]
+                - button "Cancel" [ref=f7e1458]
+            - row [ref=f7e1459] [cursor=pointer]:
+              - 'cell "▸ #41" [ref=f7e1460]':
+                - text: ▸
+                - generic [ref=f7e1461]: "#41"
+              - cell [ref=f7e1462]:
+                - code [ref=f7e1463]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1464]
+              - cell "6m ago" [ref=f7e1466]
+              - cell "—" [ref=f7e1467]
+              - cell "—" [ref=f7e1468]
+              - cell [ref=f7e1469]:
+                - button "Trace" [ref=f7e1470]
+                - button "Cancel" [ref=f7e1471]
+            - row [ref=f7e1472] [cursor=pointer]:
+              - 'cell "▸ #42" [ref=f7e1473]':
+                - text: ▸
+                - generic [ref=f7e1474]: "#42"
+              - cell [ref=f7e1475]:
+                - code [ref=f7e1476]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1477]
+              - cell "6m ago" [ref=f7e1479]
+              - cell "—" [ref=f7e1480]
+              - cell "—" [ref=f7e1481]
+              - cell [ref=f7e1482]:
+                - button "Trace" [ref=f7e1483]
+                - button "Cancel" [ref=f7e1484]
+            - row [ref=f7e1485] [cursor=pointer]:
+              - 'cell "▸ #43" [ref=f7e1486]':
+                - text: ▸
+                - generic [ref=f7e1487]: "#43"
+              - cell [ref=f7e1488]:
+                - code [ref=f7e1489]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1490]
+              - cell "6m ago" [ref=f7e1492]
+              - cell "—" [ref=f7e1493]
+              - cell "—" [ref=f7e1494]
+              - cell [ref=f7e1495]:
+                - button "Trace" [ref=f7e1496]
+                - button "Cancel" [ref=f7e1497]
+            - row [ref=f7e1498] [cursor=pointer]:
+              - 'cell "▸ #44" [ref=f7e1499]':
+                - text: ▸
+                - generic [ref=f7e1500]: "#44"
+              - cell [ref=f7e1501]:
+                - code [ref=f7e1502]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1503]
+              - cell "6m ago" [ref=f7e1505]
+              - cell "—" [ref=f7e1506]
+              - cell "—" [ref=f7e1507]
+              - cell [ref=f7e1508]:
+                - button "Trace" [ref=f7e1509]
+                - button "Cancel" [ref=f7e1510]
+            - row [ref=f7e1511] [cursor=pointer]:
+              - 'cell "▸ #45" [ref=f7e1512]':
+                - text: ▸
+                - generic [ref=f7e1513]: "#45"
+              - cell [ref=f7e1514]:
+                - code [ref=f7e1515]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1516]
+              - cell "6m ago" [ref=f7e1518]
+              - cell "—" [ref=f7e1519]
+              - cell "—" [ref=f7e1520]
+              - cell [ref=f7e1521]:
+                - button "Trace" [ref=f7e1522]
+                - button "Cancel" [ref=f7e1523]
+            - row [ref=f7e1524] [cursor=pointer]:
+              - 'cell "▸ #46" [ref=f7e1525]':
+                - text: ▸
+                - generic [ref=f7e1526]: "#46"
+              - cell [ref=f7e1527]:
+                - code [ref=f7e1528]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1529]
+              - cell "6m ago" [ref=f7e1531]
+              - cell "—" [ref=f7e1532]
+              - cell "—" [ref=f7e1533]
+              - cell [ref=f7e1534]:
+                - button "Trace" [ref=f7e1535]
+                - button "Cancel" [ref=f7e1536]
+            - row [ref=f7e1537] [cursor=pointer]:
+              - 'cell "▸ #47" [ref=f7e1538]':
+                - text: ▸
+                - generic [ref=f7e1539]: "#47"
+              - cell [ref=f7e1540]:
+                - code [ref=f7e1541]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1542]
+              - cell "6m ago" [ref=f7e1544]
+              - cell "—" [ref=f7e1545]
+              - cell "—" [ref=f7e1546]
+              - cell [ref=f7e1547]:
+                - button "Trace" [ref=f7e1548]
+                - button "Cancel" [ref=f7e1549]
+            - row [ref=f7e1550] [cursor=pointer]:
+              - 'cell "▸ #48" [ref=f7e1551]':
+                - text: ▸
+                - generic [ref=f7e1552]: "#48"
+              - cell [ref=f7e1553]:
+                - code [ref=f7e1554]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1555]
+              - cell "6m ago" [ref=f7e1557]
+              - cell "—" [ref=f7e1558]
+              - cell "—" [ref=f7e1559]
+              - cell [ref=f7e1560]:
+                - button "Trace" [ref=f7e1561]
+                - button "Cancel" [ref=f7e1562]
+            - row [ref=f7e1563] [cursor=pointer]:
+              - 'cell "▸ #49" [ref=f7e1564]':
+                - text: ▸
+                - generic [ref=f7e1565]: "#49"
+              - cell [ref=f7e1566]:
+                - code [ref=f7e1567]: crawl-ryanair-range-route
+              - cell "QUEUED" [ref=f7e1568]
+              - cell "6m ago" [ref=f7e1570]
+              - cell "—" [ref=f7e1571]
+              - cell "—" [ref=f7e1572]
+              - cell [ref=f7e1573]:
+                - button "Trace" [ref=f7e1574]
+                - button "Cancel" [ref=f7e1575]
+            - row [ref=f7e1576] [cursor=pointer]:
+              - 'cell "▸ #50" [ref=f7e1577]':
+                - text: ▸
+                - generic [ref=f7e1578]: "#50"
+              - cell [ref=f7e1579]:
+                - code [ref=f7e1580]: crawl-ryanair-range
+              - cell "QUEUED" [ref=f7e1581]
+              - cell "1m ago" [ref=f7e1583]
+              - cell "—" [ref=f7e1584]
+              - cell "—" [ref=f7e1585]
+              - cell [ref=f7e1586]:
+                - button "Trace" [ref=f7e1587]
+                - button "Cancel" [ref=f7e1588]
+      - generic [ref=f7e64]:
+        - generic [ref=f7e65]:
+          - heading "Recent runs" [level=3] [ref=f7e66]
+          - paragraph [ref=f7e67]: Latest Trigger.dev runs across this project — click any to inspect its crawl trace.
+          - table [ref=f7e69]:
+            - rowgroup [ref=f7e70]:
+              - row [ref=f7e71]:
+                - columnheader "Task" [ref=f7e72]
+                - columnheader "Status" [ref=f7e73]
+                - columnheader "Started" [ref=f7e74]
+                - columnheader "Origin" [ref=f7e75]
+                - columnheader [ref=f7e76]
+            - rowgroup [ref=f7e77]:
+              - row [ref=f7e1589] [cursor=pointer]:
+                - cell [ref=f7e1590]:
+                  - text: ▸
+                  - code [ref=f7e1591]: crawl-ryanair-range
+                - cell "QUEUED" [ref=f7e1592]
+                - cell "1m ago" [ref=f7e1594]
+                - cell "—" [ref=f7e1595]
+                - cell [ref=f7e1596]:
+                  - button "Trace" [ref=f7e1597]
+                  - button "Cancel" [ref=f7e1598]
+              - row [ref=f7e1599] [cursor=pointer]:
+                - cell [ref=f7e1600]:
+                  - text: ▸
+                  - code [ref=f7e1601]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1602]
+                - cell "6m ago" [ref=f7e1604]
+                - cell "—" [ref=f7e1605]
+                - cell [ref=f7e1606]:
+                  - button "Trace" [ref=f7e1607]
+                  - button "Cancel" [ref=f7e1608]
+              - row [ref=f7e1609] [cursor=pointer]:
+                - cell [ref=f7e1610]:
+                  - text: ▸
+                  - code [ref=f7e1611]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1612]
+                - cell "6m ago" [ref=f7e1614]
+                - cell "—" [ref=f7e1615]
+                - cell [ref=f7e1616]:
+                  - button "Trace" [ref=f7e1617]
+                  - button "Cancel" [ref=f7e1618]
+              - row [ref=f7e1619] [cursor=pointer]:
+                - cell [ref=f7e1620]:
+                  - text: ▸
+                  - code [ref=f7e1621]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1622]
+                - cell "6m ago" [ref=f7e1624]
+                - cell "—" [ref=f7e1625]
+                - cell [ref=f7e1626]:
+                  - button "Trace" [ref=f7e1627]
+                  - button "Cancel" [ref=f7e1628]
+              - row [ref=f7e1629] [cursor=pointer]:
+                - cell [ref=f7e1630]:
+                  - text: ▸
+                  - code [ref=f7e1631]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1632]
+                - cell "6m ago" [ref=f7e1634]
+                - cell "—" [ref=f7e1635]
+                - cell [ref=f7e1636]:
+                  - button "Trace" [ref=f7e1637]
+                  - button "Cancel" [ref=f7e1638]
+              - row [ref=f7e1639] [cursor=pointer]:
+                - cell [ref=f7e1640]:
+                  - text: ▸
+                  - code [ref=f7e1641]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1642]
+                - cell "6m ago" [ref=f7e1644]
+                - cell "—" [ref=f7e1645]
+                - cell [ref=f7e1646]:
+                  - button "Trace" [ref=f7e1647]
+                  - button "Cancel" [ref=f7e1648]
+              - row [ref=f7e1649] [cursor=pointer]:
+                - cell [ref=f7e1650]:
+                  - text: ▸
+                  - code [ref=f7e1651]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1652]
+                - cell "6m ago" [ref=f7e1654]
+                - cell "—" [ref=f7e1655]
+                - cell [ref=f7e1656]:
+                  - button "Trace" [ref=f7e1657]
+                  - button "Cancel" [ref=f7e1658]
+              - row [ref=f7e1659] [cursor=pointer]:
+                - cell [ref=f7e1660]:
+                  - text: ▸
+                  - code [ref=f7e1661]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1662]
+                - cell "6m ago" [ref=f7e1664]
+                - cell "—" [ref=f7e1665]
+                - cell [ref=f7e1666]:
+                  - button "Trace" [ref=f7e1667]
+                  - button "Cancel" [ref=f7e1668]
+              - row [ref=f7e1669] [cursor=pointer]:
+                - cell [ref=f7e1670]:
+                  - text: ▸
+                  - code [ref=f7e1671]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1672]
+                - cell "6m ago" [ref=f7e1674]
+                - cell "—" [ref=f7e1675]
+                - cell [ref=f7e1676]:
+                  - button "Trace" [ref=f7e1677]
+                  - button "Cancel" [ref=f7e1678]
+              - row [ref=f7e1679] [cursor=pointer]:
+                - cell [ref=f7e1680]:
+                  - text: ▸
+                  - code [ref=f7e1681]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1682]
+                - cell "6m ago" [ref=f7e1684]
+                - cell "—" [ref=f7e1685]
+                - cell [ref=f7e1686]:
+                  - button "Trace" [ref=f7e1687]
+                  - button "Cancel" [ref=f7e1688]
+              - row [ref=f7e1689] [cursor=pointer]:
+                - cell [ref=f7e1690]:
+                  - text: ▸
+                  - code [ref=f7e1691]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1692]
+                - cell "6m ago" [ref=f7e1694]
+                - cell "—" [ref=f7e1695]
+                - cell [ref=f7e1696]:
+                  - button "Trace" [ref=f7e1697]
+                  - button "Cancel" [ref=f7e1698]
+              - row [ref=f7e1699] [cursor=pointer]:
+                - cell [ref=f7e1700]:
+                  - text: ▸
+                  - code [ref=f7e1701]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1702]
+                - cell "6m ago" [ref=f7e1704]
+                - cell "—" [ref=f7e1705]
+                - cell [ref=f7e1706]:
+                  - button "Trace" [ref=f7e1707]
+                  - button "Cancel" [ref=f7e1708]
+              - row [ref=f7e1709] [cursor=pointer]:
+                - cell [ref=f7e1710]:
+                  - text: ▸
+                  - code [ref=f7e1711]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1712]
+                - cell "6m ago" [ref=f7e1714]
+                - cell "—" [ref=f7e1715]
+                - cell [ref=f7e1716]:
+                  - button "Trace" [ref=f7e1717]
+                  - button "Cancel" [ref=f7e1718]
+              - row [ref=f7e1719] [cursor=pointer]:
+                - cell [ref=f7e1720]:
+                  - text: ▸
+                  - code [ref=f7e1721]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1722]
+                - cell "6m ago" [ref=f7e1724]
+                - cell "—" [ref=f7e1725]
+                - cell [ref=f7e1726]:
+                  - button "Trace" [ref=f7e1727]
+                  - button "Cancel" [ref=f7e1728]
+              - row [ref=f7e1729] [cursor=pointer]:
+                - cell [ref=f7e1730]:
+                  - text: ▸
+                  - code [ref=f7e1731]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f7e1732]
+                - cell "6m ago" [ref=f7e1734]
+                - cell "—" [ref=f7e1735]
+                - cell [ref=f7e1736]:
+                  - button "Trace" [ref=f7e1737]
+                  - button "Cancel" [ref=f7e1738]
+        - generic [ref=f7e80]:
+          - heading "System" [level=3] [ref=f7e81]
+          - paragraph [ref=f7e82]: Connection state for the services this UI talks to.
+          - generic [ref=f7e83]:
+            - generic [ref=f7e84]: Trigger.dev
+            - generic [ref=f7e85]: linked
+          - generic [ref=f7e86]:
+            - generic [ref=f7e87]: ClickHouse (flights)
+            - generic [ref=f7e88]: reachable
+          - generic [ref=f7e89]:
+            - generic [ref=f7e90]: ClickHouse (otel)
+            - generic [ref=f7e91]: reachable
+          - generic [ref=f7e92]:
+            - generic [ref=f7e93]: HyperDX
+            - link "http://localhost:8090" [ref=f7e94] [cursor=pointer]:
+              - /url: http://localhost:8090
+          - generic [ref=f7e95]:
+            - generic [ref=f7e96]: Server
+            - generic [ref=f7e97]: v0.0.0
+    - text: ▸ ▸
+  - contentinfo [ref=f7e98]:
+    - generic [ref=f7e99]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f7e100] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

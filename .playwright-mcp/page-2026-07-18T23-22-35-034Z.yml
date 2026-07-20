@@ -1,0 +1,80 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: H
+      - text: Hackathron
+      - generic [ref=e6]: control center
+    - tablist [ref=e7]:
+      - tab "Dashboard" [ref=e8] [cursor=pointer]
+      - tab "Trigger" [ref=e9] [cursor=pointer]
+      - tab "Queue 0" [active] [ref=e82] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=e11]: "0"
+      - tab "Traces" [ref=e12] [cursor=pointer]
+      - tab "Maintenance" [ref=e13] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e15]: all services
+      - button "↻" [ref=e18] [cursor=pointer]
+  - main [ref=e19]:
+    - text: ▸ ▸
+    - tabpanel [ref=e270]:
+      - generic [ref=e271]:
+        - generic [ref=e272]:
+          - heading "Queue" [level=1] [ref=e273]
+          - paragraph [ref=e274]:
+            - text: Crawl progress ledger — what is pending, in flight, completed and failed. Backed by
+            - code [ref=e275]: crawl_progress_latest
+            - text: .
+        - generic [ref=e276]:
+          - combobox "airline" [ref=e277]:
+            - option "Ryanair" [selected]
+            - option "EasyJet"
+          - button "Refresh" [ref=e278] [cursor=pointer]
+      - generic [ref=e279]:
+        - generic [ref=e280]:
+          - generic [ref=e281]: Pending
+          - generic [ref=e282]: "0"
+          - generic [ref=e283]: Ryanair
+        - generic [ref=e284]:
+          - generic [ref=e285]: Processing
+          - generic [ref=e286]: "0"
+          - generic [ref=e287]: Ryanair
+        - generic [ref=e288]:
+          - generic [ref=e289]: Completed
+          - generic [ref=e290]: "230"
+          - generic [ref=e291]: Ryanair
+        - generic [ref=e292]:
+          - generic [ref=e293]: Failed
+          - generic [ref=e294]: "0"
+          - generic [ref=e295]: Ryanair
+      - generic [ref=e296]:
+        - generic [ref=e297]:
+          - button "Pending" [ref=e298] [cursor=pointer]
+          - button "Processing" [ref=e299] [cursor=pointer]
+          - button "Completed" [ref=e300] [cursor=pointer]
+          - button "Failed" [ref=e301] [cursor=pointer]
+        - generic [ref=e302]:
+          - textbox "Filter origin…" [ref=e303]
+          - textbox [ref=e304]
+          - generic [ref=e305]: →
+          - textbox [ref=e306]
+          - generic [ref=e307]: 0 pending items
+        - table [ref=e309]:
+          - rowgroup [ref=e310]:
+            - row [ref=e311]:
+              - columnheader "Origin" [ref=e312]
+              - columnheader "Destination" [ref=e313]
+              - columnheader "From" [ref=e314]
+              - columnheader "To" [ref=e315]
+              - columnheader "Inserted / Started / Completed" [ref=e316]
+              - columnheader "Rows" [ref=e317]
+              - columnheader "Trace" [ref=e318]
+          - rowgroup [ref=e319]:
+            - row [ref=e320]:
+              - cell "No items." [ref=e321]
+  - contentinfo [ref=e79]:
+    - generic [ref=e80]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=e81] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

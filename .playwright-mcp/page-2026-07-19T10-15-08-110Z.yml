@@ -1,0 +1,123 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: H
+      - text: Hackathron
+      - generic [ref=e6]: control center
+    - tablist [ref=e7]:
+      - tab "Dashboard" [ref=e8] [cursor=pointer]
+      - tab "Trigger" [ref=e9] [cursor=pointer]
+      - tab "Queue 2213" [ref=e101] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=e11]: "2213"
+      - tab "Traces" [selected] [ref=e12] [cursor=pointer]
+      - tab "Maintenance" [ref=e13] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e15]: all services
+      - button "↻" [ref=e18] [cursor=pointer]
+  - main [ref=e19]:
+    - text: ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸
+    - tabpanel [ref=e6668]:
+      - generic [ref=e6669]:
+        - generic [ref=e6670]:
+          - heading "Traces" [level=1] [ref=e6671]
+          - paragraph [ref=e6672]: Resolve a crawl run / Trigger run into the OTel trace id, then jump straight to HyperDX.
+        - link "Open HyperDX ↗" [ref=e6674] [cursor=pointer]:
+          - /url: http://localhost:8090
+      - generic [ref=e6675]:
+        - heading "Resolve a run → trace" [level=3] [ref=e6676]
+        - paragraph [ref=e6677]:
+          - text: Paste a
+          - code [ref=e6678]: crawl_run_id
+          - text: (UUID) or a Trigger.dev
+          - code [ref=e6679]: run id
+          - text: to fetch every log & span recorded for that trace, plus a direct HyperDX link.
+        - generic [ref=e6680]:
+          - generic [ref=e6681]:
+            - generic [ref=e6682]: crawl_run_id / Trigger run id
+            - textbox "crawl_run_id / Trigger run id" [ref=e6683]:
+              - /placeholder: UUID or run id
+              - text: 541bf450-eb18-41e8-95a6-d095520ed40b
+            - generic [ref=e6684]: UUIDs are converted to the 32-char trace id used by ClickHouse.
+          - generic [ref=e6685]:
+            - generic [ref=e6686]: Time window
+            - combobox "Time window" [ref=e6687]:
+              - option "Last hour"
+              - option "Last 24 hours" [selected]
+              - option "Last 7 days"
+              - option "Last 30 days"
+        - generic [ref=e6688]:
+          - button "Resolve trace" [ref=e6689] [cursor=pointer]
+          - button "Show recent traces" [ref=e6690] [cursor=pointer]
+      - generic [ref=e6691]:
+        - generic [ref=e6692]:
+          - heading "Trace summary" [level=3] [ref=e6693]
+          - generic [ref=e6694]:
+            - generic [ref=e6695]:
+              - generic [ref=e6696]: Trace id
+              - generic [ref=e6697]: 541bf450eb1841e895a6d095520ed40b
+              - generic [ref=e6698]: 0 spans · 0 logs
+            - generic [ref=e6699]:
+              - generic [ref=e6700]: crawl_run_id
+              - generic [ref=e6701]: 541bf450-eb18-41e8-95a6-d095520ed40b
+            - generic [ref=e6702]:
+              - generic [ref=e6703]: Spans
+              - generic [ref=e6704]: "0"
+            - generic [ref=e6705]:
+              - generic [ref=e6706]: Logs
+              - generic [ref=e6707]: "0"
+          - generic [ref=e6708]:
+            - link "Open in HyperDX ↗" [ref=e6709] [cursor=pointer]:
+              - /url: http://localhost:8090/search?q=541bf450eb1841e895a6d095520ed40b&from=2026-07-18T10%3A15%3A06.914Z&to=2026-07-19T10%3A16%3A06.914Z
+            - button "Copy trace id" [ref=e6710] [cursor=pointer]
+        - generic [ref=e6711]:
+          - generic [ref=e6712]:
+            - heading "Spans" [level=3] [ref=e6713]
+            - paragraph [ref=e6714]:
+              - text: All
+              - code [ref=e6715]: otel_traces
+              - text: rows tagged with this trace id, in order.
+            - table [ref=e6717]:
+              - rowgroup [ref=e6718]:
+                - row [ref=e6719]:
+                  - columnheader "Span" [ref=e6720]
+                  - columnheader "Kind" [ref=e6721]
+                  - columnheader "Duration" [ref=e6722]
+                  - columnheader "Status" [ref=e6723]
+              - rowgroup [ref=e6724]:
+                - row [ref=e6725]:
+                  - cell "No spans found." [ref=e6726]
+          - generic [ref=e6727]:
+            - heading "Logs timeline" [level=3] [ref=e6728]
+            - paragraph [ref=e6729]:
+              - text: All
+              - code [ref=e6730]: otel_logs
+              - text: rows for the trace, top-to-bottom in time.
+            - generic [ref=e6731]: No logs found.
+      - generic [ref=e6733]:
+        - heading "Recent traces in ClickHouse" [level=3] [ref=e6734]
+        - paragraph [ref=e6735]:
+          - text: Most recent OTel traces observed in
+          - code [ref=e6736]: otel.otel_traces
+          - text: . Click any to copy its trace id.
+        - table [ref=e6738]:
+          - rowgroup [ref=e6739]:
+            - row [ref=e6740]:
+              - columnheader "Started" [ref=e6741]
+              - columnheader "Span count" [ref=e6742]
+              - columnheader "Root span" [ref=e6743]
+              - columnheader "Service" [ref=e6744]
+              - columnheader "Trace id" [ref=e6745]
+              - columnheader [ref=e6746]
+          - rowgroup [ref=e6747]:
+            - row [ref=e6748]:
+              - cell "Click \"Show recent traces\" to load." [ref=e6749]
+  - contentinfo [ref=e98]:
+    - generic [ref=e99]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=e100] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0
+  - generic [ref=e6751]:
+    - generic [ref=e6752]: Resolved 541bf450eb18…
+    - generic [ref=e6753]: 0 spans · 0 logs

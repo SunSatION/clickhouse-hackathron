@@ -1,0 +1,84 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - generic [ref=f5e5]: H
+      - text: Hackathron
+      - generic [ref=f5e6]: control center
+    - tablist [ref=f5e7]:
+      - tab "Dashboard" [ref=f5e8] [cursor=pointer]
+      - tab "Trigger" [ref=f5e9] [cursor=pointer]
+      - tab "Queue …" [ref=f5e10] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f5e11]: …
+      - tab "Traces" [ref=f5e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f5e13] [cursor=pointer]
+    - generic [ref=f5e14]:
+      - generic [ref=f5e15]: all services
+      - button "↻" [ref=f5e18] [cursor=pointer]
+  - main [ref=f5e19]:
+    - tabpanel [ref=f5e20]:
+      - generic [ref=f5e21]:
+        - generic [ref=f5e22]:
+          - heading "Dashboard" [level=1] [ref=f5e23]
+          - paragraph [ref=f5e24]: Live overview of crawl progress, queue health and latest activity.
+        - generic [ref=f5e25]:
+          - generic [ref=f5e26]: updated 02:34:06
+          - button "Refresh now" [ref=f5e27] [cursor=pointer]
+      - generic [ref=f5e28]:
+        - generic [ref=f5e29]:
+          - generic [ref=f5e30]: Pending
+          - generic [ref=f5e31]: —
+          - generic [ref=f5e32]: awaiting claim
+        - generic [ref=f5e33]:
+          - generic [ref=f5e34]: Processing
+          - generic [ref=f5e35]: —
+          - generic [ref=f5e36]: in flight
+        - generic [ref=f5e37]:
+          - generic [ref=f5e38]: Completed
+          - generic [ref=f5e39]: —
+          - generic [ref=f5e40]: rows_inserted > 0
+        - generic [ref=f5e41]:
+          - generic [ref=f5e42]: Failed
+          - generic [ref=f5e43]: —
+          - generic [ref=f5e44]: terminal error
+      - generic [ref=f5e45]:
+        - generic [ref=f5e46]:
+          - heading "Recent runs" [level=3] [ref=f5e47]
+          - paragraph [ref=f5e48]: Latest Trigger.dev runs across this project — click any to inspect its crawl trace.
+          - table [ref=f5e50]:
+            - rowgroup [ref=f5e51]:
+              - row [ref=f5e52]:
+                - columnheader "Task" [ref=f5e53]
+                - columnheader "Status" [ref=f5e54]
+                - columnheader "Started" [ref=f5e55]
+                - columnheader "Origin" [ref=f5e56]
+                - columnheader [ref=f5e57]
+            - rowgroup [ref=f5e58]:
+              - row [ref=f5e59]:
+                - cell "Loading…" [ref=f5e60]
+        - generic [ref=f5e61]:
+          - heading "System" [level=3] [ref=f5e62]
+          - paragraph [ref=f5e63]: Connection state for the services this UI talks to.
+          - generic [ref=f5e64]:
+            - generic [ref=f5e65]: Trigger.dev
+            - generic [ref=f5e66]: linked
+          - generic [ref=f5e67]:
+            - generic [ref=f5e68]: ClickHouse (flights)
+            - generic [ref=f5e69]: reachable
+          - generic [ref=f5e70]:
+            - generic [ref=f5e71]: ClickHouse (otel)
+            - generic [ref=f5e72]: reachable
+          - generic [ref=f5e73]:
+            - generic [ref=f5e74]: HyperDX
+            - link "http://localhost:8090" [ref=f5e75] [cursor=pointer]:
+              - /url: http://localhost:8090
+          - generic [ref=f5e76]:
+            - generic [ref=f5e77]: Server
+            - generic [ref=f5e78]: v0.0.0
+    - text: ▸ ▸
+  - contentinfo [ref=f5e79]:
+    - generic [ref=f5e80]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f5e81] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

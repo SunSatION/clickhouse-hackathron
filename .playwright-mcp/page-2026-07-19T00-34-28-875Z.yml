@@ -1,0 +1,263 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - generic [ref=f5e5]: H
+      - text: Hackathron
+      - generic [ref=f5e6]: control center
+    - tablist [ref=f5e7]:
+      - tab "Dashboard" [ref=f5e8] [cursor=pointer]
+      - tab "Trigger" [ref=f5e9] [cursor=pointer]
+      - tab "Queue 0" [ref=f5e82] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f5e11]: "0"
+      - tab "Traces" [ref=f5e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f5e13] [cursor=pointer]
+    - generic [ref=f5e14]:
+      - generic [ref=f5e15]: all services
+      - button "↻" [ref=f5e18] [cursor=pointer]
+  - main [ref=f5e19]:
+    - tabpanel [ref=f5e20]:
+      - generic [ref=f5e21]:
+        - generic [ref=f5e22]:
+          - heading "Dashboard" [level=1] [ref=f5e23]
+          - paragraph [ref=f5e24]: Live overview of crawl progress, queue health and latest activity.
+        - generic [ref=f5e25]:
+          - generic [ref=f5e26]: updated 02:34:26
+          - button "Refresh now" [ref=f5e27] [cursor=pointer]
+      - generic [ref=f5e28]:
+        - generic [ref=f5e29]:
+          - generic [ref=f5e30]: Pending
+          - generic [ref=f5e31]: "0"
+          - generic [ref=f5e32]: awaiting claim
+        - generic [ref=f5e33]:
+          - generic [ref=f5e34]: Processing
+          - generic [ref=f5e35]: "0"
+          - generic [ref=f5e36]: in flight
+        - generic [ref=f5e37]:
+          - generic [ref=f5e38]: Completed
+          - generic [ref=f5e39]: "555"
+          - generic [ref=f5e40]: rows_inserted > 0
+        - generic [ref=f5e41]:
+          - generic [ref=f5e42]: Failed
+          - generic [ref=f5e43]: "0"
+          - generic [ref=f5e44]: terminal error
+      - generic [ref=f5e45]:
+        - generic [ref=f5e46]:
+          - heading "Recent runs" [level=3] [ref=f5e47]
+          - paragraph [ref=f5e48]: Latest Trigger.dev runs across this project — click any to inspect its crawl trace.
+          - table [ref=f5e50]:
+            - rowgroup [ref=f5e51]:
+              - row [ref=f5e52]:
+                - columnheader "Task" [ref=f5e53]
+                - columnheader "Status" [ref=f5e54]
+                - columnheader "Started" [ref=f5e55]
+                - columnheader "Origin" [ref=f5e56]
+                - columnheader [ref=f5e57]
+            - rowgroup [ref=f5e58]:
+              - row [ref=f5e268] [cursor=pointer]:
+                - cell [ref=f5e269]:
+                  - text: ▾
+                  - code [ref=f5e270]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e271]
+                - cell "3m ago" [ref=f5e273]
+                - cell "—" [ref=f5e274]
+                - cell [ref=f5e275]:
+                  - button "Trace" [ref=f5e276]
+                  - button "Cancel" [ref=f5e277]
+              - row [ref=f5e278]:
+                - cell [ref=f5e279]:
+                  - generic [ref=f5e280]:
+                    - generic [ref=f5e281]:
+                      - term [ref=f5e282]: ID
+                      - definition [ref=f5e283]: run_cmrr284oemgip0anaqpwmxbns
+                      - term [ref=f5e284]: Task
+                      - definition [ref=f5e285]: crawl-ryanair-range-route
+                      - term [ref=f5e286]: Version
+                      - definition [ref=f5e287]: "20260718.84"
+                      - term [ref=f5e288]: Status
+                      - definition [ref=f5e289]: QUEUED
+                      - term [ref=f5e290]: Created
+                      - definition [ref=f5e291]: 3m ago
+                      - term [ref=f5e292]: Started
+                      - definition [ref=f5e293]: —
+                      - term [ref=f5e294]: Finished
+                      - definition [ref=f5e295]: —
+                      - term [ref=f5e296]: Duration
+                      - definition [ref=f5e297]: 0s
+                      - term [ref=f5e298]: Cost
+                      - definition [ref=f5e299]: $0.0000
+                    - group [ref=f5e300]:
+                      - generic "Payload" [ref=f5e301] [cursor=pointer]
+                      - generic [ref=f5e302]: "{ \"crawlRunId\": \"25ec0545-9f4c-4542-acdb-cd0e2fce3233\", \"originIata\": \"ZAD\", \"dateFrom\": \"2026-08-01\", \"dateTo\": \"2026-09-01\", \"destinationFilter\": null, \"adults\": 1, \"requestDelayMs\": 20000, \"requestJitterMs\": 10000, \"cooldownMs\": 0 }"
+                    - group [ref=f5e303]:
+                      - generic "Output (none)" [ref=f5e304] [cursor=pointer]
+                    - group [ref=f5e305]:
+                      - generic "Metadata (none)" [ref=f5e306] [cursor=pointer]
+                    - group [ref=f5e307]:
+                      - generic "Error (none)" [ref=f5e308] [cursor=pointer]
+              - row [ref=f5e309] [cursor=pointer]:
+                - cell [ref=f5e310]:
+                  - text: ▸
+                  - code [ref=f5e311]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e312]
+                - cell "3m ago" [ref=f5e314]
+                - cell "—" [ref=f5e315]
+                - cell [ref=f5e316]:
+                  - button "Trace" [ref=f5e317]
+                  - button "Cancel" [ref=f5e318]
+              - row [ref=f5e319] [cursor=pointer]:
+                - cell [ref=f5e320]:
+                  - text: ▸
+                  - code [ref=f5e321]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e322]
+                - cell "3m ago" [ref=f5e324]
+                - cell "—" [ref=f5e325]
+                - cell [ref=f5e326]:
+                  - button "Trace" [ref=f5e327]
+                  - button "Cancel" [ref=f5e328]
+              - row [ref=f5e329] [cursor=pointer]:
+                - cell [ref=f5e330]:
+                  - text: ▸
+                  - code [ref=f5e331]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e332]
+                - cell "3m ago" [ref=f5e334]
+                - cell "—" [ref=f5e335]
+                - cell [ref=f5e336]:
+                  - button "Trace" [ref=f5e337]
+                  - button "Cancel" [ref=f5e338]
+              - row [ref=f5e339] [cursor=pointer]:
+                - cell [ref=f5e340]:
+                  - text: ▸
+                  - code [ref=f5e341]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e342]
+                - cell "3m ago" [ref=f5e344]
+                - cell "—" [ref=f5e345]
+                - cell [ref=f5e346]:
+                  - button "Trace" [ref=f5e347]
+                  - button "Cancel" [ref=f5e348]
+              - row [ref=f5e349] [cursor=pointer]:
+                - cell [ref=f5e350]:
+                  - text: ▸
+                  - code [ref=f5e351]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e352]
+                - cell "3m ago" [ref=f5e354]
+                - cell "—" [ref=f5e355]
+                - cell [ref=f5e356]:
+                  - button "Trace" [ref=f5e357]
+                  - button "Cancel" [ref=f5e358]
+              - row [ref=f5e359] [cursor=pointer]:
+                - cell [ref=f5e360]:
+                  - text: ▸
+                  - code [ref=f5e361]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e362]
+                - cell "3m ago" [ref=f5e364]
+                - cell "—" [ref=f5e365]
+                - cell [ref=f5e366]:
+                  - button "Trace" [ref=f5e367]
+                  - button "Cancel" [ref=f5e368]
+              - row [ref=f5e369] [cursor=pointer]:
+                - cell [ref=f5e370]:
+                  - text: ▸
+                  - code [ref=f5e371]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e372]
+                - cell "3m ago" [ref=f5e374]
+                - cell "—" [ref=f5e375]
+                - cell [ref=f5e376]:
+                  - button "Trace" [ref=f5e377]
+                  - button "Cancel" [ref=f5e378]
+              - row [ref=f5e379] [cursor=pointer]:
+                - cell [ref=f5e380]:
+                  - text: ▸
+                  - code [ref=f5e381]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e382]
+                - cell "3m ago" [ref=f5e384]
+                - cell "—" [ref=f5e385]
+                - cell [ref=f5e386]:
+                  - button "Trace" [ref=f5e387]
+                  - button "Cancel" [ref=f5e388]
+              - row [ref=f5e389] [cursor=pointer]:
+                - cell [ref=f5e390]:
+                  - text: ▸
+                  - code [ref=f5e391]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e392]
+                - cell "3m ago" [ref=f5e394]
+                - cell "—" [ref=f5e395]
+                - cell [ref=f5e396]:
+                  - button "Trace" [ref=f5e397]
+                  - button "Cancel" [ref=f5e398]
+              - row [ref=f5e399] [cursor=pointer]:
+                - cell [ref=f5e400]:
+                  - text: ▸
+                  - code [ref=f5e401]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e402]
+                - cell "3m ago" [ref=f5e404]
+                - cell "—" [ref=f5e405]
+                - cell [ref=f5e406]:
+                  - button "Trace" [ref=f5e407]
+                  - button "Cancel" [ref=f5e408]
+              - row [ref=f5e409] [cursor=pointer]:
+                - cell [ref=f5e410]:
+                  - text: ▸
+                  - code [ref=f5e411]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e412]
+                - cell "3m ago" [ref=f5e414]
+                - cell "—" [ref=f5e415]
+                - cell [ref=f5e416]:
+                  - button "Trace" [ref=f5e417]
+                  - button "Cancel" [ref=f5e418]
+              - row [ref=f5e419] [cursor=pointer]:
+                - cell [ref=f5e420]:
+                  - text: ▸
+                  - code [ref=f5e421]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e422]
+                - cell "3m ago" [ref=f5e424]
+                - cell "—" [ref=f5e425]
+                - cell [ref=f5e426]:
+                  - button "Trace" [ref=f5e427]
+                  - button "Cancel" [ref=f5e428]
+              - row [ref=f5e429] [cursor=pointer]:
+                - cell [ref=f5e430]:
+                  - text: ▸
+                  - code [ref=f5e431]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e432]
+                - cell "3m ago" [ref=f5e434]
+                - cell "—" [ref=f5e435]
+                - cell [ref=f5e436]:
+                  - button "Trace" [ref=f5e437]
+                  - button "Cancel" [ref=f5e438]
+              - row [ref=f5e439] [cursor=pointer]:
+                - cell [ref=f5e440]:
+                  - text: ▸
+                  - code [ref=f5e441]: crawl-ryanair-range-route
+                - cell "QUEUED" [ref=f5e442]
+                - cell "3m ago" [ref=f5e444]
+                - cell "—" [ref=f5e445]
+                - cell [ref=f5e446]:
+                  - button "Trace" [ref=f5e447]
+                  - button "Cancel" [ref=f5e448]
+        - generic [ref=f5e61]:
+          - heading "System" [level=3] [ref=f5e62]
+          - paragraph [ref=f5e63]: Connection state for the services this UI talks to.
+          - generic [ref=f5e64]:
+            - generic [ref=f5e65]: Trigger.dev
+            - generic [ref=f5e66]: linked
+          - generic [ref=f5e67]:
+            - generic [ref=f5e68]: ClickHouse (flights)
+            - generic [ref=f5e69]: reachable
+          - generic [ref=f5e70]:
+            - generic [ref=f5e71]: ClickHouse (otel)
+            - generic [ref=f5e72]: reachable
+          - generic [ref=f5e73]:
+            - generic [ref=f5e74]: HyperDX
+            - link "http://localhost:8090" [ref=f5e75] [cursor=pointer]:
+              - /url: http://localhost:8090
+          - generic [ref=f5e76]:
+            - generic [ref=f5e77]: Server
+            - generic [ref=f5e78]: v0.0.0
+    - text: ▸ ▸
+  - contentinfo [ref=f5e79]:
+    - generic [ref=f5e80]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f5e81] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

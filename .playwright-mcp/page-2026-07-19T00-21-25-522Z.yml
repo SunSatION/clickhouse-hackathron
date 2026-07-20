@@ -1,0 +1,75 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]: H
+      - text: Hackathron
+      - generic [ref=f1e6]: control center
+    - tablist [ref=f1e7]:
+      - tab "Dashboard" [ref=f1e8] [cursor=pointer]
+      - tab "Trigger" [active] [ref=f1e9] [cursor=pointer]
+      - tab "Queue 0" [ref=f1e82] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f1e11]: "0"
+      - tab "Traces" [ref=f1e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f1e13] [cursor=pointer]
+    - generic [ref=f1e14]:
+      - generic [ref=f1e15]: all services
+      - button "↻" [ref=f1e18] [cursor=pointer]
+  - main [ref=f1e19]:
+    - tabpanel [ref=f1e83]:
+      - generic [ref=f1e85]:
+        - heading "Trigger" [level=1] [ref=f1e86]
+        - paragraph [ref=f1e87]: Fire a Trigger.dev task or kick off the queue worker. All inputs are validated against the DB and config.
+      - tablist [ref=f1e88]:
+        - button "Single origin" [ref=f1e89] [cursor=pointer]
+        - button "Full scan" [ref=f1e90] [cursor=pointer]
+        - button "Seed & run queue" [ref=f1e91] [cursor=pointer]
+        - button "Run one pending item" [ref=f1e92] [cursor=pointer]
+        - button "Sync Ryanair routes" [ref=f1e93] [cursor=pointer]
+      - generic [ref=f1e95]:
+        - heading "Crawl one Ryanair origin Trigger.dev" [level=3] [ref=f1e96]:
+          - text: Crawl one Ryanair origin
+          - generic [ref=f1e97]: Trigger.dev
+        - paragraph [ref=f1e98]: Loading…
+        - generic [ref=f1e99]:
+          - generic [ref=f1e100]:
+            - generic [ref=f1e101]: Origin IATA *
+            - combobox "Origin IATA *" [ref=f1e102]
+            - generic [ref=f1e103]: Type a 3-letter code — autocomplete from the routes table.
+          - generic [ref=f1e104]:
+            - generic [ref=f1e105]: Date from *
+            - textbox "Date from *" [ref=f1e106]: 2026-08-01
+          - generic [ref=f1e107]:
+            - generic [ref=f1e108]: Date to *
+            - textbox "Date to *" [ref=f1e109]: 2026-09-01
+          - generic [ref=f1e110]:
+            - generic [ref=f1e111]: Adults
+            - spinbutton "Adults" [ref=f1e112]: "1"
+        - generic [ref=f1e113]:
+          - generic [ref=f1e114]:
+            - generic [ref=f1e115]: Destinations filter
+            - combobox "Destinations filter" [ref=f1e116]
+            - generic [ref=f1e117]:
+              - text: Comma-separated. Leave empty to use every destination in
+              - code [ref=f1e118]: airline_routes
+              - text: for the origin.
+          - generic [ref=f1e119]:
+            - generic [ref=f1e120]: Run ID (optional)
+            - generic [ref=f1e121]:
+              - textbox "Run ID (optional)" [ref=f1e122]:
+                - /placeholder: auto-generated UUID
+              - button "Generate" [ref=f1e123] [cursor=pointer]
+            - generic [ref=f1e124]: Set this to correlate the run's trace with a known crawl_run_id.
+        - group [ref=f1e125]:
+          - generic "▸ Pacing" [ref=f1e126] [cursor=pointer]
+        - generic [ref=f1e127]:
+          - button "Run" [ref=f1e128] [cursor=pointer]
+          - button "Reset" [ref=f1e129] [cursor=pointer]
+        - generic [ref=f1e130]: // No run yet.
+      - text: ▸
+  - contentinfo [ref=f1e79]:
+    - generic [ref=f1e80]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f1e81] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

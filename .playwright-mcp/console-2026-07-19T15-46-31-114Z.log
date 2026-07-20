@@ -1,0 +1,4 @@
+[     646ms] ReferenceError: Cannot access 'nextMonthIso' before initialization
+    at http://localhost:3030/map.js:55:17
+    at http://localhost:3030/map.js:992:3
+[     651ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3030/:0

@@ -1,0 +1,57 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - link "W Wayfarer" [ref=f7e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f7e4]: W
+      - text: Wayfarer
+    - navigation [ref=f7e5]:
+      - link "Explore" [ref=f7e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f7e7] [cursor=pointer]:
+        - /url: "#favorites"
+    - generic [ref=f7e8]:
+      - button "Settings (BYOK, account)" [ref=f7e9] [cursor=pointer]
+      - button "Account" [ref=f7e13] [cursor=pointer]
+  - generic [ref=f7e17]:
+    - generic:
+      - generic [ref=f7e18]:
+        - button "Zoom in" [ref=f7e19] [cursor=pointer]: +
+        - button "Zoom out" [ref=f7e20] [cursor=pointer]: −
+      - generic [ref=f7e21]:
+        - link "Leaflet" [ref=f7e22] [cursor=pointer]:
+          - /url: https://leafletjs.com
+        - text: "| © OpenStreetMap contributors, © CARTO"
+  - button "Ryanair" [ref=f7e28] [cursor=pointer]
+  - complementary [ref=f7e29]:
+    - button "Toggle sidebar" [ref=f7e30] [cursor=pointer]
+    - generic [ref=f7e33]:
+      - heading "Explore airports" [level=3] [ref=f7e34]
+      - paragraph [ref=f7e35]: Click any pin to see fares. Or ask the assistant below.
+    - generic [ref=f7e36]:
+      - combobox "Sort" [ref=f7e37]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f7e38]
+      - textbox "Dest" [ref=f7e39]
+      - textbox [ref=f7e40]
+      - generic [ref=f7e41] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f7e42]
+        - text: Ryanair
+      - generic [ref=f7e43] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f7e44]
+        - text: EasyJet
+    - generic [ref=f7e46]:
+      - heading "Plan a multi-stop trip" [level=4] [ref=f7e47]
+      - paragraph [ref=f7e48]: Click any pin to add it to your trip. Click again to remove. Right-click a pin to view its fares.
+  - generic [ref=f7e49]:
+    - generic [ref=f7e50]:
+      - 'textbox "Ask Wayfarer to plan your next trip — try: ‘Visit France, Spain and Italy from Malta in one holiday, 2-3 days each.’" [ref=f7e51]'
+      - button "Send" [ref=f7e52] [cursor=pointer]
+    - generic [ref=f7e56]:
+      - button "Clear" [ref=f7e57] [cursor=pointer]
+      - 'button "Sample: capitals" [ref=f7e58] [cursor=pointer]'
+      - 'button "Sample: 5 cities" [ref=f7e59] [cursor=pointer]'

@@ -1,0 +1,55 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]: H
+      - text: Hackathron
+      - generic [ref=f1e6]: control center
+    - tablist [ref=f1e7]:
+      - tab "Dashboard" [ref=f1e8] [cursor=pointer]
+      - tab "Trigger" [selected] [ref=f1e9] [cursor=pointer]
+      - tab "Queue …" [ref=f1e10] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=f1e11]: …
+      - tab "Traces" [ref=f1e12] [cursor=pointer]
+      - tab "Maintenance" [ref=f1e13] [cursor=pointer]
+    - generic [ref=f1e14]:
+      - generic [ref=f1e15]: all services
+      - button "↻" [ref=f1e18] [cursor=pointer]
+  - main [ref=f1e19]:
+    - tabpanel [ref=f1e20]:
+      - generic [ref=f1e22]:
+        - heading "Trigger" [level=1] [ref=f1e23]
+        - paragraph [ref=f1e24]: Fire a Trigger.dev task or kick off the queue worker. All inputs are validated against the DB and config.
+      - tablist [ref=f1e25]:
+        - tab "Single origin" [ref=f1e26] [cursor=pointer]
+        - tab "Full scan" [ref=f1e27] [cursor=pointer]
+        - tab "Seed & run queue" [ref=f1e28] [cursor=pointer]
+        - tab "Run one pending item" [ref=f1e29] [cursor=pointer]
+        - tab "Sync Ryanair routes" [selected] [ref=f1e30] [cursor=pointer]
+      - text: ▸ ▸
+      - generic [ref=f1e32]:
+        - heading "Sync Ryanair routes Trigger.dev" [level=3] [ref=f1e33]:
+          - text: Sync Ryanair routes
+          - generic [ref=f1e34]: Trigger.dev
+        - paragraph [ref=f1e35]: Loading…
+        - generic [ref=f1e36]:
+          - generic [ref=f1e37]:
+            - generic [ref=f1e38]: Source *
+            - combobox "Source *" [ref=f1e39]:
+              - option "dynamic — all active airports (often WAF-blocked)" [selected]
+              - option "bases — RYANAIR_DEFAULT_BASES static list (~199 origins)"
+          - generic [ref=f1e40]:
+            - generic [ref=f1e41]: Concurrency
+            - spinbutton "Concurrency" [ref=f1e42]: "1"
+          - generic [ref=f1e43]:
+            - generic [ref=f1e44]: Origins override
+            - combobox "Origins override" [ref=f1e45]
+            - generic [ref=f1e46]: Empty = full list.
+        - button "Sync now" [ref=f1e48] [cursor=pointer]
+        - generic [ref=f1e49]: // No run yet.
+  - contentinfo [ref=f1e50]:
+    - generic [ref=f1e51]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=f1e52] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

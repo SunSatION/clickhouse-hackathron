@@ -1,0 +1,67 @@
+- generic [active] [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - link "W Wayfarer" [ref=f1e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f1e4]: W
+      - text: Wayfarer
+    - navigation [ref=f1e5]:
+      - link "Explore" [ref=f1e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f1e7] [cursor=pointer]:
+        - /url: "#favorites"
+      - link "Admin" [ref=f1e8] [cursor=pointer]:
+        - /url: /admin
+    - generic [ref=f1e9]:
+      - generic [ref=f1e10]: online
+      - button "Settings (BYOK, account)" [ref=f1e12] [cursor=pointer]
+      - button "Account" [ref=f1e16] [cursor=pointer]
+  - generic [ref=f1e20]:
+    - generic:
+      - generic [ref=f1e21]:
+        - button "Zoom in" [ref=f1e22] [cursor=pointer]: +
+        - button "Zoom out" [ref=f1e23] [cursor=pointer]: −
+      - generic [ref=f1e24]:
+        - link "Leaflet" [ref=f1e25] [cursor=pointer]:
+          - /url: https://leafletjs.com
+        - text: "| © OpenStreetMap contributors, © CARTO"
+  - complementary [ref=f1e30]:
+    - button "Toggle sidebar" [ref=f1e31] [cursor=pointer]
+    - generic [ref=f1e34]:
+      - heading "Explore airports" [level=3] [ref=f1e35]
+      - paragraph [ref=f1e36]: Click any pin to see fares. Or ask the assistant below.
+    - generic [ref=f1e37]:
+      - combobox "Sort" [ref=f1e38]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f1e39]
+      - textbox "Dest" [ref=f1e40]
+      - textbox [ref=f1e41]
+      - generic [ref=f1e42] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f1e43]
+        - text: Ryanair
+      - generic [ref=f1e44] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f1e45]
+        - text: EasyJet
+    - generic [ref=f1e47]:
+      - heading "Welcome to Wayfarer" [level=4] [ref=f1e48]
+      - paragraph [ref=f1e49]:
+        - text: "Ask me to plan a trip — for example:"
+        - emphasis [ref=f1e50]: "\"I want to visit France, Spain and Italy in one holiday. I live in Malta. Give me the cheapest itinerary with 2-3 days in each country.\""
+  - generic [ref=f1e51]:
+    - generic [ref=f1e52]:
+      - textbox "Ask Wayfarer to plan your next trip…" [ref=f1e53]
+      - button "Send" [ref=f1e54] [cursor=pointer]
+    - generic [ref=f1e58]:
+      - button "🇮🇹🇫🇷 Italy + France" [ref=f1e59] [cursor=pointer]
+      - button "🇪🇸🇵🇹 Spain + Portugal" [ref=f1e60] [cursor=pointer]
+      - button "🇬🇷 Greek weekend" [ref=f1e61] [cursor=pointer]
+      - button "🇩🇪🇳🇱🇧🇪 Central Europe" [ref=f1e62] [cursor=pointer]
+  - generic [ref=f1e63]:
+    - generic [ref=f1e64]: Home airport
+    - generic [ref=f1e66]: Reachable airport
+  - link "control center →" [ref=f1e68] [cursor=pointer]:
+    - /url: /admin

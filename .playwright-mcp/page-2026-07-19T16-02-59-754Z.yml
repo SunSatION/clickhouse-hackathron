@@ -1,0 +1,48 @@
+- generic [active] [ref=f5e1]:
+  - banner [ref=f5e2]:
+    - link "W Wayfarer" [ref=f5e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f5e4]: W
+      - text: Wayfarer
+    - navigation [ref=f5e5]:
+      - link "Explore" [ref=f5e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f5e7] [cursor=pointer]:
+        - /url: "#favorites"
+    - generic [ref=f5e8]:
+      - button "Settings (BYOK, account)" [ref=f5e9] [cursor=pointer]
+      - button "Account" [ref=f5e13] [cursor=pointer]
+  - button "Ryanair" [ref=f5e19] [cursor=pointer]
+  - complementary [ref=f5e20]:
+    - button "Toggle sidebar" [ref=f5e21] [cursor=pointer]
+    - generic [ref=f5e24]:
+      - heading "Explore airports" [level=3] [ref=f5e25]
+      - paragraph [ref=f5e26]: Click any pin to see fares. Or ask the assistant below.
+    - generic [ref=f5e27]:
+      - combobox "Sort" [ref=f5e28]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f5e29]
+      - textbox "Dest" [ref=f5e30]
+      - textbox [ref=f5e31]
+      - generic [ref=f5e32] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f5e33]
+        - text: Ryanair
+      - generic [ref=f5e34] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f5e35]
+        - text: EasyJet
+    - generic [ref=f5e37]:
+      - heading "Plan a multi-stop trip" [level=4] [ref=f5e38]
+      - paragraph [ref=f5e39]: Click any pin to add it to your trip. Click again to remove. Right-click a pin to view its fares.
+  - generic [ref=f5e40]:
+    - generic [ref=f5e41]:
+      - 'textbox "Ask Wayfarer to plan your next trip — try: ‘Visit France, Spain and Italy from Malta in one holiday, 2-3 days each.’" [ref=f5e42]'
+      - button "Send" [ref=f5e43] [cursor=pointer]
+    - generic [ref=f5e47]:
+      - button "Clear" [ref=f5e48] [cursor=pointer]
+      - 'button "Sample: capitals" [ref=f5e49] [cursor=pointer]'
+      - 'button "Sample: 5 cities" [ref=f5e50] [cursor=pointer]'

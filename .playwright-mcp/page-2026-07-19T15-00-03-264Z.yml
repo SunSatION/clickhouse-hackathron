@@ -1,0 +1,438 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - link "W Wayfarer" [ref=f2e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f2e4]: W
+      - text: Wayfarer
+    - navigation [ref=f2e5]:
+      - link "Explore" [ref=f2e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f2e7] [cursor=pointer]:
+        - /url: "#favorites"
+      - link "Admin" [ref=f2e8] [cursor=pointer]:
+        - /url: /admin
+    - generic [ref=f2e9]:
+      - generic [ref=f2e10]: online
+      - button "Settings (BYOK, account)" [ref=f2e12] [cursor=pointer]
+      - button "Account" [ref=f2e16] [cursor=pointer]
+  - generic [ref=f2e20]:
+    - generic:
+      - generic:
+        - button "STN" [ref=f2e21] [cursor=pointer]
+        - button "DUB" [ref=f2e23] [cursor=pointer]
+        - button "CRL" [ref=f2e25] [cursor=pointer]
+        - button "BGY" [ref=f2e27] [cursor=pointer]
+        - button "AGP" [ref=f2e29] [cursor=pointer]
+        - button "ALC" [ref=f2e31] [cursor=pointer]
+        - button "MAN" [ref=f2e33] [cursor=pointer]
+        - button "KRK" [ref=f2e35] [cursor=pointer]
+        - button "PMI" [ref=f2e37] [cursor=pointer]
+        - button "OPO" [ref=f2e39] [cursor=pointer]
+        - button "BUD" [ref=f2e41] [cursor=pointer]
+        - button "MLA" [ref=f2e43] [cursor=pointer]
+        - button "VIE" [ref=f2e45] [cursor=pointer]
+        - button "BVA" [ref=f2e47] [cursor=pointer]
+        - button "EDI" [ref=f2e49] [cursor=pointer]
+        - button "MAD" [ref=f2e51] [cursor=pointer]
+        - button "BCN" [ref=f2e53] [cursor=pointer]
+        - button "BLQ" [ref=f2e55] [cursor=pointer]
+        - button "BRI" [ref=f2e57] [cursor=pointer]
+        - button "VLC" [ref=f2e59] [cursor=pointer]
+        - button "PSA" [ref=f2e61] [cursor=pointer]
+        - button "NAP" [ref=f2e63] [cursor=pointer]
+        - button "FCO" [ref=f2e65] [cursor=pointer]
+        - button "MRS" [ref=f2e67] [cursor=pointer]
+        - button "BHX" [ref=f2e69] [cursor=pointer]
+        - button "RAK" [ref=f2e71] [cursor=pointer]
+        - button "MXP" [ref=f2e73] [cursor=pointer]
+        - button "SVQ" [ref=f2e75] [cursor=pointer]
+        - button "WMI" [ref=f2e77] [cursor=pointer]
+        - button "GDN" [ref=f2e79] [cursor=pointer]
+        - button "WRO" [ref=f2e81] [cursor=pointer]
+        - button "ZAD" [ref=f2e83] [cursor=pointer]
+        - button "NRN" [ref=f2e85] [cursor=pointer]
+        - button "ARN" [ref=f2e87] [cursor=pointer]
+        - button "BER" [ref=f2e89] [cursor=pointer]
+        - button "CTA" [ref=f2e91] [cursor=pointer]
+        - button "FAO" [ref=f2e93] [cursor=pointer]
+        - button "PMO" [ref=f2e95] [cursor=pointer]
+        - button "TFS" [ref=f2e97] [cursor=pointer]
+        - button "TIA" [ref=f2e99] [cursor=pointer]
+        - button "CFU" [ref=f2e101] [cursor=pointer]
+        - button "SOF" [ref=f2e103] [cursor=pointer]
+        - button "TRN" [ref=f2e105] [cursor=pointer]
+        - button "OTP" [ref=f2e107] [cursor=pointer]
+        - button "CAG" [ref=f2e109] [cursor=pointer]
+        - button "TSF" [ref=f2e111] [cursor=pointer]
+        - button "POZ" [ref=f2e113] [cursor=pointer]
+        - button "BRS" [ref=f2e115] [cursor=pointer]
+        - button "PRG" [ref=f2e117] [cursor=pointer]
+        - button "LPL" [ref=f2e119] [cursor=pointer]
+        - button "PFO" [ref=f2e121] [cursor=pointer]
+        - button "EIN" [ref=f2e123] [cursor=pointer]
+        - button "FMM" [ref=f2e125] [cursor=pointer]
+        - button "LIS" [ref=f2e127] [cursor=pointer]
+        - button "CGN" [ref=f2e129] [cursor=pointer]
+        - button "CHQ" [ref=f2e131] [cursor=pointer]
+        - button "GRO" [ref=f2e133] [cursor=pointer]
+        - button "ACE" [ref=f2e135] [cursor=pointer]
+        - button "BTS" [ref=f2e137] [cursor=pointer]
+        - button "CPH" [ref=f2e139] [cursor=pointer]
+        - button "TLS" [ref=f2e141] [cursor=pointer]
+        - button "EMA" [ref=f2e143] [cursor=pointer]
+        - button "FKB" [ref=f2e145] [cursor=pointer]
+        - button "IBZ" [ref=f2e147] [cursor=pointer]
+        - button "LTN" [ref=f2e149] [cursor=pointer]
+        - button "SKG" [ref=f2e151] [cursor=pointer]
+        - button "SNN" [ref=f2e153] [cursor=pointer]
+        - button "HHN" [ref=f2e155] [cursor=pointer]
+        - button "LPA" [ref=f2e157] [cursor=pointer]
+        - button "ORK" [ref=f2e159] [cursor=pointer]
+        - button "VCE" [ref=f2e161] [cursor=pointer]
+        - button "AGA" [ref=f2e163] [cursor=pointer]
+        - button "SUF" [ref=f2e165] [cursor=pointer]
+        - button "ZAG" [ref=f2e167] [cursor=pointer]
+        - button "KTW" [ref=f2e169] [cursor=pointer]
+        - button "RHO" [ref=f2e171] [cursor=pointer]
+        - button "ATH" [ref=f2e173] [cursor=pointer]
+        - button "FUE" [ref=f2e175] [cursor=pointer]
+        - button "KUN" [ref=f2e177] [cursor=pointer]
+        - button "CIA" [ref=f2e179] [cursor=pointer]
+        - button "GOT" [ref=f2e181] [cursor=pointer]
+        - button "LBA" [ref=f2e183] [cursor=pointer]
+        - button "DBV" [ref=f2e185] [cursor=pointer]
+        - button "TPS" [ref=f2e187] [cursor=pointer]
+        - button "AHO" [ref=f2e189] [cursor=pointer]
+        - button "BDS" [ref=f2e191] [cursor=pointer]
+        - button "FEZ" [ref=f2e193] [cursor=pointer]
+        - button "NUE" [ref=f2e195] [cursor=pointer]
+        - button "TNG" [ref=f2e197] [cursor=pointer]
+        - button "NCL" [ref=f2e199] [cursor=pointer]
+        - button "TRS" [ref=f2e201] [cursor=pointer]
+        - button "BOH" [ref=f2e203] [cursor=pointer]
+        - button "PSR" [ref=f2e205] [cursor=pointer]
+        - button "RIX" [ref=f2e207] [cursor=pointer]
+        - button "RBA" [ref=f2e209] [cursor=pointer]
+        - button "VNO" [ref=f2e211] [cursor=pointer]
+        - button "VRN" [ref=f2e213] [cursor=pointer]
+        - button "WAW" [ref=f2e215] [cursor=pointer]
+        - button "AMM" [ref=f2e217] [cursor=pointer]
+        - button "MAH" [ref=f2e219] [cursor=pointer]
+        - button "NOC" [ref=f2e221] [cursor=pointer]
+        - button "BFS" [ref=f2e223] [cursor=pointer]
+        - button "KGS" [ref=f2e225] [cursor=pointer]
+        - button "REG" [ref=f2e227] [cursor=pointer]
+        - button "RMI" [ref=f2e229] [cursor=pointer]
+        - button "TRF" [ref=f2e231] [cursor=pointer]
+        - button "GOA" [ref=f2e233] [cursor=pointer]
+        - button "LUX" [ref=f2e235] [cursor=pointer]
+        - button "REU" [ref=f2e237] [cursor=pointer]
+        - button "BOJ" [ref=f2e239] [cursor=pointer]
+        - button "BRU" [ref=f2e241] [cursor=pointer]
+        - button "JTR" [ref=f2e243] [cursor=pointer]
+        - button "PGF" [ref=f2e245] [cursor=pointer]
+        - button "PIK" [ref=f2e247] [cursor=pointer]
+        - button "SJJ" [ref=f2e249] [cursor=pointer]
+        - button "CCF" [ref=f2e251] [cursor=pointer]
+        - button "CDT" [ref=f2e253] [cursor=pointer]
+        - button "FNC" [ref=f2e255] [cursor=pointer]
+        - button "HEL" [ref=f2e257] [cursor=pointer]
+        - button "NTE" [ref=f2e259] [cursor=pointer]
+        - button "OLB" [ref=f2e261] [cursor=pointer]
+        - button "PEG" [ref=f2e263] [cursor=pointer]
+        - button "RVN" [ref=f2e265] [cursor=pointer]
+        - button "RZE" [ref=f2e267] [cursor=pointer]
+        - button "ZTH" [ref=f2e269] [cursor=pointer]
+        - button "BZR" [ref=f2e271] [cursor=pointer]
+        - button "JSI" [ref=f2e273] [cursor=pointer]
+        - button "OUD" [ref=f2e275] [cursor=pointer]
+        - button "SDR" [ref=f2e277] [cursor=pointer]
+        - button "AAR" [ref=f2e279] [cursor=pointer]
+        - button "GLA" [ref=f2e281] [cursor=pointer]
+        - button "HER" [ref=f2e283] [cursor=pointer]
+        - button "NDR" [ref=f2e285] [cursor=pointer]
+        - button "PUY" [ref=f2e287] [cursor=pointer]
+        - button "RMU" [ref=f2e289] [cursor=pointer]
+        - button "SCQ" [ref=f2e291] [cursor=pointer]
+        - button "HAM" [ref=f2e293] [cursor=pointer]
+        - button "KIR" [ref=f2e295] [cursor=pointer]
+        - button "LCJ" [ref=f2e297] [cursor=pointer]
+        - button "LDE" [ref=f2e299] [cursor=pointer]
+        - button "LRH" [ref=f2e301] [cursor=pointer]
+        - button "PVK" [ref=f2e303] [cursor=pointer]
+        - button "TGD" [ref=f2e305] [cursor=pointer]
+        - button "BNX" [ref=f2e307] [cursor=pointer]
+        - button "BZG" [ref=f2e309] [cursor=pointer]
+        - button "EGC" [ref=f2e311] [cursor=pointer]
+        - button "ESU" [ref=f2e313] [cursor=pointer]
+        - button "FMO" [ref=f2e315] [cursor=pointer]
+        - button "FNI" [ref=f2e317] [cursor=pointer]
+        - button "GNB" [ref=f2e319] [cursor=pointer]
+        - button "KSC" [ref=f2e321] [cursor=pointer]
+        - button "LIG" [ref=f2e323] [cursor=pointer]
+        - button "LUZ" [ref=f2e325] [cursor=pointer]
+        - button "NQY" [ref=f2e327] [cursor=pointer]
+        - button "TLL" [ref=f2e329] [cursor=pointer]
+        - button "TTU" [ref=f2e331] [cursor=pointer]
+        - button "VIT" [ref=f2e333] [cursor=pointer]
+        - button "AOI" [ref=f2e335] [cursor=pointer]
+        - button "BBU" [ref=f2e337] [cursor=pointer]
+        - button "BIQ" [ref=f2e339] [cursor=pointer]
+        - button "BRE" [ref=f2e341] [cursor=pointer]
+        - button "CLJ" [ref=f2e343] [cursor=pointer]
+        - button "CRV" [ref=f2e345] [cursor=pointer]
+        - button "CWL" [ref=f2e347] [cursor=pointer]
+        - button "EFL" [ref=f2e349] [cursor=pointer]
+        - button "JMK" [ref=f2e351] [cursor=pointer]
+        - button "MME" [ref=f2e353] [cursor=pointer]
+        - button "PMF" [ref=f2e355] [cursor=pointer]
+        - button "RJK" [ref=f2e357] [cursor=pointer]
+        - button "SZG" [ref=f2e359] [cursor=pointer]
+        - button "ZAZ" [ref=f2e361] [cursor=pointer]
+        - button "ABZ" [ref=f2e363] [cursor=pointer]
+        - button "EXT" [ref=f2e365] [cursor=pointer]
+        - button "IAS" [ref=f2e367] [cursor=pointer]
+        - button "INI" [ref=f2e369] [cursor=pointer]
+        - button "LGW" [ref=f2e371] [cursor=pointer]
+        - button "PDV" [ref=f2e373] [cursor=pointer]
+        - button "PED" [ref=f2e375] [cursor=pointer]
+        - button "QSR" [ref=f2e377] [cursor=pointer]
+        - button "SZZ" [ref=f2e379] [cursor=pointer]
+        - button "TUF" [ref=f2e381] [cursor=pointer]
+        - button "BEM" [ref=f2e383] [cursor=pointer]
+        - button "BRQ" [ref=f2e385] [cursor=pointer]
+        - button "BSL" [ref=f2e387] [cursor=pointer]
+        - button "DLE" [ref=f2e389] [cursor=pointer]
+        - button "DLM" [ref=f2e391] [cursor=pointer]
+        - button "FRL" [ref=f2e393] [cursor=pointer]
+        - button "LBC" [ref=f2e395] [cursor=pointer]
+        - button "LEI" [ref=f2e397] [cursor=pointer]
+        - button "LIL" [ref=f2e399] [cursor=pointer]
+        - button "LNZ" [ref=f2e401] [cursor=pointer]
+        - button "MMX" [ref=f2e403] [cursor=pointer]
+        - button "NWI" [ref=f2e405] [cursor=pointer]
+        - button "OSL" [ref=f2e407] [cursor=pointer]
+        - button "OSR" [ref=f2e409] [cursor=pointer]
+        - button "PAD" [ref=f2e411] [cursor=pointer]
+        - button "SCN" [ref=f2e413] [cursor=pointer]
+        - button "VST" [ref=f2e415] [cursor=pointer]
+        - button "VXO" [ref=f2e417] [cursor=pointer]
+        - button "AMS" [ref=f2e419] [cursor=pointer]
+        - button "BJV" [ref=f2e421] [cursor=pointer]
+        - button "CUF" [ref=f2e423] [cursor=pointer]
+        - button "FDH" [ref=f2e425] [cursor=pointer]
+        - button "FSC" [ref=f2e427] [cursor=pointer]
+        - button "KLU" [ref=f2e429] [cursor=pointer]
+        - button "KLX" [ref=f2e431] [cursor=pointer]
+        - button "NCE" [ref=f2e433] [cursor=pointer]
+        - button "OZZ" [ref=f2e435] [cursor=pointer]
+        - button "PIS" [ref=f2e437] [cursor=pointer]
+        - button "RDZ" [ref=f2e439] [cursor=pointer]
+        - button "SPU" [ref=f2e441] [cursor=pointer]
+        - button "SZY" [ref=f2e443] [cursor=pointer]
+        - button "VAR" [ref=f2e445] [cursor=pointer]
+        - button "XCR" [ref=f2e447] [cursor=pointer]
+        - button "BVE" [ref=f2e449] [cursor=pointer]
+        - button "ERH" [ref=f2e451] [cursor=pointer]
+        - button "LCA" [ref=f2e453] [cursor=pointer]
+        - button "LDY" [ref=f2e455] [cursor=pointer]
+        - button "LXS" [ref=f2e457] [cursor=pointer]
+        - button "OSI" [ref=f2e459] [cursor=pointer]
+        - button "PLQ" [ref=f2e461] [cursor=pointer]
+        - button "SFT" [ref=f2e463] [cursor=pointer]
+        - button "VIL" [ref=f2e465] [cursor=pointer]
+        - button "VOL" [ref=f2e467] [cursor=pointer]
+        - button "MLA→FCO 2026-08-19 · EUR 34 · Ryanair":
+          - generic: MLA→FCO2026-08-19 · EUR 34 · Ryanair
+        - button "MAD→MLA 2026-08-19 · EUR 34 · Ryanair":
+          - generic: MAD→MLA2026-08-19 · EUR 34 · Ryanair
+        - button "MLA→MLA 2026-09-13 · no data · —":
+          - generic: MLA→MLA2026-09-13 · no data · —
+    - generic:
+      - generic [ref=f2e469]:
+        - button "Zoom in" [ref=f2e470] [cursor=pointer]: +
+        - button "Zoom out" [ref=f2e471] [cursor=pointer]: −
+      - generic [ref=f2e472]:
+        - link "Leaflet" [ref=f2e473] [cursor=pointer]:
+          - /url: https://leafletjs.com
+        - text: "| © OpenStreetMap contributors, © CARTO"
+  - generic [ref=f2e478]:
+    - button "Reachable" [ref=f2e479] [cursor=pointer]
+    - button "Fit itinerary" [ref=f2e522] [cursor=pointer]
+  - complementary [ref=f2e480]:
+    - button "Toggle sidebar" [ref=f2e481] [cursor=pointer]
+    - generic [ref=f2e484]:
+      - heading "Itineraries" [level=3] [ref=f2e523]
+      - paragraph [ref=f2e486]: 4 options for your trip
+    - generic [ref=f2e487]:
+      - combobox "Sort" [ref=f2e488]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f2e489]
+      - textbox "Dest" [ref=f2e490]
+      - textbox [ref=f2e491]
+      - generic [ref=f2e492] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f2e493]
+        - text: Ryanair
+      - generic [ref=f2e494] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f2e495]
+        - text: EasyJet
+    - generic [ref=f2e496]:
+      - generic [ref=f2e524] [cursor=pointer]:
+        - generic [ref=f2e525]:
+          - generic [ref=f2e526]:
+            - text: italy → france → spain → malta
+            - generic [ref=f2e527]: incomplete
+          - generic [ref=f2e528]: EUR 67.50
+        - generic [ref=f2e529]:
+          - generic [ref=f2e530]: 5 legs
+          - generic [ref=f2e531]: "Score: 56"
+        - generic [ref=f2e532]: "Found pricing for 2/5 legs. Missing data: FCO→CDG, CDG→MAD, MLA→MLA. Try expanding the date range or request a crawl."
+        - generic [ref=f2e533]:
+          - generic [ref=f2e534]:
+            - generic [ref=f2e535]: MLA→FCO
+            - generic [ref=f2e536]: Ryanair · 2026-08-19
+            - generic [ref=f2e537]: EUR 33.99
+          - generic [ref=f2e538]:
+            - generic [ref=f2e539]: FCO→CDG
+            - generic [ref=f2e540]: — · 2026-08-29
+            - generic [ref=f2e541]: —
+          - generic [ref=f2e542]:
+            - generic [ref=f2e543]: CDG→MAD
+            - generic [ref=f2e544]: — · 2026-09-03
+            - generic [ref=f2e545]: —
+          - generic [ref=f2e546]:
+            - generic [ref=f2e547]: MAD→MLA
+            - generic [ref=f2e548]: Ryanair · 2026-08-19
+            - generic [ref=f2e549]: EUR 33.51
+          - generic [ref=f2e550]:
+            - generic [ref=f2e551]: MLA→MLA
+            - generic [ref=f2e552]: — · 2026-09-13
+            - generic [ref=f2e553]: —
+        - generic [ref=f2e554]:
+          - button "☆ Save" [ref=f2e555]
+          - button "Refresh crawl" [ref=f2e556]
+          - button "View trace" [ref=f2e557]
+      - generic [ref=f2e558] [cursor=pointer]:
+        - generic [ref=f2e559]:
+          - generic [ref=f2e560]:
+            - text: italy → spain → france → malta
+            - generic [ref=f2e561]: incomplete
+          - generic [ref=f2e562]: EUR 112.48
+        - generic [ref=f2e563]:
+          - generic [ref=f2e564]: 5 legs
+          - generic [ref=f2e565]: "Score: 56"
+        - generic [ref=f2e566]: "Found pricing for 2/5 legs. Missing data: MAD→CDG, CDG→MLA, MLA→MLA. Try expanding the date range or request a crawl."
+        - generic [ref=f2e567]:
+          - generic [ref=f2e568]:
+            - generic [ref=f2e569]: MLA→FCO
+            - generic [ref=f2e570]: Ryanair · 2026-08-19
+            - generic [ref=f2e571]: EUR 33.99
+          - generic [ref=f2e572]:
+            - generic [ref=f2e573]: FCO→MAD
+            - generic [ref=f2e574]: Ryanair · 2026-08-19
+            - generic [ref=f2e575]: EUR 78.49
+          - generic [ref=f2e576]:
+            - generic [ref=f2e577]: MAD→CDG
+            - generic [ref=f2e578]: — · 2026-09-03
+            - generic [ref=f2e579]: —
+          - generic [ref=f2e580]:
+            - generic [ref=f2e581]: CDG→MLA
+            - generic [ref=f2e582]: — · 2026-09-08
+            - generic [ref=f2e583]: —
+          - generic [ref=f2e584]:
+            - generic [ref=f2e585]: MLA→MLA
+            - generic [ref=f2e586]: — · 2026-09-13
+            - generic [ref=f2e587]: —
+        - generic [ref=f2e588]:
+          - button "☆ Save" [ref=f2e589]
+          - button "Refresh crawl" [ref=f2e590]
+          - button "View trace" [ref=f2e591]
+      - generic [ref=f2e592] [cursor=pointer]:
+        - generic [ref=f2e593]:
+          - generic [ref=f2e594]:
+            - text: italy → spain → malta → france
+            - generic [ref=f2e595]: incomplete
+          - generic [ref=f2e596]: EUR 145.99
+        - generic [ref=f2e597]:
+          - generic [ref=f2e598]: 5 legs
+          - generic [ref=f2e599]: "Score: 68"
+        - generic [ref=f2e600]: "Found pricing for 3/5 legs. Missing data: MLA→CDG, CDG→MLA. Try expanding the date range or request a crawl."
+        - generic [ref=f2e601]:
+          - generic [ref=f2e602]:
+            - generic [ref=f2e603]: MLA→FCO
+            - generic [ref=f2e604]: Ryanair · 2026-08-19
+            - generic [ref=f2e605]: EUR 33.99
+          - generic [ref=f2e606]:
+            - generic [ref=f2e607]: FCO→MAD
+            - generic [ref=f2e608]: Ryanair · 2026-08-19
+            - generic [ref=f2e609]: EUR 78.49
+          - generic [ref=f2e610]:
+            - generic [ref=f2e611]: MAD→MLA
+            - generic [ref=f2e612]: Ryanair · 2026-08-19
+            - generic [ref=f2e613]: EUR 33.51
+          - generic [ref=f2e614]:
+            - generic [ref=f2e615]: MLA→CDG
+            - generic [ref=f2e616]: — · 2026-09-08
+            - generic [ref=f2e617]: —
+          - generic [ref=f2e618]:
+            - generic [ref=f2e619]: CDG→MLA
+            - generic [ref=f2e620]: — · 2026-09-13
+            - generic [ref=f2e621]: —
+        - generic [ref=f2e622]:
+          - button "☆ Save" [ref=f2e623]
+          - button "Refresh crawl" [ref=f2e624]
+          - button "View trace" [ref=f2e625]
+      - generic [ref=f2e626] [cursor=pointer]:
+        - generic [ref=f2e627]:
+          - generic [ref=f2e628]:
+            - text: italy → france → malta → spain
+            - generic [ref=f2e629]: incomplete
+          - generic [ref=f2e630]: EUR 164.31
+        - generic [ref=f2e631]:
+          - generic [ref=f2e632]: 5 legs
+          - generic [ref=f2e633]: "Score: 68"
+        - generic [ref=f2e634]: "Found pricing for 3/5 legs. Missing data: FCO→CDG, CDG→MLA. Try expanding the date range or request a crawl."
+        - generic [ref=f2e635]:
+          - generic [ref=f2e636]:
+            - generic [ref=f2e637]: MLA→FCO
+            - generic [ref=f2e638]: Ryanair · 2026-08-19
+            - generic [ref=f2e639]: EUR 33.99
+          - generic [ref=f2e640]:
+            - generic [ref=f2e641]: FCO→CDG
+            - generic [ref=f2e642]: — · 2026-08-29
+            - generic [ref=f2e643]: —
+          - generic [ref=f2e644]:
+            - generic [ref=f2e645]: CDG→MLA
+            - generic [ref=f2e646]: — · 2026-09-03
+            - generic [ref=f2e647]: —
+          - generic [ref=f2e648]:
+            - generic [ref=f2e649]: MLA→MAD
+            - generic [ref=f2e650]: Ryanair · 2026-08-19
+            - generic [ref=f2e651]: EUR 96.81
+          - generic [ref=f2e652]:
+            - generic [ref=f2e653]: MAD→MLA
+            - generic [ref=f2e654]: Ryanair · 2026-08-19
+            - generic [ref=f2e655]: EUR 33.51
+        - generic [ref=f2e656]:
+          - button "☆ Save" [ref=f2e657]
+          - button "Refresh crawl" [ref=f2e658]
+          - button "View trace" [ref=f2e659]
+  - generic [ref=f2e501]:
+    - generic [ref=f2e502]:
+      - button "🇮🇹🇫🇷 Italy + France" [ref=f2e503] [cursor=pointer]
+      - button "🇪🇸🇵🇹 Spain + Portugal" [ref=f2e504] [cursor=pointer]
+      - button "🇬🇷 Greek weekend" [ref=f2e505] [cursor=pointer]
+      - button "🇩🇪🇳🇱🇧🇪 Central Europe" [ref=f2e506] [cursor=pointer]
+    - generic [ref=f2e507]:
+      - textbox "Ask Wayfarer to plan your next trip…" [ref=f2e508]: I want to visit France, Spain and Italy in one holiday. I live in Malta. Give me the cheapest itinerary with 3 days in each country.
+      - button "Send" [ref=f2e509] [cursor=pointer]
+  - generic [ref=f2e513]:
+    - generic [ref=f2e514]: Home airport
+    - generic [ref=f2e516]: Reachable airport
+  - link "control center →" [ref=f2e518] [cursor=pointer]:
+    - /url: /admin

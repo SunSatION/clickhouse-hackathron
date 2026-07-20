@@ -1,0 +1,8 @@
+[  102367ms] TypeError: Method RegExp.prototype.test called on incompatible receiver undefined
+    at test (<anonymous>)
+    at Array.filter (<anonymous>)
+    at HTMLButtonElement.<anonymous> (http://localhost:3030/:1418:105)
+[  112230ms] TypeError: Method RegExp.prototype.test called on incompatible receiver undefined
+    at test (<anonymous>)
+    at Array.filter (<anonymous>)
+    at HTMLButtonElement.<anonymous> (http://localhost:3030/:1418:105)

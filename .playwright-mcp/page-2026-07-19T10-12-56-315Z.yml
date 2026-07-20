@@ -1,0 +1,104 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: H
+      - text: Hackathron
+      - generic [ref=e6]: control center
+    - tablist [ref=e7]:
+      - tab "Dashboard" [selected] [ref=e8] [cursor=pointer]
+      - tab "Trigger" [ref=e9] [cursor=pointer]
+      - tab "Queue …" [ref=e10] [cursor=pointer]:
+        - text: Queue
+        - generic [ref=e11]: …
+      - tab "Traces" [ref=e12] [cursor=pointer]
+      - tab "Maintenance" [ref=e13] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e15]: connecting…
+      - button "↻" [ref=e18] [cursor=pointer]
+  - main [ref=e19]:
+    - tabpanel [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - heading "Dashboard" [level=1] [ref=e23]
+          - paragraph [ref=e24]: Live overview of crawl progress, queue health and latest activity.
+        - generic [ref=e25]:
+          - generic [ref=e26]: never
+          - button "Refresh now" [ref=e27] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Pending
+          - generic [ref=e31]: —
+          - generic [ref=e32]: awaiting claim
+        - generic [ref=e33]:
+          - generic [ref=e34]: Processing
+          - generic [ref=e35]: —
+          - generic [ref=e36]: in flight
+        - generic [ref=e37]:
+          - generic [ref=e38]: Completed
+          - generic [ref=e39]: —
+          - generic [ref=e40]: rows_inserted > 0
+        - generic [ref=e41]:
+          - generic [ref=e42]: Failed
+          - generic [ref=e43]: —
+          - generic [ref=e44]: terminal error
+      - generic [ref=e45]:
+        - heading "Run queue" [level=3] [ref=e46]
+        - paragraph [ref=e47]:
+          - text: Live Trigger.dev queue —
+          - strong [ref=e48]: EXECUTING
+          - text: at the top,
+          - strong [ref=e49]: QUEUED
+          - text: below in pickup order (oldest first, since concurrencyLimit = 1).
+        - table [ref=e51]:
+          - rowgroup [ref=e52]:
+            - row [ref=e53]:
+              - columnheader "#" [ref=e54]
+              - columnheader "Task" [ref=e55]
+              - columnheader "Status" [ref=e56]
+              - columnheader "Queued at" [ref=e57]
+              - columnheader "Started" [ref=e58]
+              - columnheader "Origin" [ref=e59]
+              - columnheader [ref=e60]
+          - rowgroup [ref=e61]:
+            - row [ref=e62]:
+              - cell "Loading…" [ref=e63]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - heading "Recent runs" [level=3] [ref=e66]
+          - paragraph [ref=e67]: Latest Trigger.dev runs across this project — click any to inspect its crawl trace.
+          - table [ref=e69]:
+            - rowgroup [ref=e70]:
+              - row [ref=e71]:
+                - columnheader "Task" [ref=e72]
+                - columnheader "Status" [ref=e73]
+                - columnheader "Started" [ref=e74]
+                - columnheader "Origin" [ref=e75]
+                - columnheader [ref=e76]
+            - rowgroup [ref=e77]:
+              - row [ref=e78]:
+                - cell "Loading…" [ref=e79]
+        - generic [ref=e80]:
+          - heading "System" [level=3] [ref=e81]
+          - paragraph [ref=e82]: Connection state for the services this UI talks to.
+          - generic [ref=e83]:
+            - generic [ref=e84]: Trigger.dev
+            - generic [ref=e85]: —
+          - generic [ref=e86]:
+            - generic [ref=e87]: ClickHouse (flights)
+            - generic [ref=e88]: —
+          - generic [ref=e89]:
+            - generic [ref=e90]: ClickHouse (otel)
+            - generic [ref=e91]: —
+          - generic [ref=e92]:
+            - generic [ref=e93]: HyperDX
+            - generic [ref=e94]: —
+          - generic [ref=e95]:
+            - generic [ref=e96]: Server
+            - generic [ref=e97]: v—
+    - text: ▸ ▸
+  - contentinfo [ref=e98]:
+    - generic [ref=e99]:
+      - text: Hackathron Crawler · ClickHouse · Trigger.dev · OTel →
+      - link "HyperDX" [ref=e100] [cursor=pointer]:
+        - /url: http://localhost:8090
+      - text: · v0.0.0

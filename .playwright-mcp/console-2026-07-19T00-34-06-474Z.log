@@ -1,0 +1,14 @@
+[  140235ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/queue/stats?airline=Ryanair:0
+[  140235ms] [WARNING] refreshDashboard: TypeError: Failed to fetch
+    at getJson (http://localhost:3030/:1102:25)
+    at refreshDashboard (http://localhost:3030/:1345:13)
+    at http://localhost:3030/:1931:105 @ http://localhost:3030/:1356
+[  140235ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/runs/recent?limit=15:0
+[  140235ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/health:0
+[  145232ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/runs/recent?limit=15:0
+[  145232ms] [WARNING] refreshDashboard: TypeError: Failed to fetch
+    at getJson (http://localhost:3030/:1102:25)
+    at refreshDashboard (http://localhost:3030/:1346:13)
+    at http://localhost:3030/:1931:105 @ http://localhost:3030/:1356
+[  145232ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/queue/stats?airline=Ryanair:0
+[  145233ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3030/api/health:0

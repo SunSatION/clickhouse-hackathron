@@ -1,0 +1,322 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - link "W Wayfarer" [ref=f7e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f7e4]: W
+      - text: Wayfarer
+    - navigation [ref=f7e5]:
+      - link "Explore" [ref=f7e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f7e7] [cursor=pointer]:
+        - /url: "#favorites"
+    - generic [ref=f7e8]:
+      - button "Settings (BYOK, account)" [ref=f7e9] [cursor=pointer]
+      - button "Account" [ref=f7e13] [cursor=pointer]
+  - generic [ref=f7e17]:
+    - generic:
+      - generic:
+        - button "STN" [ref=f7e546] [cursor=pointer]
+        - button "DUB" [ref=f7e548] [cursor=pointer]
+        - button "CRL" [ref=f7e550] [cursor=pointer]
+        - button "BGY" [ref=f7e552] [cursor=pointer]
+        - button "AGP" [ref=f7e554] [cursor=pointer]
+        - button "ALC" [ref=f7e556] [cursor=pointer]
+        - button "MAN" [ref=f7e558] [cursor=pointer]
+        - button "KRK" [ref=f7e560] [cursor=pointer]
+        - button "PMI" [ref=f7e562] [cursor=pointer]
+        - button "OPO" [ref=f7e564] [cursor=pointer]
+        - button "BUD" [ref=f7e566] [cursor=pointer]
+        - button "MLA" [ref=f7e568] [cursor=pointer]
+        - button "VIE" [ref=f7e570] [cursor=pointer]
+        - button "BVA" [ref=f7e572] [cursor=pointer]
+        - button "EDI" [ref=f7e574] [cursor=pointer]
+        - button "MAD" [ref=f7e576] [cursor=pointer]
+        - button "BCN" [ref=f7e578] [cursor=pointer]
+        - button "BLQ" [ref=f7e580] [cursor=pointer]
+        - button "BRI" [ref=f7e582] [cursor=pointer]
+        - button "VLC" [ref=f7e584] [cursor=pointer]
+        - button "PSA" [ref=f7e586] [cursor=pointer]
+        - button "NAP" [ref=f7e588] [cursor=pointer]
+        - button "✓ FCO" [ref=f7e590] [cursor=pointer]
+        - button "MRS" [ref=f7e592] [cursor=pointer]
+        - button "BHX" [ref=f7e594] [cursor=pointer]
+        - button "RAK" [ref=f7e596] [cursor=pointer]
+        - button "MXP" [ref=f7e598] [cursor=pointer]
+        - button "SVQ" [ref=f7e600] [cursor=pointer]
+        - button "WMI" [ref=f7e602] [cursor=pointer]
+        - button "GDN" [ref=f7e604] [cursor=pointer]
+        - button "WRO" [ref=f7e606] [cursor=pointer]
+        - button "ZAD" [ref=f7e608] [cursor=pointer]
+        - button "NRN" [ref=f7e610] [cursor=pointer]
+        - button "ARN" [ref=f7e612] [cursor=pointer]
+        - button "BER" [ref=f7e614] [cursor=pointer]
+        - button "CTA" [ref=f7e616] [cursor=pointer]
+        - button "FAO" [ref=f7e618] [cursor=pointer]
+        - button "PMO" [ref=f7e620] [cursor=pointer]
+        - button "TFS" [ref=f7e622] [cursor=pointer]
+        - button "TIA" [ref=f7e624] [cursor=pointer]
+        - button "CFU" [ref=f7e626] [cursor=pointer]
+        - button "SOF" [ref=f7e628] [cursor=pointer]
+        - button "TRN" [ref=f7e630] [cursor=pointer]
+        - button "OTP" [ref=f7e632] [cursor=pointer]
+        - button "CAG" [ref=f7e634] [cursor=pointer]
+        - button "TSF" [ref=f7e636] [cursor=pointer]
+        - button "POZ" [ref=f7e638] [cursor=pointer]
+        - button "BRS" [ref=f7e640] [cursor=pointer]
+        - button "PRG" [ref=f7e642] [cursor=pointer]
+        - button "LPL" [ref=f7e644] [cursor=pointer]
+        - button "PFO" [ref=f7e646] [cursor=pointer]
+        - button "EIN" [ref=f7e648] [cursor=pointer]
+        - button "FMM" [ref=f7e650] [cursor=pointer]
+        - button "LIS" [ref=f7e652] [cursor=pointer]
+        - button "CGN" [ref=f7e654] [cursor=pointer]
+        - button "CHQ" [ref=f7e656] [cursor=pointer]
+        - button "GRO" [ref=f7e658] [cursor=pointer]
+        - button "ACE" [ref=f7e660] [cursor=pointer]
+        - button "BTS" [ref=f7e662] [cursor=pointer]
+        - button "CPH" [ref=f7e664] [cursor=pointer]
+        - button "TLS" [ref=f7e666] [cursor=pointer]
+        - button "EMA" [ref=f7e668] [cursor=pointer]
+        - button "FKB" [ref=f7e670] [cursor=pointer]
+        - button "IBZ" [ref=f7e672] [cursor=pointer]
+        - button "LTN" [ref=f7e674] [cursor=pointer]
+        - button "SKG" [ref=f7e676] [cursor=pointer]
+        - button "SNN" [ref=f7e678] [cursor=pointer]
+        - button "HHN" [ref=f7e680] [cursor=pointer]
+        - button "LPA" [ref=f7e682] [cursor=pointer]
+        - button "ORK" [ref=f7e684] [cursor=pointer]
+        - button "VCE" [ref=f7e686] [cursor=pointer]
+        - button "AGA" [ref=f7e688] [cursor=pointer]
+        - button "SUF" [ref=f7e690] [cursor=pointer]
+        - button "ZAG" [ref=f7e692] [cursor=pointer]
+        - button "KTW" [ref=f7e694] [cursor=pointer]
+        - button "RHO" [ref=f7e696] [cursor=pointer]
+        - button "ATH" [ref=f7e698] [cursor=pointer]
+        - button "FUE" [ref=f7e700] [cursor=pointer]
+        - button "KUN" [ref=f7e702] [cursor=pointer]
+        - button "CIA" [ref=f7e704] [cursor=pointer]
+        - button "GOT" [ref=f7e706] [cursor=pointer]
+        - button "LBA" [ref=f7e708] [cursor=pointer]
+        - button "DBV" [ref=f7e710] [cursor=pointer]
+        - button "TPS" [ref=f7e712] [cursor=pointer]
+        - button "AHO" [ref=f7e714] [cursor=pointer]
+        - button "BDS" [ref=f7e716] [cursor=pointer]
+        - button "FEZ" [ref=f7e718] [cursor=pointer]
+        - button "NUE" [ref=f7e720] [cursor=pointer]
+        - button "TNG" [ref=f7e722] [cursor=pointer]
+        - button "NCL" [ref=f7e724] [cursor=pointer]
+        - button "TRS" [ref=f7e726] [cursor=pointer]
+        - button "BOH" [ref=f7e728] [cursor=pointer]
+        - button "PSR" [ref=f7e730] [cursor=pointer]
+        - button "RIX" [ref=f7e732] [cursor=pointer]
+        - button "RBA" [ref=f7e734] [cursor=pointer]
+        - button "VNO" [ref=f7e736] [cursor=pointer]
+        - button "VRN" [ref=f7e738] [cursor=pointer]
+        - button "WAW" [ref=f7e740] [cursor=pointer]
+        - button "AMM" [ref=f7e742] [cursor=pointer]
+        - button "MAH" [ref=f7e744] [cursor=pointer]
+        - button "NOC" [ref=f7e746] [cursor=pointer]
+        - button "BFS" [ref=f7e748] [cursor=pointer]
+        - button "KGS" [ref=f7e750] [cursor=pointer]
+        - button "REG" [ref=f7e752] [cursor=pointer]
+        - button "RMI" [ref=f7e754] [cursor=pointer]
+        - button "TRF" [ref=f7e756] [cursor=pointer]
+        - button "GOA" [ref=f7e758] [cursor=pointer]
+        - button "LUX" [ref=f7e760] [cursor=pointer]
+        - button "REU" [ref=f7e762] [cursor=pointer]
+        - button "BOJ" [ref=f7e764] [cursor=pointer]
+        - button "BRU" [ref=f7e766] [cursor=pointer]
+        - button "JTR" [ref=f7e768] [cursor=pointer]
+        - button "PGF" [ref=f7e770] [cursor=pointer]
+        - button "PIK" [ref=f7e772] [cursor=pointer]
+        - button "SJJ" [ref=f7e774] [cursor=pointer]
+        - button "CCF" [ref=f7e776] [cursor=pointer]
+        - button "CDT" [ref=f7e778] [cursor=pointer]
+        - button "FNC" [ref=f7e780] [cursor=pointer]
+        - button "HEL" [ref=f7e782] [cursor=pointer]
+        - button "NTE" [ref=f7e784] [cursor=pointer]
+        - button "OLB" [ref=f7e786] [cursor=pointer]
+        - button "PEG" [ref=f7e788] [cursor=pointer]
+        - button "RVN" [ref=f7e790] [cursor=pointer]
+        - button "RZE" [ref=f7e792] [cursor=pointer]
+        - button "ZTH" [ref=f7e794] [cursor=pointer]
+        - button "BZR" [ref=f7e796] [cursor=pointer]
+        - button "JSI" [ref=f7e798] [cursor=pointer]
+        - button "OUD" [ref=f7e800] [cursor=pointer]
+        - button "SDR" [ref=f7e802] [cursor=pointer]
+        - button "AAR" [ref=f7e804] [cursor=pointer]
+        - button "GLA" [ref=f7e806] [cursor=pointer]
+        - button "HER" [ref=f7e808] [cursor=pointer]
+        - button "NDR" [ref=f7e810] [cursor=pointer]
+        - button "PUY" [ref=f7e812] [cursor=pointer]
+        - button "RMU" [ref=f7e814] [cursor=pointer]
+        - button "SCQ" [ref=f7e816] [cursor=pointer]
+        - button "HAM" [ref=f7e818] [cursor=pointer]
+        - button "KIR" [ref=f7e820] [cursor=pointer]
+        - button "LCJ" [ref=f7e822] [cursor=pointer]
+        - button "LDE" [ref=f7e824] [cursor=pointer]
+        - button "LRH" [ref=f7e826] [cursor=pointer]
+        - button "PVK" [ref=f7e828] [cursor=pointer]
+        - button "TGD" [ref=f7e830] [cursor=pointer]
+        - button "BNX" [ref=f7e832] [cursor=pointer]
+        - button "BZG" [ref=f7e834] [cursor=pointer]
+        - button "EGC" [ref=f7e836] [cursor=pointer]
+        - button "ESU" [ref=f7e838] [cursor=pointer]
+        - button "FMO" [ref=f7e840] [cursor=pointer]
+        - button "FNI" [ref=f7e842] [cursor=pointer]
+        - button "GNB" [ref=f7e844] [cursor=pointer]
+        - button "KSC" [ref=f7e846] [cursor=pointer]
+        - button "LIG" [ref=f7e848] [cursor=pointer]
+        - button "LUZ" [ref=f7e850] [cursor=pointer]
+        - button "NQY" [ref=f7e852] [cursor=pointer]
+        - button "TLL" [ref=f7e854] [cursor=pointer]
+        - button "TTU" [ref=f7e856] [cursor=pointer]
+        - button "VIT" [ref=f7e858] [cursor=pointer]
+        - button "AOI" [ref=f7e860] [cursor=pointer]
+        - button "BBU" [ref=f7e862] [cursor=pointer]
+        - button "BIQ" [ref=f7e864] [cursor=pointer]
+        - button "BRE" [ref=f7e866] [cursor=pointer]
+        - button "CLJ" [ref=f7e868] [cursor=pointer]
+        - button "CRV" [ref=f7e870] [cursor=pointer]
+        - button "CWL" [ref=f7e872] [cursor=pointer]
+        - button "EFL" [ref=f7e874] [cursor=pointer]
+        - button "JMK" [ref=f7e876] [cursor=pointer]
+        - button "MME" [ref=f7e878] [cursor=pointer]
+        - button "PMF" [ref=f7e880] [cursor=pointer]
+        - button "RJK" [ref=f7e882] [cursor=pointer]
+        - button "SZG" [ref=f7e884] [cursor=pointer]
+        - button "ZAZ" [ref=f7e886] [cursor=pointer]
+        - button "ABZ" [ref=f7e888] [cursor=pointer]
+        - button "EXT" [ref=f7e890] [cursor=pointer]
+        - button "IAS" [ref=f7e892] [cursor=pointer]
+        - button "INI" [ref=f7e894] [cursor=pointer]
+        - button "LGW" [ref=f7e896] [cursor=pointer]
+        - button "PDV" [ref=f7e898] [cursor=pointer]
+        - button "PED" [ref=f7e900] [cursor=pointer]
+        - button "QSR" [ref=f7e902] [cursor=pointer]
+        - button "SZZ" [ref=f7e904] [cursor=pointer]
+        - button "TUF" [ref=f7e906] [cursor=pointer]
+        - button "BEM" [ref=f7e908] [cursor=pointer]
+        - button "BRQ" [ref=f7e910] [cursor=pointer]
+        - button "BSL" [ref=f7e912] [cursor=pointer]
+        - button "DLE" [ref=f7e914] [cursor=pointer]
+        - button "DLM" [ref=f7e916] [cursor=pointer]
+        - button "FRL" [ref=f7e918] [cursor=pointer]
+        - button "LBC" [ref=f7e920] [cursor=pointer]
+        - button "LEI" [ref=f7e922] [cursor=pointer]
+        - button "LIL" [ref=f7e924] [cursor=pointer]
+        - button "LNZ" [ref=f7e926] [cursor=pointer]
+        - button "MMX" [ref=f7e928] [cursor=pointer]
+        - button "NWI" [ref=f7e930] [cursor=pointer]
+        - button "OSL" [ref=f7e932] [cursor=pointer]
+        - button "OSR" [ref=f7e934] [cursor=pointer]
+        - button "PAD" [ref=f7e936] [cursor=pointer]
+        - button "SCN" [ref=f7e938] [cursor=pointer]
+        - button "VST" [ref=f7e940] [cursor=pointer]
+        - button "VXO" [ref=f7e942] [cursor=pointer]
+        - button "AMS" [ref=f7e944] [cursor=pointer]
+        - button "BJV" [ref=f7e946] [cursor=pointer]
+        - button "CUF" [ref=f7e948] [cursor=pointer]
+        - button "FDH" [ref=f7e950] [cursor=pointer]
+        - button "FSC" [ref=f7e952] [cursor=pointer]
+        - button "KLU" [ref=f7e954] [cursor=pointer]
+        - button "KLX" [ref=f7e956] [cursor=pointer]
+        - button "NCE" [ref=f7e958] [cursor=pointer]
+        - button "OZZ" [ref=f7e960] [cursor=pointer]
+        - button "PIS" [ref=f7e962] [cursor=pointer]
+        - button "RDZ" [ref=f7e964] [cursor=pointer]
+        - button "SPU" [ref=f7e966] [cursor=pointer]
+        - button "SZY" [ref=f7e968] [cursor=pointer]
+        - button "VAR" [ref=f7e970] [cursor=pointer]
+        - button "XCR" [ref=f7e972] [cursor=pointer]
+        - button "BVE" [ref=f7e974] [cursor=pointer]
+        - button "ERH" [ref=f7e976] [cursor=pointer]
+        - button "LCA" [ref=f7e978] [cursor=pointer]
+        - button "LDY" [ref=f7e980] [cursor=pointer]
+        - button "LXS" [ref=f7e982] [cursor=pointer]
+        - button "OSI" [ref=f7e984] [cursor=pointer]
+        - button "PLQ" [ref=f7e986] [cursor=pointer]
+        - button "SFT" [ref=f7e988] [cursor=pointer]
+        - button "VIL" [ref=f7e990] [cursor=pointer]
+        - button "VOL" [ref=f7e992] [cursor=pointer]
+    - generic:
+      - generic [ref=f7e18]:
+        - button "Zoom in" [ref=f7e19] [cursor=pointer]: +
+        - button "Zoom out" [ref=f7e20] [cursor=pointer]: −
+      - generic [ref=f7e21]:
+        - link "Leaflet" [ref=f7e22] [cursor=pointer]:
+          - /url: https://leafletjs.com
+        - text: "| © OpenStreetMap contributors, © CARTO"
+  - button "Ryanair" [ref=f7e28] [cursor=pointer]
+  - complementary [ref=f7e29]:
+    - button "Toggle sidebar" [ref=f7e30] [cursor=pointer]
+    - generic [ref=f7e33]:
+      - heading "Plan a multi-stop trip" [level=3] [ref=f7e508]
+      - paragraph [ref=f7e35]: From MLA · 1 destination selected
+    - generic [ref=f7e36]:
+      - combobox "Sort" [ref=f7e37]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f7e38]
+      - textbox "Dest" [ref=f7e39]
+      - textbox [ref=f7e40]
+      - generic [ref=f7e41] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f7e42]
+        - text: Ryanair
+      - generic [ref=f7e43] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f7e44]
+        - text: EasyJet
+    - generic [ref=f7e45]:
+      - generic [ref=f7e994]:
+        - heading "Home" [level=4] [ref=f7e995]
+        - generic [ref=f7e996]: MLA · Valletta
+        - generic [ref=f7e997]: Change in settings (top-right).
+      - generic [ref=f7e998]:
+        - heading "Trip type" [level=4] [ref=f7e999]
+        - generic [ref=f7e1000]:
+          - button "Multi-stop" [ref=f7e1001] [cursor=pointer]
+          - button "Round trip" [ref=f7e1002] [cursor=pointer]
+      - generic [ref=f7e1003]:
+        - heading "Destinations (click pins to add)" [level=4] [ref=f7e1004]
+        - generic [ref=f7e1006]:
+          - text: FCO · Rome
+          - button "×" [ref=f7e1007] [cursor=pointer]
+      - generic [ref=f7e1008]:
+        - generic [ref=f7e1009]:
+          - generic [ref=f7e1010]:
+            - generic [ref=f7e1011]: Depart from
+            - textbox [ref=f7e1012]: 2026-08-19
+          - generic [ref=f7e1013]:
+            - generic [ref=f7e1014]: Return by
+            - textbox [ref=f7e1015]: 2026-09-19
+        - generic [ref=f7e1016]:
+          - generic [ref=f7e1017]:
+            - generic [ref=f7e1018]: Days per stop
+            - spinbutton [ref=f7e1019]: "3"
+          - generic [ref=f7e1020]:
+            - generic [ref=f7e1021]: Max itineraries
+            - spinbutton [ref=f7e1022]: "4"
+      - generic [ref=f7e1023]:
+        - text: "Route:"
+        - strong [ref=f7e1024]: MLA → FCO → MLA
+        - text: 31 days, ~3 per stop.
+      - generic [ref=f7e1025]:
+        - button "Clear" [ref=f7e1026] [cursor=pointer]
+        - button "Plan trip →" [ref=f7e1027] [cursor=pointer]
+      - generic [ref=f7e1028]:
+        - heading "Or ask the assistant" [level=4] [ref=f7e1029]
+        - paragraph [ref=f7e1030]: Free-form prompts also work and will auto-detect countries.
+  - generic [ref=f7e49]:
+    - generic [ref=f7e50]:
+      - 'textbox "Ask Wayfarer to plan your next trip — try: ‘Visit France, Spain and Italy from Malta in one holiday, 2-3 days each.’" [ref=f7e51]'
+      - button "Send" [ref=f7e52] [cursor=pointer]
+    - generic [ref=f7e56]:
+      - button "Clear" [ref=f7e57] [cursor=pointer]
+      - 'button "Sample: capitals" [ref=f7e58] [cursor=pointer]'
+      - 'button "Sample: 5 cities" [ref=f7e59] [cursor=pointer]'
+  - link "control center" [ref=f7e1034] [cursor=pointer]:
+    - /url: /admin

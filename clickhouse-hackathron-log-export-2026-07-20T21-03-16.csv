@@ -1,0 +1,320 @@
+TimeUTC,timestampInMs,requestPath,requestMethod,requestQueryString,responseStatusCode,requestId,requestUserAgent,level,environment,branch,vercelCache,type,function,host,deploymentDomain,deploymentId,durationMs,region,maxMemoryUsed,memorySize,message,projectId,traceId,sessionId,invocationId,instanceId,concurrency,workflowRunId,workflowStepId
+2026-07-20 20:47:37,1784580457800,clickhouse-hackathron.vercel.app/api/tasks,GET,,500,vwpfh-1784580457583-212310cd180f,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,,,,,"file:///var/task/api/index.mjs:1
+import { app } from ""../src/frontend/server.js"";
+         ^^^
+SyntaxError: The requested module '../src/frontend/server.js' does not provide an export named 'app'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:47:37,1784580457583,clickhouse-hackathron.vercel.app/api/tasks,GET,,500,vwpfh-1784580457583-212310cd180f,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,150,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MHH50WVM07S0HCK87X3EV,,-1,,
+2026-07-20 20:47:37,1784580457345,clickhouse-hackathron.vercel.app/api/map/airports,GET,airline=Ryanair,500,wgcfh-1784580457124-8eca4e761d8c,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,,,,,"file:///var/task/api/index.mjs:1
+import { app } from ""../src/frontend/server.js"";
+         ^^^
+SyntaxError: The requested module '../src/frontend/server.js' does not provide an export named 'app'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:47:37,1784580457124,clickhouse-hackathron.vercel.app/api/map/airports,GET,airline=Ryanair,500,wgcfh-1784580457124-8eca4e761d8c,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,149,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MHGPMVN66T524R2RPGRM6,,-1,,
+2026-07-20 20:47:36,1784580456875,clickhouse-hackathron.vercel.app/api/health,GET,,500,vwghl-1784580456651-b7401507b114,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,,,,,"file:///var/task/api/index.mjs:1
+import { app } from ""../src/frontend/server.js"";
+         ^^^
+SyntaxError: The requested module '../src/frontend/server.js' does not provide an export named 'app'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:47:36,1784580456651,clickhouse-hackathron.vercel.app/api/health,GET,,500,vwghl-1784580456651-b7401507b114,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,148,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MHG8173YBAF7Y3JFC0D28,,-1,,
+2026-07-20 20:45:41,1784580341202,clickhouse-hackathron.vercel.app/api/health,HEAD,,500,rqwvx-1784580340844-2a15d752b1ae,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,,,,,"file:///var/task/api/index.mjs:1
+import { app } from ""../src/frontend/server.js"";
+         ^^^
+SyntaxError: The requested module '../src/frontend/server.js' does not provide an export named 'app'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:45:40,1784580340844,clickhouse-hackathron.vercel.app/api/health,HEAD,,500,rqwvx-1784580340844-2a15d752b1ae,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,168,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MDZ8SB984WP63DJYY5ZD4,,-1,,
+2026-07-20 20:45:40,1784580340616,clickhouse-hackathron.vercel.app/api/health,GET,cb=now,500,4mr78-1784580340243-6ced53c35a7a,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,,,,,"file:///var/task/api/index.mjs:1
+import { app } from ""../src/frontend/server.js"";
+         ^^^
+SyntaxError: The requested module '../src/frontend/server.js' does not provide an export named 'app'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:45:40,1784580340243,clickhouse-hackathron.vercel.app/api/health,GET,cb=now,500,4mr78-1784580340243-6ced53c35a7a,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_BJnFuiDpW4LuxuAJAS6hkfysDu2s,150,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MDYQ26ZPQ3DSCAJCJEN64,,-1,,
+2026-07-20 20:44:52,1784580292467,clickhouse-hackathron.vercel.app/api/llm/chat,POST,,200,dpgrm-1784580292467-19cf14e7ce1a,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,232,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MCFX9GAZRG93C7ZPCG9SG,fOFGaIXTLmM9,1,,
+2026-07-20 20:44:43,1784580283649,clickhouse-hackathron.vercel.app/api/map/airports,GET,,200,gj2d5-1784580283649-2e76d0388d8d,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,208,iad1,232,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MC79RVKRF8A3SA89BYA5A,fOFGaIXTLmM9,1,,
+2026-07-20 20:44:43,1784580283640,clickhouse-hackathron.vercel.app/api/map/itinerary/favorites,GET,,200,4vvd8-1784580283640-6b896a55f125,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,5,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MC79PQK6JGVVZV95PK55H,DtQMOTViwffk,1,,
+2026-07-20 20:44:43,1784580283639,clickhouse-hackathron.vercel.app/api/llm/status,GET,,200,k6qxf-1784580283639-732db7395da1,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MC797VM38CB3R55QEST9A,DtQMOTViwffk,1,,
+2026-07-20 20:44:31,1784580271564,clickhouse-hackathron.vercel.app/api/health,GET,,200,mz7xz-1784580271564-0dffe57a1597,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MBVG5NNXQJAYHT3SB0KVV,DtQMOTViwffk,1,,
+2026-07-20 20:44:21,1784580261016,wayfare.allbyitself.com/api/llm/status,GET,,200,vlz2w-1784580261016-f8094dab41e8,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MBH67T76AEWDTVYSWFZ3K,DtQMOTViwffk,1,,
+2026-07-20 20:44:21,1784580261015,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,200,dkfpf-1784580261015-30213e62b177,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,5,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MBH663Z2V3C2C72CHZSS5,DtQMOTViwffk,1,,
+2026-07-20 20:44:21,1784580261013,wayfare.allbyitself.com/api/map/airports,GET,,200,62l7l-1784580261013-160528f6a3b1,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,8,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MBH64EJVQY60R7B2RB2AA,DtQMOTViwffk,1,,
+2026-07-20 20:44:13,1784580253096,wayfare.allbyitself.com/api/map/airports,GET,,200,hrhsk-1784580253096-677dab33a724,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,233,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MB9F4F71KPDHX6K4HQB3V,DtQMOTViwffk,1,,
+2026-07-20 20:44:13,1784580253087,wayfare.allbyitself.com/api/llm/status,GET,,200,vlz2w-1784580253087-2f4858e066d6,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,16,iad1,232,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MB9EFPKYWHKAF9KTXX63P,DtQMOTViwffk,1,,
+2026-07-20 20:44:13,1784580253086,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,200,xmvss-1784580253086-15724502b3e7,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,6,iad1,233,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MB9J968X66DQBP4XK6VSJ,DtQMOTViwffk,1,,
+2026-07-20 20:44:02,1784580242469,wayfare.allbyitself.com/api/llm/status,GET,,500,nx9x5-1784580242084-99ebebafbf91,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",info,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:44:02,1784580242084,wayfare.allbyitself.com/api/llm/status,GET,,500,nx9x5-1784580242084-99ebebafbf91,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,316,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MAYPPRPJR0Z9FHN5XG5ZN,,-1,,
+2026-07-20 20:44:02,1784580242445,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,500,mvlvg-1784580242083-b90ae020123b,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",info,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:44:02,1784580242083,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,500,mvlvg-1784580242083-b90ae020123b,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,301,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MAYPJHAAWBFSCKE0W3XBX,,-1,,
+2026-07-20 20:44:02,1784580242074,wayfare.allbyitself.com/api/map/airports,GET,,200,66c6f-1784580242074-a02255bcfb09,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,clickhouse-hackathron-rijpnl992-sun-sat-ion.vercel.app,dpl_8bKHdAJX6UWf4NpTWhjx2LTvbFmQ,22,iad1,231,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MAYPSWJ225ARK07RBAPYK,DtQMOTViwffk,1,,
+2026-07-20 20:43:58,1784580238204,wayfare.allbyitself.com/api/llm/status,GET,,500,dcxd4-1784580237096-99357000f2de,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",info,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
+PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:43:57,1784580237096,wayfare.allbyitself.com/api/llm/status,GET,,500,dcxd4-1784580237096-99357000f2de,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,292,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MASYZ7J2RMVVRKBPNZAR2,,-1,,
+2026-07-20 20:43:57,1784580237444,wayfare.allbyitself.com/api/map/airports,GET,,500,vxh89-1784580237089-c49503f24924,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",info,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:43:57,1784580237089,wayfare.allbyitself.com/api/map/airports,GET,,500,vxh89-1784580237089-c49503f24924,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,287,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MASTP48VKYR6XNKRV5JVJ,,-1,,
+2026-07-20 20:43:58,1784580238022,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,500,87fnm-1784580237087-d3b2b027ae9c,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",info,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
+PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:43:57,1784580237087,wayfare.allbyitself.com/api/map/itinerary/favorites,GET,,500,87fnm-1784580237087-d3b2b027ae9c,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/index,wayfare.allbyitself.com,wayfare.allbyitself.com,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,292,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0MASVK5H1CH1M3JP50S3NW,,-1,,
+2026-07-20 20:43:28,1784580208560,clickhouse-hackathron.vercel.app/api/health,GET,,500,f48sw-1784580208036-3681fc92f644,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,,,,,"PathError [TypeError]: Missing parameter name at index 10: /api/:any*; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/var/task/node_modules/path-to-regexp/dist/index.js:108:27)
+    at parse (/var/task/node_modules/path-to-regexp/dist/index.js:140:26)
+    at process (/var/task/node_modules/path-to-regexp/dist/index.js:263:56)
+    at pathToRegexp (/var/task/node_modules/path-to-regexp/dist/index.js:274:5)
+    at Object.match (/var/task/node_modules/path-to-regexp/dist/index.js:225:30)
+    at matcher (/var/task/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/var/task/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/var/task/node_modules/router/index.js:428:17)
+    at Function.route (/var/task/node_modules/express/lib/application.js:257:22)
+    at app.<computed> [as get] (/var/task/node_modules/express/lib/application.js:478:22) {
+  originalPath: '/api/:any*'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:43:28,1784580208036,clickhouse-hackathron.vercel.app/api/health,GET,,500,f48sw-1784580208036-3681fc92f644,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_AoBVF3jHSCYVrnixfpG7MSdWvyF2,306,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M9XKC5TWDYXBVEV5TXTMK,,-1,,
+2026-07-20 20:42:46,1784580166945,clickhouse-hackathron.vercel.app/api/map/airports,GET,,500,7szlc-1784580166614-1aef1bf0579f,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:42:46,1784580166614,clickhouse-hackathron.vercel.app/api/map/airports,GET,,500,7szlc-1784580166614-1aef1bf0579f,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,141,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M8N45A8RJDS8N1PKFK7NE,,-1,,
+2026-07-20 20:42:46,1784580166345,clickhouse-hackathron.vercel.app/api/health,GET,,500,r5qs8-1784580166135-8c44d4086b50,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:42:46,1784580166135,clickhouse-hackathron.vercel.app/api/health,GET,,500,r5qs8-1784580166135-8c44d4086b50,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,144,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M8MHCEWJDH81TFMQKN12G,,-1,,
+2026-07-20 20:42:03,1784580123243,clickhouse-hackathron.vercel.app/api/health,HEAD,,500,whk9g-1784580122781-ef06f4aa1af6,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:42:02,1784580122781,clickhouse-hackathron.vercel.app/api/health,HEAD,,500,whk9g-1784580122781-ef06f4aa1af6,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,159,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M7ADSNG9FTS42DHPN24GN,,-1,,
+2026-07-20 20:42:02,1784580122544,clickhouse-hackathron.vercel.app/api/health,GET,,500,v9xb8-1784580122144-a3d18b8de16e,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:42:02,1784580122144,clickhouse-hackathron.vercel.app/api/health,GET,,500,v9xb8-1784580122144-a3d18b8de16e,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_6Q47joXJ5eeQiL1o16PCbYUWMMqQ,149,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M79RC29RPQ2D5Y700S9YS,,-1,,
+2026-07-20 20:40:54,1784580054859,clickhouse-hackathron.vercel.app/api/health,GET,,200,96txj-1784580054631-0647cff415e5,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,,,,,[api/index.mjs] called GET /api/health,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:40:54,1784580054631,clickhouse-hackathron.vercel.app/api/health,GET,,200,96txj-1784580054631-0647cff415e5,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,8,iad1,233,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M57SVQ4VKW6FJKNTDVEPR,NINS6bg7oiUJ,1,,
+2026-07-20 20:40:11,1784580011734,clickhouse-hackathron.vercel.app/api/map/airports,GET,,200,z7l9s-1784580011529-b39b8f66c03e,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,,,,,[api/index.mjs] called GET /api/map/airports,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:40:11,1784580011529,clickhouse-hackathron.vercel.app/api/map/airports,GET,,200,z7l9s-1784580011529-b39b8f66c03e,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,7,iad1,231,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M3XP3SEFW0CFW4269BFZH,NINS6bg7oiUJ,1,,
+2026-07-20 20:40:11,1784580011287,clickhouse-hackathron.vercel.app/api/health,GET,,200,xxjd7-1784580011045-dc89b7646fc3,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,,,,,[api/index.mjs] handler loaded,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:40:11,1784580011298,clickhouse-hackathron.vercel.app/api/health,GET,,200,xxjd7-1784580011045-dc89b7646fc3,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,,,,,[api/index.mjs] called GET /api/health,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:40:11,1784580011045,clickhouse-hackathron.vercel.app/api/health,GET,,200,xxjd7-1784580011045-dc89b7646fc3,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_HwyqHnHRUh3xaaoNaEF6Fe5TnTU5,31,iad1,230,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M3X82JS5H19E9AK312B2H,NINS6bg7oiUJ,1,,
+2026-07-20 20:39:31,1784579971749,clickhouse-hackathron.vercel.app/api/map/airports,GET,,500,g9mqg-1784579971424-ec9e81372efb,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_9tYG18h3aridgP2Mytg6sUXZBCwH,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server.ts' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server.ts'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:39:31,1784579971424,clickhouse-hackathron.vercel.app/api/map/airports,GET,,500,g9mqg-1784579971424-ec9e81372efb,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_9tYG18h3aridgP2Mytg6sUXZBCwH,136,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M2PGB9BYRQ1TP5KM50FR7,,-1,,
+2026-07-20 20:39:31,1784579971162,clickhouse-hackathron.vercel.app/api/health,GET,,500,vqwwx-1784579970794-2876511d4a70,curl/8.7.1,info,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_9tYG18h3aridgP2Mytg6sUXZBCwH,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server.ts' imported from /var/task/api/index.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server.ts'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:39:30,1784579970794,clickhouse-hackathron.vercel.app/api/health,GET,,500,vqwwx-1784579970794-2876511d4a70,curl/8.7.1,,production,main,MISS,function,/api/index,clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_9tYG18h3aridgP2Mytg6sUXZBCwH,138,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M2NXPZHAPY9YEEB1N44SB,,-1,,
+2026-07-20 20:38:45,1784579925891,clickhouse-hackathron.vercel.app/api/tasks,GET,...slug=tasks,500,84vf4-1784579925674-2a00129dbf51,curl/8.7.1,info,production,main,MISS,function,/api/[...slug],clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_3QR8pGmboRofG6v3mZBev5STNdD5,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server.ts' imported from /var/task/api/[...slug].mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server.ts'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:38:45,1784579925674,clickhouse-hackathron.vercel.app/api/tasks,GET,...slug=tasks,500,84vf4-1784579925674-2a00129dbf51,curl/8.7.1,,production,main,MISS,function,/api/[...slug],clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_3QR8pGmboRofG6v3mZBev5STNdD5,144,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M19Q04JM8HPVVPAW9KYM1,,-1,,
+2026-07-20 20:38:45,1784579925096,clickhouse-hackathron.vercel.app/api/health,GET,...slug=health,500,wrbks-1784579924726-2381d73cb092,curl/8.7.1,info,production,main,MISS,function,/api/[...slug],clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_3QR8pGmboRofG6v3mZBev5STNdD5,,,,,"Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/frontend/server.ts' imported from /var/task/api/[...slug].mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:281:11)
+    at moduleResolve (node:internal/modules/esm/resolve:867:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:991:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1034:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/frontend/server.ts'
+}
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.",prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,,,,,
+2026-07-20 20:38:44,1784579924726,clickhouse-hackathron.vercel.app/api/health,GET,...slug=health,500,wrbks-1784579924726-2381d73cb092,curl/8.7.1,,production,main,MISS,function,/api/[...slug],clickhouse-hackathron.vercel.app,clickhouse-hackathron.vercel.app,dpl_3QR8pGmboRofG6v3mZBev5STNdD5,147,iad1,-1,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0M18XQWXR30MBYBS0WS82Q,,-1,,
+2026-07-20 20:37:47,1784579867804,clickhouse-hackathron.vercel.app/api/health,GET,,200,rn557-1784579867804-99039d410bae,curl/8.7.1,,production,main,MISS,function,/api/health,clickhouse-hackathron.vercel.app,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,6,iad1,236,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KZH6JT6HT289YBHKBKKM1,JRR1MjXJUA5A,1,,
+2026-07-20 20:37:47,1784579867494,clickhouse-hackathron.vercel.app/api/health,GET,nocache=1,200,7ngft-1784579867494-0f4a0a95205b,curl/8.7.1,,production,main,MISS,function,/api/health,clickhouse-hackathron.vercel.app,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,6,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KZGWXJ4EB5SA2G6VEW23B,JRR1MjXJUA5A,1,,
+2026-07-20 20:37:34,1784579854481,clickhouse-hackathron.vercel.app/api/health,GET,,200,dpgrm-1784579854481-3624b622acd1,curl/8.7.1,,production,main,MISS,function,/api/health,clickhouse-hackathron.vercel.app,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,9,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KZ4667HH94VYC5X6E6C06,JRR1MjXJUA5A,1,,
+2026-07-20 20:36:34,1784579794264,clickhouse-hackathron.vercel.app/api/health,GET,,200,qg6wn-1784579794264-186c73e5e806,curl/8.7.1,,production,main,MISS,function,/api/health,clickhouse-hackathron.vercel.app,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,7,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KX9CF0CHYZ7A9WEC1XG73,JRR1MjXJUA5A,1,,
+2026-07-20 20:36:23,1784579783908,clickhouse-hackathron.vercel.app/api/health,GET,,200,4vvd8-1784579783908-05f1d960ef91,curl/8.7.1,,production,main,MISS,function,/api/health,clickhouse-hackathron.vercel.app,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,10,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KWZ8M2KAV3D8037S9TTDQ,JRR1MjXJUA5A,1,,
+2026-07-20 20:32:22,1784579542924,wayfare.allbyitself.com/api/health,GET,,304,pf5bk-1784579542924-ffb4c14468f3,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/health,wayfare.allbyitself.com,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,12,iad1,235,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KNM1R0F6FWA9TYKNX5NNP,JRR1MjXJUA5A,1,,
+2026-07-20 20:31:38,1784579498951,wayfare.allbyitself.com/api/health,GET,,200,qfzp5-1784579498951-9f172a4a409f,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",,production,main,MISS,function,/api/health,wayfare.allbyitself.com,clickhouse-hackathron-o697vfhio-sun-sat-ion.vercel.app,dpl_FE2krt6TDG7UzBQbrjeFKmEKgiP2,36,iad1,234,2048,,prj_TX6BPwPwcmqbHEYJSurn6hEAs0id,,,01KY0KM93XJPATJY8R9CNGT74P,JRR1MjXJUA5A,1,,
