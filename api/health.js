@@ -1,3 +1,5 @@
 module.exports = function handler(req, res) {
-  res.json({ ok: true, route: "health", method: req.method });
+  res.statusCode = 200;
+  res.setHeader("content-type", "application/json");
+  res.end(JSON.stringify({ ok: true, route: "health" }));
 };
