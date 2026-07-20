@@ -1,6 +1,9 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "url";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 interface Airport {
   iata: string;
@@ -25,13 +28,13 @@ interface AirportIndex {
 }
 
 function airportsJsonPath(): string {
-  return join(process.cwd(), "public", "data", "airports.json");
+  return join(__dirname, "..", "..", "public", "data", "airports.json");
 }
 
 function loadFromDisk(): AirportIndex {
   const path = airportsJsonPath();
   if (!existsSync(path)) {
-    throw new Error("airports.json not found");
+    throw new Error(`airports.json not found at ${path}`);
   }
   const raw = readFileSync(path, "utf8");
   return JSON.parse(raw) as AirportIndex;
