@@ -1,7 +1,6 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/map.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/admin", "destination": "/index.html" }
   ]
 }
