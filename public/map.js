@@ -59,8 +59,9 @@
     favorites: [],
     sidebarMode: "builder",
     userId: ensureUserId(),
-    llmProvider: localStorage.getItem("wayfarer.llm.provider") || "",
-    llmModel: localStorage.getItem("wayfarer.llm.model") || "",
+    llmProvider: "",
+    llmModel: "",
+    llmStatus: null,
     operatorMode: localStorage.getItem("wayfarer.operator") === "1",
     displayName: localStorage.getItem("wayfarer.name") || "",
     fares: [],
@@ -230,6 +231,51 @@
     if (home) map.flyTo([home.lat, home.lon], 5, { duration: 1 });
   }
 
+  function flyToAllAirports() {
+    const visibleAirports = state.airports.filter((a) => {
+      if (!Number.isFinite(a.lat) || !Number.isFinite(a.lon)) return false;
+      const opts = pinOpts(a.iata);
+      return !opts.dimmed;
+    });
+    if (visibleAirports.length === 0) return;
+    const lats = visibleAirports.map((a) => a.lat);
+    const lons = visibleAirports.map((a) => a.lon);
+    const centroidLat = lats.reduce((s, v) => s + v, 0) / lats.length;
+    const centroidLon = lons.reduce((s, v) => s + v, 0) / lons.length;
+    if (visibleAirports.length === 1) {
+      map.flyTo([centroidLat, centroidLon], 19, { duration: 1 });
+      return;
+    }
+    const bounds = L.latLngBounds(visibleAirports.map((a) => [a.lat, a.lon]));
+    const fittingZoom = map.getBoundsZoom(bounds, false, [80, 80]);
+    const zoom = Math.min(fittingZoom, 19);
+    map.flyTo([centroidLat, centroidLon], zoom, { duration: 1 });
+  }
+
+  function fitToDestinations(originIata) {
+    const origin = state.airportsByIata.get(originIata);
+    const destIatas = Array.from(state.mapFilterDestinations);
+    const destAirports = destIatas
+      .map((i) => state.airportsByIata.get(i))
+      .filter((a) => a && Number.isFinite(a.lat) && Number.isFinite(a.lon));
+    const allPoints = [];
+    if (origin && Number.isFinite(origin.lat) && Number.isFinite(origin.lon)) {
+      allPoints.push([origin.lat, origin.lon]);
+    }
+    for (const ap of destAirports) {
+      allPoints.push([ap.lat, ap.lon]);
+    }
+    if (allPoints.length === 0) return;
+    if (allPoints.length === 1) {
+      map.flyTo(allPoints[0], 10, { duration: 1 });
+      return;
+    }
+    const bounds = L.latLngBounds(allPoints);
+    const fittingZoom = map.getBoundsZoom(bounds, false, [80, 80]);
+    const zoom = Math.min(Math.max(fittingZoom, 5), 16);
+    map.flyToBounds(bounds, { padding: [80, 80], zoom, duration: 1 });
+  }
+
   function toggleDestination(iata) {
     if (iata === state.homeIata) {
       toast.warn("That's your home airport", "Change it in settings.");
@@ -295,6 +341,7 @@
         else state.mapFilterDestinations.add(f.origin);
       }
       drawPins();
+      fitToDestinations(iata);
     } catch (e) {
       console.warn("handlePinClick: failed to load fares for filter:", e);
     }
@@ -456,6 +503,7 @@
       saveDestinations();
       drawPins();
       renderBuilder();
+      flyToAllAirports();
       toast.info("Trip cleared");
     });
     $("b-plan")?.addEventListener("click", () => {
@@ -741,69 +789,206 @@
     chatSend.disabled = true;
     setSidebarMode("itineraries");
     $("sidebar-toolbar").hidden = true;
-    $("sidebar-title").textContent = "Planning your trip…";
+    $("sidebar-title").textContent = "Assistant";
     $("sidebar-subtitle").textContent = prompt;
-    $("sidebar-body").innerHTML = `<div class="empty"><h4>Assistant is thinking…</h4><p>Calling LLM (server-side). Tool calls may follow.</p></div>`;
+    const body = $("sidebar-body");
+    const conversation = document.createElement("div");
+    conversation.className = "chat-thread";
+    conversation.innerHTML = `
+      <div class="chat-msg user">${escapeHtml(prompt)}</div>
+      <div class="chat-msg assistant assistant-text" data-role="assistant-text"><span class="thinking">Thinking…</span></div>
+      <div class="chat-events" data-role="events"></div>
+    `;
+    body.innerHTML = "";
+    body.appendChild(conversation);
+    const assistantEl = conversation.querySelector("[data-role=assistant-text]");
+    const eventsEl = conversation.querySelector("[data-role=events]");
+    const runCards = new Map();
 
+    const messages = [{ role: "user", content: prompt }];
+    let resp;
     try {
-      const messages = [{ role: "user", content: prompt }];
-      const r = await postJson("/api/llm/chat", {
-        userId: state.userId,
-        messages,
-        model: state.llmModel || undefined,
-        maxIterations: 6,
+      resp = await fetch("/api/llm/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "text/event-stream" },
+        body: JSON.stringify({ messages, maxIterations: 6 }),
       });
+    } catch (e) {
+      assistantEl.innerHTML = `<span class="err">Network error: ${escapeHtml(String(e))}</span>`;
+      chatSend.disabled = false;
+      return;
+    }
+    if (!resp.ok || !resp.body) {
+      const text = await resp.text().catch(() => "");
+      assistantEl.innerHTML = `<span class="err">Assistant error (HTTP ${resp.status}): ${escapeHtml(text)}</span>`;
+      chatSend.disabled = false;
+      return;
+    }
 
-      if (!r.ok) {
-        $("sidebar-body").innerHTML = `
-          <div class="empty">
-            <h4>Assistant not configured</h4>
-            <p>${escapeHtml(r.error || "No LLM credentials available.")}</p>
-            <p style="margin-top:12px">Open Settings (top-right) → LLM and save a key, or set <code>OPENAI_API_KEY</code> in the server's <code>.env</code>.</p>
-          </div>`;
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let assistantText = "";
+    let sawDone = false;
+
+    const finish = () => {
+      chatSend.disabled = false;
+      if (assistantText) {
+        $("sidebar-title").textContent = "Assistant";
+        $("sidebar-subtitle").textContent = `Plan ready · ${runCards.size} live task${runCards.size === 1 ? "" : "s"}`;
+      } else {
+        assistantEl.innerHTML = assistantEl.innerHTML.includes("err") ? assistantEl.innerHTML : `<span class="muted">(no reply)</span>`;
+      }
+      chatInput.value = "";
+      autoResize();
+      refreshHotAirportsFromRuns(runCards);
+    };
+
+    const handleEvent = (evtName, data) => {
+      if (evtName === "status") return;
+      if (evtName === "assistant_delta") {
+        if (typeof data.content === "string") {
+          assistantText += data.content;
+          assistantEl.innerHTML = escapeHtml(assistantText).replace(/\n/g, "<br/>");
+        }
         return;
       }
-
-      const itineraryCalls = (r.toolCalls || []).filter((c) => c.tool === "plan_multi_stop" || c.tool === "plan_round_trip");
-      const itineraries = itineraryCalls
-        .flatMap((c) => {
-          const result = c.result;
-          if (!result || !result.ok) return [];
-          return result.itineraries || result.options || [];
-        });
-
-      if (itineraries.length > 0) {
-        state.itineraries = itineraries.map((it, i) => ({
-          id: String(it.id || `llm-${i}-${Date.now()}`),
-          title: String(it.title || `Option ${i + 1}`),
-          totalPrice: Number(it.totalPrice ?? 0),
-          currency: String(it.currency ?? "EUR"),
-          totalDurationMinutes: it.totalDurationMinutes ?? null,
-          legs: it.legs || [],
-          summary: String(it.summary || ""),
-          recommendationScore: Number(it.recommendationScore ?? 0),
-        }));
-        state.activeItineraryId = state.itineraries[0].id;
-        renderItineraries();
-        renderItineraryOnMap(state.activeItineraryId);
+      if (evtName === "tool_call") {
+        const card = document.createElement("div");
+        card.className = "chat-tool-card";
+        card.dataset.tool = data.name;
+        card.innerHTML = `<div class="chat-tool-head"><span class="chat-tool-name">${escapeHtml(data.name)}</span><span class="status pending" data-status-for="${data.id}">running…</span></div><pre class="chat-tool-args">${escapeHtml(JSON.stringify(data.arguments ?? {}, null, 2))}</pre>`;
+        eventsEl.appendChild(card);
+        card.dataset.toolCallId = data.id;
+        return;
       }
+      if (evtName === "tool_result") {
+        const card = eventsEl.querySelector(`.chat-tool-card[data-tool-call-id="${data.id}"]`);
+        if (!card) return;
+        const status = card.querySelector(`[data-status-for="${data.id}"]`);
+        if (status) status.outerHTML = `<span class="status ok">ok</span>`;
+        const pre = document.createElement("pre");
+        pre.className = "chat-tool-result";
+        const summary = summarizeToolResult(data.name, data.result);
+        pre.innerHTML = `<details><summary>${escapeHtml(summary)}</summary><code>${escapeHtml(JSON.stringify(data.result ?? {}, null, 2)).slice(0, 2000)}</code></details>`;
+        card.appendChild(pre);
+        const result = data.result;
+        if (result && typeof result === "object") {
+          const flights = Array.isArray(result.itineraries) ? result.itineraries : Array.isArray(result.options) ? result.options : [];
+          if (flights.length > 0) {
+            const wrapped = flights.map((it, i) => ({
+              id: String(it.id || `llm-${i}-${Date.now()}`),
+              title: String(it.title || `Option ${i + 1}`),
+              totalPrice: Number(it.totalPrice ?? 0),
+              currency: String(it.currency ?? "EUR"),
+              totalDurationMinutes: it.totalDurationMinutes ?? null,
+              legs: it.legs || [],
+              summary: String(it.summary || ""),
+              recommendationScore: Number(it.recommendationScore ?? 0),
+            }));
+            state.itineraries = wrapped;
+            state.activeItineraryId = wrapped[0].id;
+          }
+        }
+        return;
+      }
+      if (evtName === "run_triggered") {
+        const card = document.createElement("div");
+        card.className = "chat-run-card";
+        card.dataset.runId = data.runId;
+        card.innerHTML = `
+          <div class="chat-run-head">
+            <span class="status queued" data-run-status>QUEUED</span>
+            <strong>${escapeHtml(data.task || data.toolName || "task")}</strong>
+            <span class="muted mono">${escapeHtml(String(data.runId).slice(0, 8))}…</span>
+          </div>
+          <div class="chat-run-meta muted" data-run-meta>just triggered</div>
+        `;
+        eventsEl.appendChild(card);
+        runCards.set(data.runId, card);
+        subscribeRunPolls(data.runId);
+        return;
+      }
+      if (evtName === "run_status" || evtName === "run_final") {
+        const card = runCards.get(data.runId);
+        if (!card) return;
+        const status = String(data.status || "UNKNOWN").toLowerCase();
+        const badge = card.querySelector("[data-run-status]");
+        if (badge) {
+          badge.className = `status ${status}`;
+          badge.textContent = data.status;
+        }
+        const meta = card.querySelector("[data-run-meta]");
+        if (meta) {
+          const parts = [];
+          if (data.taskIdentifier) parts.push(escapeHtml(String(data.taskIdentifier)));
+          if (data.costInCents != null) parts.push(`cost $${(Number(data.costInCents) / 100).toFixed(4)}`);
+          if (data.durationMs != null) parts.push(`${Math.round(Number(data.durationMs) / 1000)}s`);
+          meta.innerHTML = parts.length ? parts.join(" · ") : `<span class="muted">live · ${escapeHtml(evtName === "run_final" ? "finished" : "watching…")}</span>`;
+        }
+        if (evtName === "run_final" && /COMPLETED|FAILED|CANCEL|CRASH|TIMEOUT|EXPIRED/.test(String(data.status).toUpperCase())) {
+          card.classList.add("run-done");
+        }
+        return;
+      }
+      if (evtName === "error") {
+        assistantEl.innerHTML = `<span class="err">${escapeHtml(String(data.error || "Assistant error"))}</span>`;
+        return;
+      }
+    };
 
-      const reply = r.content || "";
-      const replyHtml = reply
-        ? `<div class="builder-section"><h4>Assistant</h4><div style="font-size:13px;line-height:1.5">${escapeHtml(reply).replace(/\n/g, "<br/>")}</div></div>`
-        : "";
-      const toolsUsed = (r.toolCalls || []).map((c) => c.tool).join(", ") || "none";
-      const summary = `<div class="builder-section"><h4>What happened</h4><div style="font-size:12px;color:var(--muted)">Model: ${escapeHtml(r.provider)} · ${escapeHtml(r.model)} · iterations: ${r.iterations} · tools: ${escapeHtml(toolsUsed)}</div></div>`;
-      const existing = $("sidebar-body");
-      const wrap = document.createElement("div");
-      wrap.innerHTML = summary + replyHtml;
-      existing.parentNode?.insertBefore(wrap, existing);
+    const subscribeRunPolls = (runId) => {
+      fetch(`/api/runs/${encodeURIComponent(runId)}/stream`).catch(() => { /* if the chat already closed, ignore */ });
+    };
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          if (!block.trim()) continue;
+          let evtName = "message";
+          let dataLine = "";
+          for (const line of block.split("\n")) {
+            if (line.startsWith("event:")) evtName = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+          }
+          if (!dataLine) continue;
+          let parsed;
+          try { parsed = JSON.parse(dataLine); } catch { continue; }
+          if (evtName === "done") sawDone = true;
+          handleEvent(evtName, parsed);
+        }
+      }
     } catch (e) {
-      console.error("submitChat:", e);
-      $("sidebar-body").innerHTML = `<div class="empty"><h4>Failed to plan</h4><p>${escapeHtml(String(e))}</p></div>`;
-      toast.error("Itinerary failed", String(e));
-    } finally {
-      chatSend.disabled = false;
+      assistantEl.innerHTML += `<br/><span class="err">Stream error: ${escapeHtml(String(e))}</span>`;
+    }
+    finish();
+  }
+
+  function summarizeToolResult(name, result) {
+    if (!result || typeof result !== "object") return `result`;
+    if (result.ok === false) return `error: ${result.error || "unknown"}`;
+    if (name === "search_airports") return `${result.count ?? 0} airport${(result.count ?? 0) === 1 ? "" : "s"}`;
+    if (name === "get_airport_fares") return `${result.count ?? 0} fare${(result.count ?? 0) === 1 ? "" : "s"} for ${result.iata || ""}`;
+    if (name === "plan_round_trip") return `${result.count ?? 0} round trip${(result.count ?? 0) === 1 ? "" : "s"}`;
+    if (name === "plan_multi_stop") return `${result.count ?? 0} itinerary options`;
+    if (name === "trigger_refresh_crawl") return `enqueued ${result.enqueued ?? 0}, queued worker run ${(result.runId || "").slice(0, 8)}…`;
+    if (name === "list_favorites") return `${result.count ?? 0} favorite${(result.count ?? 0) === 1 ? "" : "s"}`;
+    if (name === "save_favorite" || name === "remove_favorite") return "ok";
+    return "result";
+  }
+
+  function refreshHotAirportsFromRuns(runCards) {
+    if (runCards.size === 0) return;
+    if (state.faresAirport) loadFaresForAirport(state.faresAirport);
+    if (state.destinations.length && state.sidebarMode === "itineraries" && state.itineraries.length) {
+      renderItineraries();
+      renderItineraryOnMap(state.activeItineraryId);
     }
   }
 
@@ -1060,10 +1245,15 @@
   });
   $("btn-settings").addEventListener("click", () => {
     $("set-home").value = state.homeIata;
-    $("set-byok-provider").value = state.llmProvider;
-    $("set-byok-key").value = "";
-    $("set-byok-model").value = state.llmModel;
     $("set-operator").checked = state.operatorMode;
+    const slot = $("set-llm-status");
+    if (slot) {
+      if (state.llmStatus?.configured) {
+        slot.innerHTML = `<span style="color:#047857;font-weight:600">● Hosted · ${escapeHtml(state.llmStatus.provider || "LLM")}${state.llmStatus.model ? " · " + escapeHtml(state.llmStatus.model) : ""}</span>`;
+      } else {
+        slot.innerHTML = `<span style="color:#b91c1c;font-weight:600">● Not configured</span> — set <code>OPENAI_API_KEY</code> / <code>MINIMAX_API_KEY</code> / etc. on the server.`;
+      }
+    }
     $("modal-settings").classList.add("open");
   });
   $("btn-account").addEventListener("click", () => {
@@ -1073,36 +1263,10 @@
   $("btn-save-settings").addEventListener("click", async () => {
     state.homeIata = ($("set-home").value || "MLA").toUpperCase();
     if (!IATA_RE.test(state.homeIata)) { toast.warn("Invalid home IATA"); return; }
-    const provider = $("set-byok-provider").value;
-    const apiKey = $("set-byok-key").value.trim();
-    const model = $("set-byok-model").value.trim();
     state.operatorMode = $("set-operator").checked;
     localStorage.setItem("wayfarer.home", state.homeIata);
-    localStorage.setItem("wayfarer.llm.provider", provider);
-    localStorage.setItem("wayfarer.llm.model", model);
     localStorage.setItem("wayfarer.operator", state.operatorMode ? "1" : "0");
-    state.llmProvider = provider;
-    state.llmModel = model;
     syncOperatorLink();
-
-    if (provider && apiKey) {
-      try {
-        await postJson("/api/llm/byok", { userId: state.userId, provider, apiKey, model });
-        toast.success("BYOK key stored server-side");
-      } catch (e) {
-        toast.error("BYOK save failed", String(e));
-        return;
-      }
-    } else if (provider && !apiKey) {
-      try {
-        await delJson(`/api/llm/byok?userId=${encodeURIComponent(state.userId)}`);
-        toast.info("BYOK key cleared");
-      } catch (e) {
-        console.warn("byok delete failed", e);
-      }
-    } else {
-      try { await delJson(`/api/llm/byok?userId=${encodeURIComponent(state.userId)}`); } catch {}
-    }
 
     state.destinations = state.destinations.filter((d) => d !== state.homeIata);
     saveDestinations();
@@ -1168,7 +1332,7 @@
 
   async function refreshLlmStatus() {
     try {
-      const r = await getJson(`/api/llm/status?userId=${encodeURIComponent(state.userId)}`);
+      const r = await getJson(`/api/llm/status`);
       state.llmStatus = r;
     } catch (e) {
       state.llmStatus = { ok: false, configured: false, source: "none" };
