@@ -220,6 +220,59 @@
         padding: 8px 0;
       }
 
+      /* === AI progress banner (silent-mode chat) === */
+      .ai-progress {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        margin: -16px -20px 12px -20px;
+        background: linear-gradient(135deg, var(--accent-soft), transparent);
+        border-bottom: 1px solid var(--accent);
+        border-radius: 12px 12px 0 0;
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .ai-progress.show { display: flex; }
+      .ai-progress .spinner {
+        width: 14px; height: 14px;
+        border: 2px solid var(--accent);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: ai-spin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+      .ai-progress.done .spinner { display: none; }
+      .ai-progress.done::before {
+        content: "✓";
+        color: var(--ok);
+        font-weight: 700;
+        font-size: 14px;
+      }
+      @keyframes ai-spin { to { transform: rotate(360deg); } }
+      .ai-progress-text { flex: 1; line-height: 1.35; }
+      .ai-progress-text .tool { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: var(--muted); }
+
+      /* === Chat bar — hidden unless debug === */
+      body:not(.debug) .chat-quick { display: none; }
+
+      /* === Clarification modal === */
+      #ai-clarification .modal-body p { margin: 0 0 12px 0; line-height: 1.5; }
+      #ai-clarification .modal-body textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        font-family: inherit;
+        font-size: 13px;
+        resize: vertical;
+      }
+      #ai-clarification .modal-body textarea:focus {
+        outline: 2px solid var(--accent-soft);
+        border-color: var(--accent);
+      }
+
       /* === Bottom chat input === */
       .chat-bar {
         background: rgba(255, 255, 255, 0.96);
@@ -743,6 +796,13 @@
         <label class="checkbox-pill" id="pill-easyjet"><input type="checkbox" id="f-easyjet" /> EasyJet</label>
       </div>
       <div class="sidebar-body" id="sidebar-body">
+        <div class="ai-progress" id="ai-progress" hidden>
+          <div class="spinner"></div>
+          <div class="ai-progress-text">
+            <div id="ai-progress-label">Working on it…</div>
+            <div class="tool" id="ai-progress-tool"></div>
+          </div>
+        </div>
         <div class="empty">
           <h4>Plan a multi-stop trip</h4>
           <p>Click any pin to add it to your trip. Click again to remove. Right-click a pin to view its fares.</p>
@@ -799,6 +859,26 @@
         <div class="modal-foot">
           <button class="secondary" data-close-modal>Cancel</button>
           <button class="primary" id="btn-save-settings">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI clarification modal (silent-mode chat → question) -->
+    <div class="modal-bg" id="ai-clarification">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>I need a bit more info</h3>
+          <button class="icon-btn" data-close-clarification>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="ai-clarification-question"></p>
+          <textarea id="ai-clarification-reply" placeholder="Type your answer…"></textarea>
+        </div>
+        <div class="modal-foot">
+          <button class="secondary" data-close-clarification>Skip</button>
+          <button class="primary" id="btn-clarification-send">Send</button>
         </div>
       </div>
     </div>

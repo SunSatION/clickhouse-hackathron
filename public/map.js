@@ -8,6 +8,10 @@
   const IATA_RE = /^[A-Z]{3}$/;
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+  /* Silent-mode flag: chat drives UI, not conversation. ?debug=1 restores verbose thread. */
+  const chatDebug = new URLSearchParams(location.search).get("debug") === "1";
+  if (chatDebug) document.body.classList.add("debug");
+
   const todayIso = () => new Date().toISOString().slice(0, 10);
   const nextStartIso = () => {
     const d = new Date();
@@ -787,29 +791,10 @@
     return f;
   }
 
-  async function submitChat() {
-    const prompt = chatInput.value.trim();
-    if (!prompt) return;
-    chatSend.disabled = true;
-    setSidebarMode("itineraries");
-    $("sidebar-toolbar").hidden = true;
-    $("sidebar-title").textContent = "Assistant";
-    $("sidebar-subtitle").textContent = prompt;
-    const body = $("sidebar-body");
-    const conversation = document.createElement("div");
-    conversation.className = "chat-thread";
-    conversation.innerHTML = `
-      <div class="chat-msg user">${escapeHtml(prompt)}</div>
-      <div class="chat-msg assistant assistant-text" data-role="assistant-text"><span class="thinking">Thinking…</span></div>
-      <div class="chat-events" data-role="events"></div>
-    `;
-    body.innerHTML = "";
-    body.appendChild(conversation);
-    const assistantEl = conversation.querySelector("[data-role=assistant-text]");
-    const eventsEl = conversation.querySelector("[data-role=events]");
-    const runCards = new Map();
-
-    const messages = [{ role: "user", content: prompt }];
+  /* ====================================================== */
+  /* SSE loop shared between debug + silent chat modes      */
+  /* ====================================================== */
+  async function runLlmStream(messages, handlers) {
     let resp;
     try {
       resp = await fetch("/api/llm/chat", {
@@ -818,133 +803,17 @@
         body: JSON.stringify({ messages, maxIterations: 6 }),
       });
     } catch (e) {
-      assistantEl.innerHTML = `<span class="err">Network error: ${escapeHtml(String(e))}</span>`;
-      chatSend.disabled = false;
+      handlers.onError?.(new Error(String(e)));
       return;
     }
     if (!resp.ok || !resp.body) {
       const text = await resp.text().catch(() => "");
-      assistantEl.innerHTML = `<span class="err">Assistant error (HTTP ${resp.status}): ${escapeHtml(text)}</span>`;
-      chatSend.disabled = false;
+      handlers.onError?.(new Error(`HTTP ${resp.status}: ${text.slice(0, 200)}`));
       return;
     }
-
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-    let assistantText = "";
-    let sawDone = false;
-
-    const finish = () => {
-      chatSend.disabled = false;
-      if (assistantText) {
-        $("sidebar-title").textContent = "Assistant";
-        $("sidebar-subtitle").textContent = `Plan ready · ${runCards.size} live task${runCards.size === 1 ? "" : "s"}`;
-      } else {
-        assistantEl.innerHTML = assistantEl.innerHTML.includes("err") ? assistantEl.innerHTML : `<span class="muted">(no reply)</span>`;
-      }
-      chatInput.value = "";
-      autoResize();
-      refreshHotAirportsFromRuns(runCards);
-    };
-
-    const handleEvent = (evtName, data) => {
-      if (evtName === "status") return;
-      if (evtName === "assistant_delta") {
-        if (typeof data.content === "string") {
-          assistantText += data.content;
-          assistantEl.innerHTML = escapeHtml(assistantText).replace(/\n/g, "<br/>");
-        }
-        return;
-      }
-      if (evtName === "tool_call") {
-        const card = document.createElement("div");
-        card.className = "chat-tool-card";
-        card.dataset.tool = data.name;
-        card.innerHTML = `<div class="chat-tool-head"><span class="chat-tool-name">${escapeHtml(data.name)}</span><span class="status pending" data-status-for="${data.id}">running…</span></div><pre class="chat-tool-args">${escapeHtml(JSON.stringify(data.arguments ?? {}, null, 2))}</pre>`;
-        eventsEl.appendChild(card);
-        card.dataset.toolCallId = data.id;
-        return;
-      }
-      if (evtName === "tool_result") {
-        const card = eventsEl.querySelector(`.chat-tool-card[data-tool-call-id="${data.id}"]`);
-        if (!card) return;
-        const status = card.querySelector(`[data-status-for="${data.id}"]`);
-        if (status) status.outerHTML = `<span class="status ok">ok</span>`;
-        const pre = document.createElement("pre");
-        pre.className = "chat-tool-result";
-        const summary = summarizeToolResult(data.name, data.result);
-        pre.innerHTML = `<details><summary>${escapeHtml(summary)}</summary><code>${escapeHtml(JSON.stringify(data.result ?? {}, null, 2)).slice(0, 2000)}</code></details>`;
-        card.appendChild(pre);
-        const result = data.result;
-        if (result && typeof result === "object") {
-          const flights = Array.isArray(result.itineraries) ? result.itineraries : Array.isArray(result.options) ? result.options : [];
-          if (flights.length > 0) {
-            const wrapped = flights.map((it, i) => ({
-              id: String(it.id || `llm-${i}-${Date.now()}`),
-              title: String(it.title || `Option ${i + 1}`),
-              totalPrice: Number(it.totalPrice ?? 0),
-              currency: String(it.currency ?? "EUR"),
-              totalDurationMinutes: it.totalDurationMinutes ?? null,
-              legs: it.legs || [],
-              summary: String(it.summary || ""),
-              recommendationScore: Number(it.recommendationScore ?? 0),
-            }));
-            state.itineraries = wrapped;
-            state.activeItineraryId = wrapped[0].id;
-          }
-        }
-        return;
-      }
-      if (evtName === "run_triggered") {
-        const card = document.createElement("div");
-        card.className = "chat-run-card";
-        card.dataset.runId = data.runId;
-        card.innerHTML = `
-          <div class="chat-run-head">
-            <span class="status queued" data-run-status>QUEUED</span>
-            <strong>${escapeHtml(data.task || data.toolName || "task")}</strong>
-            <span class="muted mono">${escapeHtml(String(data.runId).slice(0, 8))}…</span>
-          </div>
-          <div class="chat-run-meta muted" data-run-meta>just triggered</div>
-        `;
-        eventsEl.appendChild(card);
-        runCards.set(data.runId, card);
-        subscribeRunPolls(data.runId);
-        return;
-      }
-      if (evtName === "run_status" || evtName === "run_final") {
-        const card = runCards.get(data.runId);
-        if (!card) return;
-        const status = String(data.status || "UNKNOWN").toLowerCase();
-        const badge = card.querySelector("[data-run-status]");
-        if (badge) {
-          badge.className = `status ${status}`;
-          badge.textContent = data.status;
-        }
-        const meta = card.querySelector("[data-run-meta]");
-        if (meta) {
-          const parts = [];
-          if (data.taskIdentifier) parts.push(escapeHtml(String(data.taskIdentifier)));
-          if (data.costInCents != null) parts.push(`cost $${(Number(data.costInCents) / 100).toFixed(4)}`);
-          if (data.durationMs != null) parts.push(`${Math.round(Number(data.durationMs) / 1000)}s`);
-          meta.innerHTML = parts.length ? parts.join(" · ") : `<span class="muted">live · ${escapeHtml(evtName === "run_final" ? "finished" : "watching…")}</span>`;
-        }
-        if (evtName === "run_final" && /COMPLETED|FAILED|CANCEL|CRASH|TIMEOUT|EXPIRED/.test(String(data.status).toUpperCase())) {
-          card.classList.add("run-done");
-        }
-        return;
-      }
-      if (evtName === "error") {
-        assistantEl.innerHTML = `<span class="err">${escapeHtml(String(data.error || "Assistant error"))}</span>`;
-        return;
-      }
-    };
-
-    const subscribeRunPolls = (runId) => {
-      fetch(`/api/runs/${encodeURIComponent(runId)}/stream`).catch(() => { /* if the chat already closed, ignore */ });
-    };
-
     try {
       while (true) {
         const { value, done } = await reader.read();
@@ -964,15 +833,211 @@
           if (!dataLine) continue;
           let parsed;
           try { parsed = JSON.parse(dataLine); } catch { continue; }
-          if (evtName === "done") sawDone = true;
-          handleEvent(evtName, parsed);
+          handlers.onEvent?.(evtName, parsed);
         }
       }
     } catch (e) {
-      assistantEl.innerHTML += `<br/><span class="err">Stream error: ${escapeHtml(String(e))}</span>`;
+      handlers.onError?.(e);
     }
-    finish();
   }
+
+  async function submitChat() {
+    const prompt = chatInput.value.trim();
+    if (!prompt) return;
+    chatSend.disabled = true;
+    const messages = [{ role: "user", content: prompt }];
+
+    if (chatDebug) {
+      await runChatDebug(messages, prompt);
+    } else {
+      await runChatSilent(messages, prompt);
+    }
+
+    chatSend.disabled = false;
+    chatInput.value = "";
+    autoResize();
+  }
+
+  /* --- debug mode: full conversation thread (legacy) --- */
+  async function runChatDebug(messages, prompt) {
+    setSidebarMode("itineraries");
+    $("sidebar-toolbar").hidden = true;
+    $("sidebar-title").textContent = "Assistant";
+    $("sidebar-subtitle").textContent = prompt;
+    const body = $("sidebar-body");
+    const conversation = document.createElement("div");
+    conversation.className = "chat-thread";
+    conversation.innerHTML = `
+      <div class="chat-msg user">${escapeHtml(prompt)}</div>
+      <div class="chat-msg assistant assistant-text" data-role="assistant-text"><span class="thinking">Thinking…</span></div>
+      <div class="chat-events" data-role="events"></div>
+    `;
+    body.innerHTML = "";
+    body.appendChild(conversation);
+    const assistantEl = conversation.querySelector("[data-role=assistant-text]");
+    const eventsEl = conversation.querySelector("[data-role=events]");
+    const runCards = new Map();
+    let assistantText = "";
+
+    const subscribeRunPolls = (runId) => {
+      fetch(`/api/runs/${encodeURIComponent(runId)}/stream`).catch(() => { /* ignore */ });
+    };
+
+    await runLlmStream(messages, {
+      onEvent: (evtName, data) => {
+        if (evtName === "status") return;
+        if (evtName === "assistant_delta") {
+          if (typeof data.content === "string") {
+            assistantText += data.content;
+            assistantEl.innerHTML = escapeHtml(assistantText).replace(/\n/g, "<br/>");
+          }
+          return;
+        }
+        if (evtName === "tool_call") {
+          const card = document.createElement("div");
+          card.className = "chat-tool-card";
+          card.dataset.tool = data.name;
+          card.innerHTML = `<div class="chat-tool-head"><span class="chat-tool-name">${escapeHtml(data.name)}</span><span class="status pending" data-status-for="${data.id}">running…</span></div><pre class="chat-tool-args">${escapeHtml(JSON.stringify(data.arguments ?? {}, null, 2))}</pre>`;
+          eventsEl.appendChild(card);
+          card.dataset.toolCallId = data.id;
+          return;
+        }
+        if (evtName === "tool_result") {
+          const card = eventsEl.querySelector(`.chat-tool-card[data-tool-call-id="${data.id}"]`);
+          if (!card) return;
+          const status = card.querySelector(`[data-status-for="${data.id}"]`);
+          if (status) status.outerHTML = `<span class="status ok">ok</span>`;
+          const pre = document.createElement("pre");
+          pre.className = "chat-tool-result";
+          const summary = summarizeToolResult(data.name, data.result);
+          pre.innerHTML = `<details><summary>${escapeHtml(summary)}</summary><code>${escapeHtml(JSON.stringify(data.result ?? {}, null, 2)).slice(0, 2000)}</code></details>`;
+          card.appendChild(pre);
+          const result = data.result;
+          if (result && typeof result === "object") {
+            const flights = Array.isArray(result.itineraries) ? result.itineraries : Array.isArray(result.options) ? result.options : [];
+            if (flights.length > 0) {
+              const wrapped = flights.map((it, i) => ({
+                id: String(it.id || `llm-${i}-${Date.now()}`),
+                title: String(it.title || `Option ${i + 1}`),
+                totalPrice: Number(it.totalPrice ?? 0),
+                currency: String(it.currency ?? "EUR"),
+                totalDurationMinutes: it.totalDurationMinutes ?? null,
+                legs: it.legs || [],
+                summary: String(it.summary || ""),
+                recommendationScore: Number(it.recommendationScore ?? 0),
+              }));
+              state.itineraries = wrapped;
+              state.activeItineraryId = wrapped[0].id;
+            }
+          }
+          return;
+        }
+        if (evtName === "run_triggered") {
+          const card = document.createElement("div");
+          card.className = "chat-run-card";
+          card.dataset.runId = data.runId;
+          card.innerHTML = `
+            <div class="chat-run-head">
+              <span class="status queued" data-run-status>QUEUED</span>
+              <strong>${escapeHtml(data.task || data.toolName || "task")}</strong>
+              <span class="muted mono">${escapeHtml(String(data.runId).slice(0, 8))}…</span>
+            </div>
+            <div class="chat-run-meta muted" data-run-meta>just triggered</div>
+          `;
+          eventsEl.appendChild(card);
+          runCards.set(data.runId, card);
+          subscribeRunPolls(data.runId);
+          return;
+        }
+        if (evtName === "run_status" || evtName === "run_final") {
+          const card = runCards.get(data.runId);
+          if (!card) return;
+          const status = String(data.status || "UNKNOWN").toLowerCase();
+          const badge = card.querySelector("[data-run-status]");
+          if (badge) { badge.className = `status ${status}`; badge.textContent = data.status; }
+          const meta = card.querySelector("[data-run-meta]");
+          if (meta) {
+            const parts = [];
+            if (data.taskIdentifier) parts.push(escapeHtml(String(data.taskIdentifier)));
+            if (data.costInCents != null) parts.push(`cost $${(Number(data.costInCents) / 100).toFixed(4)}`);
+            if (data.durationMs != null) parts.push(`${Math.round(Number(data.durationMs) / 1000)}s`);
+            meta.innerHTML = parts.length ? parts.join(" · ") : `<span class="muted">live · ${escapeHtml(evtName === "run_final" ? "finished" : "watching…")}</span>`;
+          }
+          if (evtName === "run_final" && /COMPLETED|FAILED|CANCEL|CRASH|TIMEOUT|EXPIRED/.test(String(data.status).toUpperCase())) {
+            card.classList.add("run-done");
+          }
+          return;
+        }
+        if (evtName === "error") {
+          assistantEl.innerHTML = `<span class="err">${escapeHtml(String(data.error || "Assistant error"))}</span>`;
+        }
+      },
+      onError: (err) => {
+        assistantEl.innerHTML = `<span class="err">${escapeHtml(String(err.message || err))}</span>`;
+      },
+    });
+
+    if (assistantText) {
+      $("sidebar-title").textContent = "Assistant";
+      $("sidebar-subtitle").textContent = `Plan ready · ${runCards.size} live task${runCards.size === 1 ? "" : "s"}`;
+    } else if (!assistantEl.innerHTML.includes("err")) {
+      assistantEl.innerHTML = `<span class="muted">(no reply)</span>`;
+    }
+    refreshHotAirportsFromRuns(runCards);
+  }
+
+  /* --- silent mode: drive UI, pop up only on clarification --- */
+  async function runChatSilent(messages, prompt) {
+    aiProgressShow("Thinking…");
+    let assistantText = "";
+    let hadQuestion = false;
+
+    await runLlmStream(messages, {
+      onEvent: (evtName, data) => {
+        if (evtName === "status") return;
+        if (evtName === "assistant_delta") {
+          if (typeof data.content === "string") assistantText += data.content;
+          return;
+        }
+        if (evtName === "tool_call") {
+          const desc = describeToolCall(data.name, data.arguments || {});
+          aiProgressUpdate(desc.label, desc.tool);
+          return;
+        }
+        if (evtName === "tool_result") {
+          applyToolResultToUi(data.name, data.result);
+          return;
+        }
+        if (evtName === "error") {
+          aiProgressDone(`Error: ${data.error || "assistant error"}`);
+          toast.error("Assistant error", String(data.error || ""));
+        }
+      },
+      onError: (err) => {
+        aiProgressDone("Couldn't reach assistant");
+        toast.error("Network error", String(err.message || err));
+      },
+    });
+
+    if (hadQuestion) return;
+
+    if (assistantText && isAssistantQuestion(assistantText)) {
+      aiProgressDone("I need a bit more info");
+      hadQuestion = true;
+      const nextMessages = [...messages, { role: "assistant", content: assistantText }];
+      showClarification(assistantText, async (reply) => {
+        nextMessages.push({ role: "user", content: reply });
+        await runChatSilent(nextMessages, reply);
+      });
+      return;
+    }
+
+    aiProgressDone(assistantText ? "Done" : "No reply");
+    if (assistantText && !assistantText.endsWith("?") && assistantText.length < 240) {
+      toast.info("Assistant", assistantText.slice(0, 120));
+    }
+  }
+
 
   function summarizeToolResult(name, result) {
     if (!result || typeof result !== "object") return `result`;
@@ -985,6 +1050,132 @@
     if (name === "list_favorites") return `${result.count ?? 0} favorite${(result.count ?? 0) === 1 ? "" : "s"}`;
     if (name === "save_favorite" || name === "remove_favorite") return "ok";
     return "result";
+  }
+
+  /* ====================================================== */
+  /* Silent-mode chat: UI updates instead of conversation  */
+  /* ====================================================== */
+  const aiProgressEl = () => $("ai-progress");
+  const aiProgressLabel = () => $("ai-progress-label");
+  const aiProgressTool = () => $("ai-progress-tool");
+
+  function aiProgressShow(label) {
+    const el = aiProgressEl();
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove("done");
+    if (aiProgressLabel()) aiProgressLabel().textContent = label || "Working on it…";
+    if (aiProgressTool()) aiProgressTool().textContent = "";
+  }
+  function aiProgressUpdate(label, tool) {
+    if (aiProgressLabel() && label) aiProgressLabel().textContent = label;
+    if (aiProgressTool() && tool) aiProgressTool().textContent = tool;
+  }
+  function aiProgressDone(label) {
+    const el = aiProgressEl();
+    if (!el) return;
+    el.classList.add("done");
+    if (aiProgressLabel() && label) aiProgressLabel().textContent = label;
+  }
+
+  function describeToolCall(name, args) {
+    if (!args || typeof args !== "object") return { label: "Working…", tool: name };
+    const a = args;
+    switch (name) {
+      case "find_cheapest_destinations":
+        return { label: `Searching cheapest fares from ${a.origin || "your home airport"}…`, tool: name };
+      case "find_cheapest_dates":
+        return { label: `Checking prices by date for ${a.origin || ""} → ${a.destination || ""}…`, tool: name };
+      case "find_best_round_trip":
+        return { label: `Building round-trip bundles ${a.origin || ""} ⇄ ${a.destination || ""}…`, tool: name };
+      case "find_best_one_way":
+        return { label: `Finding one-way fares ${a.origin || ""} → ${a.destination || ""}…`, tool: name };
+      case "find_weekend_deals":
+        return { label: `Looking for weekend trips to ${a.destination || a.origin || ""}…`, tool: name };
+      case "find_cheapest_from_any_origin":
+        return { label: `Comparing from ${(a.origins || []).join(", ")}…`, tool: name };
+      case "plan_round_trip":
+        return { label: `Planning round trip ${a.origin || ""} ⇄ ${a.destination || ""}…`, tool: name };
+      case "plan_multi_stop":
+        return { label: `Planning multi-stop trip from ${a.homeIata || ""}…`, tool: name };
+      case "trigger_refresh_crawl":
+        return { label: `Crawling prices for ${(a.legs || []).length} route${(a.legs || []).length === 1 ? "" : "s"}…`, tool: name };
+      case "get_dataset_freshness":
+        return { label: "Checking how fresh the data is…", tool: name };
+      case "search_airports":
+        return { label: `Looking up "${a.query || ""}"…`, tool: name };
+      case "save_favorite":
+        return { label: "Saving favorite…", tool: name };
+      default:
+        return { label: "Working…", tool: name };
+    }
+  }
+
+  function applyToolResultToUi(name, result) {
+    if (!result || result.ok === false) return;
+    if (name === "find_cheapest_destinations" && Array.isArray(result.destinations) && result.destinations.length > 0) {
+      const home = String(result.origin || state.homeIata || "").toUpperCase();
+      const dests = result.destinations
+        .map((d) => String(d.destination || "").toUpperCase())
+        .filter((iata) => IATA_RE.test(iata) && iata !== home);
+      const unique = Array.from(new Set(dests)).slice(0, 12);
+      if (unique.length === 0) return;
+      state.builder.mode = "multi";
+      state.destinations = unique;
+      saveDestinations();
+      drawPins();
+      fitToDestinations(state.homeIata);
+      renderBuilder();
+      toast.success(`Found ${result.count ?? unique.length} destinations`, unique.slice(0, 4).join(" · "));
+      return;
+    }
+    if (name === "trigger_refresh_crawl") {
+      toast.info("Crawling prices in background…", `Run ${String(result.runId || "").slice(0, 8)}…`);
+      return;
+    }
+    if (name === "save_favorite" && result.favorite) {
+      toast.success("Saved to favorites", result.favorite.title || "");
+      return;
+    }
+    if (name === "remove_favorite") {
+      toast.info("Removed from favorites");
+      return;
+    }
+  }
+
+  function isAssistantQuestion(text) {
+    if (!text) return false;
+    const t = String(text).trim();
+    if (t.length < 12 || t.length > 400) return false;
+    const q = /(which|what|when|where|how many|how long|any preference|could you|can you|tell me)/i;
+    return (q.test(t) && /\?/.test(t)) || (t.endsWith("?") && t.split(/\s+/).length <= 60);
+  }
+
+  function showClarification(question, onSubmit) {
+    const modal = $("ai-clarification");
+    const q = $("ai-clarification-question");
+    const reply = $("ai-clarification-reply");
+    if (!modal || !q || !reply) return;
+    q.textContent = question;
+    reply.value = "";
+    modal.classList.add("open");
+    setTimeout(() => reply.focus(), 50);
+    const close = () => {
+      modal.classList.remove("open");
+      $("btn-clarification-send").onclick = null;
+      document.querySelectorAll("[data-close-clarification]").forEach((b) => { b.onclick = null; });
+    };
+    const submit = () => {
+      const value = reply.value.trim();
+      if (!value) { reply.focus(); return; }
+      close();
+      onSubmit(value);
+    };
+    $("btn-clarification-send").onclick = submit;
+    document.querySelectorAll("[data-close-clarification]").forEach((b) => { b.onclick = close; });
+    reply.onkeydown = (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); }
+    };
   }
 
   function refreshHotAirportsFromRuns(runCards) {
