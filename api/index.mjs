@@ -1,3 +1,4 @@
+import { app } from "../src/frontend/server";
 export default function handler(req, res) {
-  res.status(200).json({ ok: true, url: req.url, method: req.method });
+  return app(req, res);
 }
