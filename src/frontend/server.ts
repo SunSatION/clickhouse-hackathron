@@ -1,6 +1,6 @@
 if (!process.env.VERCEL) {
   try {
-    await import("dotenv/config");
+    import("dotenv/config");
   } catch {
     // dotenv only needed for local dev; ignore if unavailable.
   }
