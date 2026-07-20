@@ -3,7 +3,7 @@ import express from "express";
 const app = express();
 
 app.get("/api/health", (_req, res) => {
-  res.status(200).json({ ok: true, hello: "from src/server.ts" });
+  res.status(200).json({ ok: true, hello: "from root index.ts" });
 });
 
 app.get("/api/echo", (req, res) => {
