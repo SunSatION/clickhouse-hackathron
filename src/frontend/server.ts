@@ -1227,6 +1227,129 @@ app.get("/api/map/airports/:iata/fares", async (req, res) => {
   }
 });
 
+app.get("/api/map/fare-finder/cheapest-destinations", async (req, res) => {
+  try {
+    const origin = String(req.query.origin ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin)) { res.status(400).json({ ok: false, error: "origin must be a 3-letter IATA" }); return; }
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 12)));
+    const airline = typeof req.query.airline === "string" ? req.query.airline : undefined;
+    const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
+    const maxPrice = typeof req.query.maxPrice === "string" ? Number(req.query.maxPrice) : undefined;
+    const { findCheapestDestinations } = await import("../db/fare-finder");
+    const deals = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
+    res.json({ ok: true, origin, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/fare-finder/cheapest-dates", async (req, res) => {
+  try {
+    const origin = String(req.query.origin ?? "").trim().toUpperCase();
+    const destination = String(req.query.destination ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) { res.status(400).json({ ok: false, error: "origin and destination must be 3-letter IATAs" }); return; }
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
+    const limit = Math.min(120, Math.max(1, Number(req.query.limit ?? 60)));
+    const { findCheapestDates } = await import("../db/fare-finder");
+    const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo }, count: cells.length, cells });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/fare-finder/best-round-trip", async (req, res) => {
+  try {
+    const origin = String(req.query.origin ?? "").trim().toUpperCase();
+    const destination = String(req.query.destination ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) { res.status(400).json({ ok: false, error: "origin and destination must be 3-letter IATAs" }); return; }
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const minDays = Math.min(60, Math.max(1, Number(req.query.minDays ?? 3)));
+    const maxDays = Math.min(60, Math.max(minDays, Number(req.query.maxDays ?? 14)));
+    const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 5)));
+    const { findBestRoundTrip } = await import("../db/fare-finder");
+    const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, minDays, maxDays }, count: bundles.length, options: bundles });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/fare-finder/best-one-way", async (req, res) => {
+  try {
+    const origin = String(req.query.origin ?? "").trim().toUpperCase();
+    const destination = String(req.query.destination ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) { res.status(400).json({ ok: false, error: "origin and destination must be 3-letter IATAs" }); return; }
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
+    const limit = Math.min(60, Math.max(1, Number(req.query.limit ?? 10)));
+    const { findBestOneWay } = await import("../db/fare-finder");
+    const fares = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, count: fares.length, fares });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/fare-finder/cheapest-from-any", async (req, res) => {
+  try {
+    const originsRaw = Array.isArray(req.body?.origins) ? req.body.origins : null;
+    if (!originsRaw || originsRaw.length < 1 || originsRaw.length > 8) { res.status(400).json({ ok: false, error: "origins must be a 1-8 item array of 3-letter IATAs" }); return; }
+    const origins = originsRaw.map((s: unknown) => String(s).trim().toUpperCase()).filter((s: string) => /^[A-Z]{3}$/.test(s));
+    if (origins.length === 0) { res.status(400).json({ ok: false, error: "origins contains no valid IATAs" }); return; }
+    const dateFrom = String(req.body?.dateFrom ?? "").trim();
+    const dateTo = String(req.body?.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const destination = typeof req.body?.destination === "string" && req.body.destination ? String(req.body.destination).trim().toUpperCase() : undefined;
+    const limit = Math.min(50, Math.max(1, Number(req.body?.limit ?? 10)));
+    const { findCheapestFromAnyOrigin } = await import("../db/fare-finder");
+    const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
+    res.json({ ok: true, origins, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/fare-finder/weekend-deals", async (req, res) => {
+  try {
+    const origin = String(req.query.origin ?? "").trim().toUpperCase();
+    const destination = String(req.query.destination ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) { res.status(400).json({ ok: false, error: "origin and destination must be 3-letter IATAs" }); return; }
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
+    const nights = Math.min(21, Math.max(1, Number(req.query.nights ?? 4)));
+    const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
+    const limit = Math.min(20, Math.max(1, Number(req.query.limit ?? 5)));
+    const { findWeekendDeals } = await import("../db/fare-finder");
+    const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, nights }, count: bundles.length, options: bundles });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/fare-finder/freshness", async (_req, res) => {
+  try {
+    const { getDatasetFreshness, buildToolHints } = await import("../db/fare-finder");
+    const f = await getDatasetFreshness();
+    res.json({ ok: true, ...f, hints: buildToolHints(f) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
 app.post("/api/map/itinerary/generate", async (req, res) => {
   try {
     const prompt = String(req.body?.prompt ?? "").trim();
@@ -1401,75 +1524,151 @@ app.get("/api/tools", async (_req, res) => {
   }
 });
 
-app.post("/api/llm/byok", async (req, res) => {
-  try {
-    const userId = String(req.body?.userId ?? "").trim();
-    const provider = String(req.body?.provider ?? "").trim();
-    const apiKey = String(req.body?.apiKey ?? "").trim();
-    const model = req.body?.model ? String(req.body.model) : undefined;
-    if (!userId) { res.status(400).json({ ok: false, error: "userId is required" }); return; }
-    if (!apiKey) { res.status(400).json({ ok: false, error: "apiKey is required" }); return; }
-    if (!provider) { res.status(400).json({ ok: false, error: "provider is required" }); return; }
-    const { setUserKey } = await import("../llm/key-vault");
-    setUserKey(userId, { provider, apiKey, model });
-    res.json({ ok: true, userId, provider });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: (err as Error).message });
-  }
+app.post("/api/llm/byok", async (_req, res) => {
+  res.status(410).json({ ok: false, error: "BYOK is disabled. All chat is routed through our hosted LLM keys." });
 });
 
-app.delete("/api/llm/byok", async (req, res) => {
-  try {
-    const userId = String(req.body?.userId ?? req.query.userId ?? "").trim();
-    if (!userId) { res.status(400).json({ ok: false, error: "userId is required" }); return; }
-    const { deleteUserKey } = await import("../llm/key-vault");
-    res.json({ ok: true, removed: deleteUserKey(userId) });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: (err as Error).message });
-  }
+app.delete("/api/llm/byok", async (_req, res) => {
+  res.status(410).json({ ok: false, error: "BYOK is disabled. All chat is routed through our hosted LLM keys." });
 });
 
-app.get("/api/llm/status", async (req, res) => {
+app.get("/api/llm/status", async (_req, res) => {
   try {
-    const userId = String(req.query.userId ?? "").trim() || undefined;
     const { resolveCredentials } = await import("../llm/key-vault");
-    const creds = resolveCredentials(userId);
-    const usingByok = creds.source === "byok";
+    const creds = resolveCredentials();
     res.json({
       ok: true,
       configured: Boolean(creds.apiKey),
-      source: creds.source,
-      provider: usingByok ? creds.provider : (creds.apiKey ? creds.provider : null),
-      hasByok: usingByok,
+      source: creds.source === "none" ? "none" : "hosted",
+      provider: creds.apiKey ? creds.provider : null,
+      model: creds.apiKey ? creds.model ?? null : null,
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
 });
 
+function sseHeaders(res: express.Response) {
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+}
+
+function sseSend(res: express.Response, event: string, data: unknown) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+const TRIGGER_TERMINAL = new Set([
+  "COMPLETED",
+  "FAILED",
+  "CANCELED",
+  "CANCELLED",
+  "CRASHED",
+  "SYSTEM_FAILURE",
+  "EXPIRED",
+  "TIMED_OUT",
+]);
+
+async function pollRunUntilTerminal(runId: string, res: express.Response, abort: AbortSignal) {
+  let lastStatus: string | null = null;
+  for (let i = 0; i < 600; i++) {
+    if (abort.aborted) return;
+    try {
+      const run = await runs.retrieve(runId);
+      const status = String(run.status ?? "UNKNOWN");
+      const payload: Record<string, unknown> = {
+        runId,
+        status,
+        taskIdentifier: run.taskIdentifier ?? null,
+        startedAt: run.startedAt ?? null,
+        finishedAt: run.finishedAt ?? null,
+        costInCents: run.costInCents ?? null,
+        durationMs: run.durationMs ?? null,
+      };
+      if (status !== lastStatus) {
+        sseSend(res, "run_status", payload);
+        lastStatus = status;
+      } else if (i % 5 === 0) {
+        sseSend(res, "run_status", payload);
+      }
+      if (TRIGGER_TERMINAL.has(status.toUpperCase())) {
+        sseSend(res, "run_final", { runId, status, output: run.output ?? null, error: run.error ?? null });
+        return;
+      }
+    } catch (err) {
+      sseSend(res, "run_status", { runId, status: "ERROR", error: (err as Error).message });
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  sseSend(res, "run_final", { runId, status: "TIMEOUT", error: "frontend-stopped-watching" });
+}
+
 app.post("/api/llm/chat", async (req, res) => {
   try {
-    const userId = String(req.body?.userId ?? "").trim() || undefined;
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : null;
     if (!messages || messages.length === 0) {
       res.status(400).json({ ok: false, error: "messages[] is required" });
       return;
     }
+    sseHeaders(res);
+    const ac = new AbortController();
+    req.on("close", () => ac.abort());
+    res.on("close", () => ac.abort());
+
+    const runPollers: Promise<void>[] = [];
     const { resolveCredentials } = await import("../llm/key-vault");
     const { runLlmAgent } = await import("../llm/client");
-    const creds = resolveCredentials(userId);
+    const creds = resolveCredentials();
     const result = await runLlmAgent(
       {
         messages,
         model: req.body?.model,
         maxIterations: req.body?.maxIterations,
-        userId,
       },
       { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },
+      (event) => {
+        const map: Record<string, string> = {
+          status: "status",
+          assistant_delta: "assistant_delta",
+          tool_call: "tool_call",
+          tool_result: "tool_result",
+          assistant_message: "assistant_message",
+          run_triggered: "run_triggered",
+          error: "error",
+          done: "done",
+        };
+        const ev = map[event.type as string] ?? "agent";
+        sseSend(res, ev, event);
+
+        if (event.type === "run_triggered" && typeof event.runId === "string") {
+          runPollers.push(pollRunUntilTerminal(event.runId, res, ac.signal));
+        }
+      },
     );
-    res.json(result);
+
+    await Promise.allSettled(runPollers);
+    sseSend(res, "final", { ok: result.ok, content: result.content, iterations: result.iterations, error: result.error ?? null, provider: result.provider, model: result.model });
+    res.end();
   } catch (err) {
-    res.status(500).json({ ok: false, error: (err as Error).message });
+    try { sseSend(res, "error", { error: (err as Error).message }); res.end(); } catch { /* aborted */ }
+  }
+});
+
+app.get("/api/runs/:runId/stream", async (req, res) => {
+  try {
+    const runId = String(req.params.runId ?? "").trim();
+    if (!runId) { res.status(400).json({ ok: false, error: "runId is required" }); return; }
+    sseHeaders(res);
+    const ac = new AbortController();
+    req.on("close", () => ac.abort());
+    res.on("close", () => ac.abort());
+    await pollRunUntilTerminal(runId, res, ac.signal);
+    res.end();
+  } catch (err) {
+    try { sseSend(res, "error", { error: (err as Error).message }); res.end(); } catch { /* aborted */ }
   }
 });
 

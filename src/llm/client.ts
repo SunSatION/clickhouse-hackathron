@@ -18,6 +18,21 @@ export interface LlmChatRequest {
   userId?: string;
 }
 
+export interface LlmStreamEvent {
+  type:
+    | "status"
+    | "assistant_delta"
+    | "tool_call"
+    | "tool_result"
+    | "assistant_message"
+    | "run_triggered"
+    | "error"
+    | "done";
+  [key: string]: unknown;
+}
+
+export type LlmStreamSink = (event: LlmStreamEvent) => void;
+
 export interface LlmChatResponse {
   ok: boolean;
   provider: string;
@@ -29,12 +44,25 @@ export interface LlmChatResponse {
   error?: string;
 }
 
-const SYSTEM_PROMPT = `You are Wayfarer, a travel-planning assistant for the Hackathron trip planner.
+const SYSTEM_PROMPT = `You are Wayfare, a travel-planning assistant for the Hackathron trip planner.
 You help users plan flights between European airports that are crawled from Ryanair (and optionally EasyJet).
-You have access to a set of tools. Use them whenever a question requires live data (airport lookup, fares, round-trip pricing, multi-stop itineraries, crawl refreshes, favorites).
+You have a rich set of tools. Pick the right one based on the user's question:
+
+- "Where can I fly cheaply from X?" → \`find_cheapest_destinations\` (inspiration, ranked by best fare per destination in the window).
+- "When is the cheapest day to fly X→Y?" → \`find_cheapest_dates\` (cheapest one-way per date, full window).
+- "Cheapest one-way tickets X→Y" → \`find_best_one_way\` (K cheapest fares, price-asc).
+- "Cheapest round trip A↔B for an N-day trip" → \`find_best_round_trip\` (self-joined, ranked by total).
+- "Cheap weekend in BCN" / "long weekend" → \`find_weekend_deals\` (Fri-Sun departure/return only).
+- "From any London airport" → \`find_cheapest_from_any_origin\` (pass multiple origins, server picks best + alternatives).
+- "All fares from X" → \`get_airport_fares\`.
+- "Round trip A↔B (legacy TS pairing)" → \`plan_round_trip\`.
+- "Multi-stop trip through several cities" → \`plan_multi_stop\` (single-shot SQL planner across all permutations).
+- Before quoting prices, call \`get_dataset_freshness\` and respect its warnings; if data is older than 48h, mention the freshness window to the user.
+
 Always call the relevant tool rather than guessing. Cite prices and dates from the tool output.
 Prefer round-trip itineraries when the user asks for a holiday. Use multi-stop when they list multiple destinations.
-If pricing data is missing for a leg, suggest triggering a refresh crawl before recommending an alternative.
+If pricing data is missing for a leg or destination, call \`trigger_refresh_crawl\` FIRST so the crawl actually runs (the tool both enqueues the work AND fires the queue worker); then either retry the lookup or recommend the user wait for results.
+All LLM calls are routed through our hosting service — there is no per-user key. The Trigger.dev tasks you fire (crawl-queue-worker / crawl-pending-item) will run to completion and the frontend will be updated in realtime with their status.
 Be concise. Output should be 2–6 short paragraphs max.`;
 
 function toOpenAiTools(): Array<Record<string, unknown>> {
@@ -56,7 +84,11 @@ function toAnthropicTools(): Array<Record<string, unknown>> {
   }));
 }
 
-export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string; apiKey: string; model?: string }): Promise<LlmChatResponse> {
+export async function runLlmAgent(
+  req: LlmChatRequest,
+  creds: { provider: string; apiKey: string; model?: string },
+  sink?: LlmStreamSink,
+): Promise<LlmChatResponse> {
   const provider = creds.provider || "openai";
   const model = req.model || creds.model || defaultModel(provider);
   const maxIterations = Math.max(1, Math.min(10, req.maxIterations ?? 6));
@@ -65,8 +97,10 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
     { role: "system", content: SYSTEM_PROMPT },
     ...req.messages,
   ];
+  const emit = (e: LlmStreamEvent) => { if (sink) try { sink(e); } catch { /* ignore */ } };
 
   if (!creds.apiKey) {
+    emit({ type: "error", error: "no_credentials" });
     return {
       ok: false,
       provider,
@@ -76,9 +110,10 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
       iterations: 0,
       source: "none",
       error:
-        "No LLM credentials configured. Set OPENAI_API_KEY (or another provider env) on the server, or save a BYOK key via POST /api/llm/byok.",
+        "No LLM credentials configured. Set OPENAI_API_KEY (or ANTHROPIC_API_KEY / OPENROUTER_API_KEY / MINIMAX_API_KEY) on the server.",
     };
   }
+  emit({ type: "status", status: "thinking", provider, model });
 
   let iterations = 0;
   let finalContent: string | null = null;
@@ -90,6 +125,7 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
       raw = await callProvider(provider, { apiKey: creds.apiKey, model, messages });
     } catch (err) {
       log.warn("LLM call failed", { provider, error: (err as Error).message });
+      emit({ type: "error", error: (err as Error).message });
       return {
         ok: false,
         provider,
@@ -97,7 +133,7 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
         content: null,
         toolCalls,
         iterations,
-        source: creds.apiKey ? "byok" : "env",
+        source: "env",
         error: (err as Error).message,
       };
     }
@@ -105,6 +141,10 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
     const assistantMessage = raw.assistantMessage as ChatMessage;
     messages.push(assistantMessage);
     finalContent = typeof assistantMessage.content === "string" ? assistantMessage.content : finalContent;
+    if (typeof assistantMessage.content === "string" && assistantMessage.content) {
+      emit({ type: "assistant_delta", content: assistantMessage.content });
+    }
+    emit({ type: "assistant_message", content: assistantMessage.content, toolCalls: assistantMessage.tool_calls ?? [] });
 
     const calls = assistantMessage.tool_calls ?? [];
     if (calls.length === 0) break;
@@ -117,6 +157,7 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
         parsedArgs = call.arguments;
       }
       const tool = getToolByName(call.name);
+      emit({ type: "tool_call", id: call.id, name: call.name, arguments: parsedArgs });
       let result: unknown;
       let toolError: string | undefined;
       if (!tool) {
@@ -137,6 +178,23 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
         }
       }
       toolCalls.push({ tool: call.name, arguments: parsedArgs, result });
+
+      if (result && typeof result === "object") {
+        const r = result as Record<string, unknown>;
+        if (r.runId && typeof r.runId === "string") {
+          emit({
+            type: "run_triggered",
+            toolId: call.id,
+            toolName: call.name,
+            runId: r.runId,
+            task: typeof r.task === "string" ? r.task : null,
+            crawlRunId: typeof r.crawlRunId === "string" ? r.crawlRunId : null,
+            publicAccessToken: typeof r.publicAccessToken === "string" ? r.publicAccessToken : null,
+          });
+        }
+      }
+
+      emit({ type: "tool_result", id: call.id, name: call.name, result });
       messages.push({
         role: "tool",
         content: typeof result === "string" ? result : JSON.stringify(result),
@@ -146,6 +204,8 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
     }
   }
 
+  emit({ type: "done", iterations, toolCalls: toolCalls.length });
+
   return {
     ok: true,
     provider,
@@ -153,7 +213,7 @@ export async function runLlmAgent(req: LlmChatRequest, creds: { provider: string
     content: finalContent,
     toolCalls,
     iterations,
-    source: creds.apiKey ? "byok" : "env",
+    source: "env",
   };
 }
 
@@ -175,9 +235,11 @@ interface CallArgs {
 }
 
 async function callProvider(provider: string, args: CallArgs): Promise<{ assistantMessage: ChatMessage }> {
-  if (provider === "openai" || provider === "openrouter") {
+  if (provider === "openai" || provider === "openrouter" || provider === "minimax") {
     const url = provider === "openrouter"
       ? "https://openrouter.ai/api/v1/chat/completions"
+      : provider === "minimax"
+      ? "https://api.minimax.chat/v1/chat/completions"
       : "https://api.openai.com/v1/chat/completions";
     const body = {
       model: args.model,

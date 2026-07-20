@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { tasks } from "@trigger.dev/sdk";
+
 import {
   listAirportsForAirline,
   searchAirports,
@@ -11,6 +13,18 @@ import {
 } from "../../db/airports";
 import { generateItineraries, listFavorites, saveFavorite, removeFavorite } from "../../db/itinerary";
 import { enqueuePendingRoutes } from "../../db/crawl-progress";
+import { CRAWL_CONFIG } from "../../config/crawl";
+import {
+  findBestRoundTrip,
+  findBestOneWay,
+  findCheapestDates,
+  findCheapestDestinations,
+  findCheapestFromAnyOrigin,
+  findWeekendDeals,
+  getDatasetFreshness,
+  buildToolHints,
+} from "../../db/fare-finder";
+import { planBestItinerary } from "../../db/itinerary-planner";
 
 export interface ToolDefinition {
   id: string;
@@ -160,33 +174,43 @@ export const ToolMultiStop = defineTool({
   id: "tool-multi-stop",
   name: "plan_multi_stop",
   description:
-    "Plan a multi-stop round trip starting and ending at `homeIata`, visiting each destination in order. Returns up to 8 permutations sorted by price.",
+    "Plan a multi-stop round trip starting and ending at `homeIata`, visiting each destination in order. Returns up to 8 permutations sorted by price. Backed by a single-click ClickHouse planner (not the legacy in-memory loop).",
   schema: z.object({
     homeIata: z.string().length(3).describe("Home airport IATA code."),
     destinations: z.array(z.string().length(3)).min(1).max(6).describe("1-6 destination IATA codes."),
     dateFrom: z.string().describe("Trip start date YYYY-MM-DD."),
     dateTo: z.string().describe("Trip end date YYYY-MM-DD."),
     daysPerCountry: z.number().int().min(1).max(30).optional().describe("Days spent at each stop."),
-    maxItineraries: z.number().int().min(1).max(8).optional(),
+    maxItineraries: z.number().int().min(1).max(8).optional().describe("Top-K itineraries to return (default 4)."),
+    bufferDays: z.number().int().min(0).max(7).optional().describe("Layover buffer days (default 1)."),
+    preferredAirlines: z.array(z.string()).max(6).optional().describe("Restrict to airline codes (e.g. ['FR','EZY'])."),
   }),
-  handler: async ({ homeIata, destinations, dateFrom, dateTo, daysPerCountry, maxItineraries }) => {
-    const itineraries = await generateItineraries({
-      homeIata,
-      destinations,
+  handler: async ({ homeIata, destinations, dateFrom, dateTo, daysPerCountry, maxItineraries, bufferDays, preferredAirlines }) => {
+    const result = await planBestItinerary({
+      home: homeIata.toUpperCase(),
+      stops: destinations.map((d: string) => d.toUpperCase()),
       dateFrom,
       dateTo,
-      daysPerCountry: daysPerCountry ?? 3,
-      maxItineraries: maxItineraries ?? 4,
+      bufferDays: bufferDays ?? 1,
+      topK: maxItineraries ?? 4,
+      preferredAirlines,
     });
-    const enriched = itineraries.map((it) => ({
-      ...it,
-      legs: it.legs.map((leg) => ({
-        ...leg,
-        originAirport: getAirport(leg.origin),
-        destinationAirport: getAirport(leg.destination),
+    const legsFlat = result.flatMap((itin) => itin.legs);
+    return {
+      ok: true,
+      count: result.length,
+      itineraries: result.map((it) => ({
+        ...it,
+        legs: it.legs.map((leg) => ({
+          ...leg,
+          originAirport: getAirport(leg.origin),
+          destinationAirport: getAirport(leg.destination),
+        })),
       })),
-    }));
-    return { ok: true, count: enriched.length, itineraries: enriched };
+      coverage: {
+        legs: legsFlat.length,
+      },
+    };
   },
 });
 
@@ -223,15 +247,199 @@ export const ToolRefreshCrawl = defineTool({
       dateTo: first.dateTo,
       crawlRunId,
     });
+
+    const handle = await tasks.trigger<
+      typeof import("../../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline: a,
+      crawlRunId,
+      maxIterations: Math.max(enqueue.enqueued + enqueue.already_pending, 1),
+      adults: CRAWL_CONFIG[a.toLowerCase() as "ryanair" | "easyjet"]?.adults ?? 1,
+      requestDelayMs: CRAWL_CONFIG[a.toLowerCase() as "ryanair" | "easyjet"]?.requestDelayMs ?? 0,
+      requestJitterMs: CRAWL_CONFIG[a.toLowerCase() as "ryanair" | "easyjet"]?.requestJitterMs ?? 0,
+      cooldownMs: CRAWL_CONFIG[a.toLowerCase() as "ryanair" | "easyjet"]?.cooldownMs ?? 0,
+    });
+
     return {
       ok: true,
       crawlRunId,
       airline: a,
+      runId: handle.id,
+      task: "crawl-queue-worker",
+      publicAccessToken: handle.publicAccessToken,
       enqueued: enqueue.enqueued,
       alreadyPending: enqueue.already_pending,
       legsQueued: legs.length,
       legs,
     };
+  },
+});
+
+export const ToolCheapestDestinations = defineTool({
+  id: "tool-cheapest-destinations",
+  name: "find_cheapest_destinations",
+  description:
+    "Inspiration search: returns the N cheapest destinations reachable from a given origin within a date range, ranked by best price. Use this when the user has not picked a destination yet ('where can I fly cheaply from MLA in September?').",
+  schema: z.object({
+    origin: z.string().length(3).describe("Origin IATA code (e.g. MLA, STN, BCN)."),
+    dateFrom: z.string().describe("Earliest departure date YYYY-MM-DD."),
+    dateTo: z.string().describe("Latest departure date YYYY-MM-DD."),
+    airline: z.string().optional().describe("Restrict to airline display name (e.g. 'Ryanair')."),
+    airlineCode: z.string().optional().describe("Restrict to airline IATA code (e.g. 'FR', 'EZY')."),
+    maxPrice: z.number().optional().describe("Drop fares above this EUR-equivalent price."),
+    limit: z.number().int().min(1).max(50).optional().describe("How many destinations to return (default 12)."),
+  }),
+  handler: async ({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit }) => {
+    const deals = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
+    return {
+      ok: true,
+      origin: origin.toUpperCase(),
+      window: { dateFrom, dateTo },
+      count: deals.length,
+      destinations: deals,
+    };
+  },
+});
+
+export const ToolCheapestDates = defineTool({
+  id: "tool-cheapest-dates",
+  name: "find_cheapest_dates",
+  description:
+    "Calendar view: returns the cheapest one-way price per date for a fixed origin→destination pair across a date window. Use this when the user is open to travel dates and wants a heatmap ('when is the cheapest day to fly MLA→BCN this month?').",
+  schema: z.object({
+    origin: z.string().length(3),
+    destination: z.string().length(3),
+    dateFrom: z.string(),
+    dateTo: z.string(),
+    airlineCode: z.string().optional(),
+    limit: z.number().int().min(1).max(120).optional().describe("Cap rows (default 60)."),
+  }),
+  handler: async ({ origin, destination, dateFrom, dateTo, airlineCode, limit }) => {
+    const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    return {
+      ok: true,
+      origin: origin.toUpperCase(),
+      destination: destination.toUpperCase(),
+      window: { dateFrom, dateTo },
+      count: cells.length,
+      cells,
+    };
+  },
+});
+
+export const ToolBestRoundTrip = defineTool({
+  id: "tool-best-round-trip",
+  name: "find_best_round_trip",
+  description:
+    "Bundle search: joins the cheapest outbound and return legs into priced round-trip bundles ranked by total price, respecting min/max trip length. Replaces the older TS-based pairing logic with a single ClickHouse self-join — answers 'cheapest round trip A↔B for a N-day holiday'.",
+  schema: z.object({
+    origin: z.string().length(3),
+    destination: z.string().length(3),
+    dateFrom: z.string(),
+    dateTo: z.string(),
+    minDays: z.number().int().min(1).max(60).optional().describe("Min trip length in days (default 3)."),
+    maxDays: z.number().int().min(1).max(60).optional().describe("Max trip length in days (default 14)."),
+    airlineCode: z.string().optional(),
+    limit: z.number().int().min(1).max(50).optional().describe("Top-K bundles (default 5)."),
+  }),
+  handler: async ({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit }) => {
+    const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
+    return {
+      ok: true,
+      origin: origin.toUpperCase(),
+      destination: destination.toUpperCase(),
+      window: { dateFrom, dateTo, minDays: minDays ?? 3, maxDays: maxDays ?? 14 },
+      count: bundles.length,
+      options: bundles,
+    };
+  },
+});
+
+export const ToolBestOneWay = defineTool({
+  id: "tool-best-one-way",
+  name: "find_best_one_way",
+  description:
+    "K cheapest one-way fares for a route, one per date, sorted by price ascending. Useful when a user wants the absolute lowest ticket regardless of dates.",
+  schema: z.object({
+    origin: z.string().length(3),
+    destination: z.string().length(3),
+    dateFrom: z.string(),
+    dateTo: z.string(),
+    airlineCode: z.string().optional(),
+    limit: z.number().int().min(1).max(60).optional().describe("Default 10."),
+  }),
+  handler: async ({ origin, destination, dateFrom, dateTo, airlineCode, limit }) => {
+    const rows = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    return {
+      ok: true,
+      origin: origin.toUpperCase(),
+      destination: destination.toUpperCase(),
+      count: rows.length,
+      fares: rows,
+    };
+  },
+});
+
+export const ToolCheapestFromAny = defineTool({
+  id: "tool-cheapest-from-any",
+  name: "find_cheapest_from_any_origin",
+  description:
+    "Compare multiple origin airports (e.g. all London airports) to find the single cheapest combination to each destination. Returns ranked destinations with the best origin and a sorted list of alternatives.",
+  schema: z.object({
+    origins: z.array(z.string().length(3)).min(1).max(8).describe("Origin IATAs (e.g. ['STN','LGW','LTN'])."),
+    destination: z.string().length(3).optional().describe("Optional specific destination filter."),
+    dateFrom: z.string(),
+    dateTo: z.string(),
+    limit: z.number().int().min(1).max(50).optional().describe("Default 10 destinations."),
+  }),
+  handler: async ({ origins, destination, dateFrom, dateTo, limit }) => {
+    const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
+    return {
+      ok: true,
+      origins: origins.map((o: string) => o.toUpperCase()),
+      window: { dateFrom, dateTo },
+      count: deals.length,
+      destinations: deals,
+    };
+  },
+});
+
+export const ToolWeekendDeals = defineTool({
+  id: "tool-weekend-deals",
+  name: "find_weekend_deals",
+  description:
+    "Weekend-trip preset: bundles round trips that depart Fri–Sun and return Fri–Sun within a N±2 day window, ranked by total. Built for natural language 'I want a cheap weekend in BCN'.",
+  schema: z.object({
+    origin: z.string().length(3),
+    destination: z.string().length(3),
+    dateFrom: z.string(),
+    dateTo: z.string(),
+    nightCount: z.number().int().min(1).max(21).optional().describe("Number of nights (default 4)."),
+    airlineCode: z.string().optional(),
+    limit: z.number().int().min(1).max(20).optional().describe("Top-K bundles (default 5)."),
+  }),
+  handler: async ({ origin, destination, dateFrom, dateTo, nightCount, airlineCode, limit }) => {
+    const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount, airlineCode, limit });
+    return {
+      ok: true,
+      origin: origin.toUpperCase(),
+      destination: destination.toUpperCase(),
+      window: { dateFrom, dateTo, nights: nightCount ?? 4 },
+      count: bundles.length,
+      options: bundles,
+    };
+  },
+});
+
+export const ToolDatasetFreshness = defineTool({
+  id: "tool-dataset-freshness",
+  name: "get_dataset_freshness",
+  description:
+    "Returns how fresh the flight_listings data is (max observed_at per airline + per route) plus row counts. Use this BEFORE quoting prices so the LLM can warn the user if data is stale or sparse.",
+  schema: z.object({}),
+  handler: async () => {
+    const f = await getDatasetFreshness();
+    return { ok: true, freshness: f, hints: buildToolHints(f) };
   },
 });
 
@@ -280,6 +488,13 @@ export const ToolRemoveFavorite = defineTool({
 const ALL_TOOLS = [
   ToolSearchAirports,
   ToolAirportFares,
+  ToolCheapestDestinations,
+  ToolCheapestDates,
+  ToolBestOneWay,
+  ToolBestRoundTrip,
+  ToolCheapestFromAny,
+  ToolWeekendDeals,
+  ToolDatasetFreshness,
   ToolRoundTrip,
   ToolMultiStop,
   ToolRefreshCrawl,

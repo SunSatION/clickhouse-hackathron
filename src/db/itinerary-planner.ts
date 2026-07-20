@@ -225,7 +225,7 @@ FROM (
       SELECT
         perm,
         rowNumberInAllBlocks() AS perm_id
-      FROM (SELECT arrayJoin(${permsLiteral}) AS perm)
+      FROM (SELECT arrayJoin(${permsLiteral}) AS perm) AS arr
     )
     ARRAY JOIN range(${n} + 1) AS leg_idx
   ) pl

@@ -294,6 +294,49 @@
       }
       .chat-chip:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
+      /* === Chat thread (sidebar conversation) === */
+      .chat-thread { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+      .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; max-width: 100%; word-wrap: break-word; }
+      .chat-msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+      .chat-msg.assistant { background: var(--surface-2); color: var(--fg); align-self: flex-start; border-bottom-left-radius: 4px; }
+      .chat-msg.assistant .err { color: #b91c1c; font-weight: 600; }
+      .chat-msg.assistant .thinking { color: var(--muted); font-style: italic; }
+      .chat-events { display: flex; flex-direction: column; gap: 8px; }
+
+      .chat-tool-card, .chat-run-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+      .chat-tool-head, .chat-run-head {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .chat-tool-name { font-family: ui-monospace, SFMono-Regular, monospace; }
+      .chat-tool-args, .chat-tool-result {
+        background: var(--surface-2); border-radius: 6px; padding: 8px 10px;
+        font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
+        white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
+        margin: 6px 0 0; color: var(--fg-soft);
+      }
+      .chat-run-card .muted { color: var(--muted); font-size: 11px; }
+      .chat-run-card.run-done { border-color: var(--ok); }
+      .chat-run-card.run-done .status { background: var(--ok-soft); color: #047857; }
+      .chat-run-card[data-failed="1"] { border-color: var(--err); }
+      .chat-run-card[data-failed="1"] .status { background: var(--err-soft); color: #b91c1c; }
+      .chat-run-card .live-dot {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--running); margin-right: 6px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .chat-run-card.run-done .live-dot { display: none; }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.9); }
+        50%      { opacity: 1;   transform: scale(1.1); }
+      }
+
       /* === Sidebar items === */
       .empty {
         padding: 28px 24px;
@@ -459,8 +502,7 @@
 
       /* === Toasts === */
       .toast-stack {
-        position: fixed; bottom: 96px; left: 50%;
-        transform: translateX(-50%);
+        position: fixed; bottom: 96px; left: 16px;
         z-index: 1100;
         display: flex; flex-direction: column; gap: 8px;
         max-width: 360px; width: calc(100vw - 32px);
@@ -745,23 +787,9 @@
             <input id="set-home" placeholder="MLA" maxlength="3" style="text-transform:uppercase" />
           </div>
           <div class="form-row">
-            <label for="set-byok-provider">LLM provider (BYOK)</label>
-            <select id="set-byok-provider">
-              <option value="">(use server default)</option>
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="openrouter">OpenRouter</option>
-            </select>
-            <div class="hint">If unset, the server uses <code>OPENAI_API_KEY</code> from its env. Per-user BYOK keys are encrypted at rest on the server (AES-256-GCM) and never sent back to the browser.</div>
-          </div>
-          <div class="form-row">
-            <label for="set-byok-key">API key (BYOK)</label>
-            <input id="set-byok-key" type="password" placeholder="sk-…" autocomplete="off" />
-            <div class="hint">Stored server-side, encrypted with <code>BYOK_VAULT_SECRET</code>. Cleared by saving an empty value.</div>
-          </div>
-          <div class="form-row">
-            <label for="set-byok-model">Model override (optional)</label>
-            <input id="set-byok-model" placeholder="gpt-4o-mini" />
+            <label>AI assistant</label>
+            <div class="hint" id="set-llm-status">Checking…</div>
+            <div class="hint" style="margin-top:6px">All requests are routed through Wayfare's hosted LLM keys — no API key required from you. Trigger.dev tasks (crawl, sync) are also hosted on our account, so the assistant can fire them and stream results back to this page in real time.</div>
           </div>
           <div class="form-row">
             <label class="checkbox-pill" id="pill-operator"><input type="checkbox" id="set-operator" /> Show operator link (control center)</label>

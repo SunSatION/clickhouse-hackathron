@@ -107,8 +107,7 @@ export function deleteUserKey(userId: string): boolean {
 
 export function resolveCredentials(userId?: string): { provider: string; apiKey: string; model?: string; source: "byok" | "env" | "none" } {
   if (userId) {
-    const entry = getUserKey(userId);
-    if (entry) return { provider: entry.provider, apiKey: entry.apiKey, model: entry.model, source: "byok" };
+    log.warn("BYOK is disabled — ignoring stored key for user", { userId });
   }
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) return { provider: "openai", apiKey: openaiKey, model: process.env.OPENAI_MODEL, source: "env" };
@@ -116,5 +115,7 @@ export function resolveCredentials(userId?: string): { provider: string; apiKey:
   if (anthropicKey) return { provider: "anthropic", apiKey: anthropicKey, model: process.env.ANTHROPIC_MODEL, source: "env" };
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   if (openrouterKey) return { provider: "openrouter", apiKey: openrouterKey, model: process.env.OPENROUTER_MODEL, source: "env" };
+  const minimaxKey = process.env.MINIMAX_API_KEY;
+  if (minimaxKey) return { provider: "minimax", apiKey: minimaxKey, model: process.env.MINIMAX_MODEL || "MiniMax-Text-01", source: "env" };
   return { provider: "openai", apiKey: "", source: "none" };
 }
