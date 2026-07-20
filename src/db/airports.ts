@@ -1,8 +1,6 @@
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-
 import { getClickHouse } from "./clickhouse";
 import { logger } from "../lib/logger";
+import airportsData from "../../public/data/airports.json";
 
 const log = logger("src/db/airports.ts");
 
@@ -26,25 +24,11 @@ interface AirportIndex {
 let cache: Map<string, Airport> | null = null;
 let allCache: Airport[] | null = null;
 
-function airportsJsonPath(): string {
-  return join(import.meta.dirname, "..", "..", "public", "data", "airports.json");
-}
-
-function loadFromDisk(): AirportIndex {
-  const path = airportsJsonPath();
-  if (!existsSync(path)) {
-    throw new Error(
-      `airports.json not found at ${path} — run: npx tsx scripts/build-airports-json.ts`,
-    );
-  }
-  const raw = readFileSync(path, "utf8");
-  return JSON.parse(raw) as AirportIndex;
-}
+const airportsIndex = airportsData as AirportIndex;
 
 export function listAllAirports(): Airport[] {
   if (allCache) return allCache;
-  const data = loadFromDisk();
-  allCache = data.airports;
+  allCache = airportsIndex.airports;
   cache = new Map(allCache.map((a) => [a.iata, a]));
   log.info("Loaded airports dataset", { count: allCache.length });
   return allCache;
