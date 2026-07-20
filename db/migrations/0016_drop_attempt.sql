@@ -59,8 +59,10 @@ INSERT INTO crawl_progress_v2
     updated_at
   FROM crawl_progress;
 
--- Step 3: atomic swap
-RENAME TABLE crawl_progress TO crawl_progress_old, crawl_progress_v2 TO crawl_progress;
+-- Step 3: atomic swap (split into two renames — CH Cloud Shared mode
+-- disallows multi-table RENAME in one statement).
+RENAME TABLE crawl_progress TO crawl_progress_old;
+RENAME TABLE crawl_progress_v2 TO crawl_progress;
 
 -- Step 4: drop the old physical table
 DROP TABLE crawl_progress_old;

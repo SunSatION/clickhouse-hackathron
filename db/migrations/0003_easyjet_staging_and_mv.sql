@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS easyjet_listings
   destination_iata LowCardinality(String),
 
   departure_date   Date,
-  departure_datetime DateTime DEFAULT toDateTime('00:00:00'),
+  departure_datetime DateTime DEFAULT toDateTime(0),
   arrival_datetime   Nullable(DateTime),
 
   currency         LowCardinality(String),
@@ -38,7 +38,7 @@ SELECT
   destination_iata,
   '' AS flight_number,
   departure_date,
-  CAST(toDateTime('00:00:00'), 'DateTime') AS departure_datetime,
+  CAST(toDateTime(0), 'DateTime') AS departure_datetime,
   CAST(NULL, 'Nullable(DateTime)') AS arrival_datetime,
   CAST(NULL, 'Nullable(UInt16)') AS duration_minutes,
   currency,

@@ -52,11 +52,16 @@ INSERT INTO crawl_progress_new
     started_at,
     completed_at,
     1 AS attempt,
-    now() AS inserted_at
+    now() AS inserted_at,
+    now() AS updated_at
   FROM crawl_progress;
 
--- Step 3: swap old and new tables atomically
-RENAME TABLE crawl_progress TO crawl_progress_old, crawl_progress_new TO crawl_progress;
+-- Step 3: swap old and new tables (CH Cloud Shared mode disallows
+-- multi-table RENAME in one statement, so split into two atomic renames.
+-- Brief window where neither name points at the table; OK because
+-- migration runs out-of-band and crawlers are concurrencyLimit:1).
+RENAME TABLE crawl_progress TO crawl_progress_old;
+RENAME TABLE crawl_progress_new TO crawl_progress;
 
 -- Step 4: clean up old table
 DROP TABLE crawl_progress_old;

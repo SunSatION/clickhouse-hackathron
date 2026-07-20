@@ -34,7 +34,7 @@ INNER JOIN (
     destination_iata,
     date_from,
     date_to,
-    max(inserted_at) AS max_inserted_at
+    max(attempt) AS max_attempt
   FROM crawl_progress
   GROUP BY
     airline,

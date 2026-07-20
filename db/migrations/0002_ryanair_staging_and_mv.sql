@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ryanair_listings
 
   flight_number    LowCardinality(String) DEFAULT '',
   departure_date   Date,
-  departure_datetime DateTime DEFAULT toDateTime('00:00:00'),
+  departure_datetime DateTime DEFAULT toDateTime(0),
   arrival_datetime   Nullable(DateTime),
   duration_minutes Nullable(UInt16),
 
