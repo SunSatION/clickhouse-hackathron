@@ -51,7 +51,7 @@
     airports: [],
     airportsByIata: new Map(),
     markers: new Map(),
-    destinations: loadDestinations(),
+    destinations: [],
     faresAirport: null,
     itineraries: [],
     activeItineraryId: null,
