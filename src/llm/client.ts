@@ -256,9 +256,16 @@ async function callProvider(provider: string, args: CallArgs): Promise<{ assista
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`LLM HTTP ${res.status}: ${(await res.text()).slice(0, 500)}`);
-    const data = (await res.json()) as { choices: Array<{ message: ChatMessage }> };
+    const data = (await res.json()) as { choices: Array<{ message: ChatMessage & { tool_calls?: Array<Record<string, unknown>> } }> };
     const message = data.choices[0]?.message;
     if (!message) throw new Error("LLM returned no choices");
+    if (Array.isArray(message.tool_calls)) {
+      message.tool_calls = message.tool_calls.map((c) => ({
+        id: String(c.id ?? ""),
+        name: String((c.function as { name?: string } | undefined)?.name ?? c.name ?? ""),
+        arguments: String((c.function as { arguments?: string } | undefined)?.arguments ?? c.arguments ?? "{}"),
+      }));
+    }
     return { assistantMessage: message };
   }
 
