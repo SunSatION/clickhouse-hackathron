@@ -16,53 +16,37 @@ interface AirportWithRouteCount extends Airport {
   destinationCount: number;
 }
 
-const CACHE_TTL_MS = 60_000;
-let cachedAirports: { data: Airport[]; ts: number } | null = null;
+let cachedAirports: Airport[] | null = null;
 
-async function getAirports(): Promise<Airport[]> {
-  const now = Date.now();
-  if (cachedAirports && now - cachedAirports.ts < CACHE_TTL_MS) {
-    return cachedAirports.data;
-  }
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://clickhouse-hackathron.vercel.app";
-  const ac = new AbortController();
-  const timeout = setTimeout(() => ac.abort(), 5000);
-  try {
-    const res = await fetch(`${baseUrl}/data/airports.json`, {
-      signal: ac.signal,
-      headers: { Accept: "application/json" },
-    });
-    clearTimeout(timeout);
-    if (!res.ok) throw new Error(`airports.json status: ${res.status}`);
-    const json = await res.json() as { airports?: Airport[]; count?: number };
-    const airports = json.airports ?? [];
-    cachedAirports = { data: airports, ts: now };
-    return airports;
-  } catch (e) {
-    clearTimeout(timeout);
-    if (cachedAirports) return cachedAirports.data;
-    throw e;
-  }
+async function loadAirports(): Promise<Airport[]> {
+  if (cachedAirports) return cachedAirports;
+  const baseUrl = `https://${process.env.VERCEL_URL ?? "clickhouse-hackathron.vercel.app"}`;
+  const res = await fetch(`${baseUrl}/data/airports.json`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`airports.json fetch failed: ${res.status}`);
+  const json = await res.json() as { airports: Airport[] };
+  cachedAirports = json.airports;
+  return cachedAirports;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const airline = (typeof req.query.airline === "string" && req.query.airline)
+    const airline = typeof req.query.airline === "string" && req.query.airline
       ? req.query.airline
       : "Ryanair";
 
-    const all = await getAirports();
+    const all = await loadAirports();
     const rows: AirportWithRouteCount[] = all.map((a) => ({
       ...a,
       originCount: 0,
       destinationCount: 0,
     }));
 
-    res.setHeader("Cache-Control", "public, max-age=60");
+    res.setHeader("Cache-Control", "public, max-age=300");
     res.json({ ok: true, airline, count: rows.length, airports: rows });
   } catch (err) {
+    console.error("airports handler error:", err);
     res.status(500).json({ ok: false, error: String(err) });
   }
 }
