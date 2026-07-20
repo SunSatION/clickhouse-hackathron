@@ -70,6 +70,15 @@ These are settled conventions. **Do not deviate without an explicit user request
 
 - When dropping or replacing tables: always migrate data first, then drop. Use `RENAME TABLE` (atomic, preserves all data) or `INSERT INTO new SELECT * FROM old` + `DROP old`. Never `CREATE new` + `DROP old` without migrating data first. This applies to all tables — OTEL, flights, or anything else.
 
+### 8. Deploy contract
+
+- **Trigger.dev deploys are gated on `main`.** `.github/workflows/deploy-trigger-prod.yml` runs on push to `main` (filtered to `src/trigger/**`, `src/airlines/**`, `src/db/**`, `src/llm/**`, `src/lib/**`, `src/config/**`, `src/observability/**`, `trigger.config.ts`, `package.json`). Manual dispatch from the Actions tab is also wired.
+- **The deploy reads `TRIGGER_ACCESS_TOKEN` from a GitHub Actions secret.** Create the token at <https://cloud.trigger.dev/account/tokens> and store it in the repo's Actions secrets. Never commit it.
+- **Local manual deploys** use `npm run deploy:trigger` (prod) or `npm run deploy:trigger:staging`. They pick up `TRIGGER_ACCESS_TOKEN` from `.env` or the shell.
+- **Prod env vars** (`OPENAI_API_KEY`, `RYANAIR_XID_COOKIE`, `RYANAIR_CORRELATION_ID`, `CLICKHOUSE_URL`, …) live in the Trigger dashboard (project → Environments → prod → Vars) and on the frontend host (Vercel env or VPS `.env`). Never put them in the repo.
+- **The frontend** (`src/frontend/server.ts`) is NOT deployed via Trigger. It is served from Vercel (`api/` wrappers + `vercel.json`) or a VPS, separately. The deploy workflow does not touch it.
+- **Vercel partial-implementation reminder:** `api/` only contains partial Vercel re-implementations today. `src/frontend/server.ts` is the source of truth and runs externally; do not edit `api/map/*` as if it were authoritative.
+
 ## Observability (ClickStack)
 
 This project pushes **logs, traces and metrics** into ClickStack by writing
