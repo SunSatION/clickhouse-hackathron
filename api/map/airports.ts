@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getClickHouse } from "../../src/db/clickhouse";
 
 interface Airport {
   iata: string;
@@ -17,58 +16,28 @@ interface AirportWithRouteCount extends Airport {
   destinationCount: number;
 }
 
+async function fetchAirportsJson(): Promise<Airport[]> {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : `http://localhost:${process.env.PORT ?? 3000}`;
+  const res = await fetch(`${baseUrl}/data/airports.json`);
+  if (!res.ok) throw new Error(`Failed to fetch airports.json: ${res.status}`);
+  const data = await res.json() as { airports: Airport[] };
+  return data.airports;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const airline = typeof req.query.airline === "string" && req.query.airline
       ? req.query.airline
       : "Ryanair";
+
+    const all = await fetchAirportsJson();
     const code = airline.toUpperCase();
 
-    const ch = getClickHouse();
-
-    const routesResult = await ch.query({
-      query: `
-        SELECT DISTINCT origin_iata AS iata
-        FROM airline_routes FINAL
-        WHERE airline_code = {code:String}
-        UNION ALL
-        SELECT DISTINCT destination_iata AS iata
-        FROM airline_routes FINAL
-        WHERE airline_code = {code:String}
-      `,
-      query_params: { code },
-      format: "JSONEachRow",
-    });
-    const routeRows = (await routesResult.json()) as Array<{ iata: string }>;
-    const iataSet = new Set(routeRows.map((r) => String(r.iata).toUpperCase()));
-
-    const airportsResult = await ch.query({
-      query: `
-        SELECT iata, name, city, country, region, lat, lon, type
-        FROM airports
-        WHERE iata IN {iataSet:Array(String)}
-      `,
-      query_params: { iataSet: Array.from(iataSet) },
-      format: "JSONEachRow",
-    });
-    const airportRows = (await airportsResult.json()) as Airport[];
-
-    const originResult = await ch.query({
-      query: `
-        SELECT origin_iata AS iata, count() AS n
-        FROM airline_routes FINAL
-        WHERE airline_code = {code:String}
-        GROUP BY origin_iata
-      `,
-      query_params: { code },
-      format: "JSONEachRow",
-    });
-    const originRows = (await originResult.json()) as Array<{ iata: string; n: number }>;
-    const originCountMap = new Map(originRows.map((r) => [String(r.iata).toUpperCase(), Number(r.n)]));
-
-    const rows: AirportWithRouteCount[] = airportRows.map((a) => ({
+    const rows: AirportWithRouteCount[] = all.map((a) => ({
       ...a,
-      originCount: originCountMap.get(a.iata.toUpperCase()) ?? 0,
+      originCount: 0,
       destinationCount: 0,
     }));
 
