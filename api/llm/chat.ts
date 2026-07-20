@@ -1,7 +1,24 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { z } from "zod";
 import { tasks } from "@trigger.dev/sdk";
 
-import type { llmChatAgent } from "../../src/trigger/llm-chat-agent";
+const LlmChatPayload = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["system", "user", "assistant", "tool"]),
+    content: z.string().nullable(),
+    tool_calls: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      arguments: z.string(),
+    })).optional(),
+    tool_call_id: z.string().optional(),
+    name: z.string().optional(),
+  })),
+  model: z.string().optional(),
+  maxIterations: z.number().int().min(1).max(10).default(6),
+});
+
+type LlmChatPayloadT = z.infer<typeof LlmChatPayload>;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -18,10 +35,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const maxIterations = Math.max(1, Math.min(10, Number(req.body?.maxIterations ?? 6)));
 
   try {
-    const handle = await tasks.trigger<typeof llmChatAgent>("llm-chat-agent", {
+    const payload: LlmChatPayloadT = {
       messages,
       maxIterations,
-    });
+    };
+    const handle = await tasks.trigger<LlmChatPayloadT>("llm-chat-agent", payload);
 
     res.json({
       ok: true,
