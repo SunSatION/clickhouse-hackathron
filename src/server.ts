@@ -1,1 +1,2 @@
-export { app as default } from "./frontend/server.ts";
+import { app } from "./frontend/server";
+export default app;
