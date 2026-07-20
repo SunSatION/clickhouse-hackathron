@@ -1156,10 +1156,14 @@ app.post("/api/scripts/smoke-observability", async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Frontend listening on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Frontend listening on http://localhost:${PORT}`);
+  });
+}
+
+export { app };
 
 /* ====================================================== */
 /* Map UI endpoints                                       */

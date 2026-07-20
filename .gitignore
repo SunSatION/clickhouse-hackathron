@@ -1,5 +1,7 @@
 .trigger
 .env
+.env.prod
+.env.*.local
 node_modules
 dist
 .DS_Store
