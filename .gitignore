@@ -1,7 +1,9 @@
 .trigger
 .env
 .env.prod
+.env.cloud
 .env.*.local
+.env.*
 node_modules
 dist
 .DS_Store
