@@ -1,5 +1,7 @@
-module.exports = function handler(req, res) {
-  res.statusCode = 200;
-  res.setHeader("content-type", "application/json");
-  res.end(JSON.stringify({ ok: true, route: "health" }));
+module.exports = async function handler(req, res) {
+  try {
+    res.status(200).json({ ok: true, method: req.method });
+  } catch (e) {
+    res.status(500).end("err: " + e.message);
+  }
 };
