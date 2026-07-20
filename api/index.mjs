@@ -1,3 +1,4 @@
+import { app } from "../src/frontend/server.js";
 export default function handler(req, res) {
-  res.status(200).json({ ok: true, via: "plain-node" });
+  return app(req, res);
 }
