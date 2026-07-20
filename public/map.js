@@ -272,7 +272,7 @@
     }
     const bounds = L.latLngBounds(allPoints);
     const fittingZoom = map.getBoundsZoom(bounds, false, [80, 80]);
-    const zoom = Math.min(Math.max(fittingZoom, 6), 16);
+    const zoom = Math.min(Math.max(fittingZoom - 1, 4), 15);
     const center = bounds.getCenter();
     map.flyTo([center.lat, center.lng], zoom, { duration: 1 });
   }
