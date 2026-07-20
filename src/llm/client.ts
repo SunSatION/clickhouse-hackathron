@@ -239,7 +239,7 @@ async function callProvider(provider: string, args: CallArgs): Promise<{ assista
     const url = provider === "openrouter"
       ? "https://openrouter.ai/api/v1/chat/completions"
       : provider === "minimax"
-      ? "https://api.minimax.chat/v1/chat/completions"
+      ? "https://api.minimax.io/v1/chat/completions"
       : "https://api.openai.com/v1/chat/completions";
     const body = {
       model: args.model,
