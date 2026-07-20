@@ -145,7 +145,8 @@
   /* ====================================================== */
   async function loadAirports() {
     try {
-      const r = await getJson(`/api/map/airports?airline=${encodeURIComponent(state.airline)}`);
+      const url = `/data/airports.json`;
+      const r = await getJson(url);
       state.airports = r.airports || [];
       state.airportsByIata = new Map(state.airports.map((a) => [a.iata, a]));
       drawPins();
