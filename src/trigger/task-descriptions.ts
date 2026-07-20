@@ -83,6 +83,13 @@ export const TASK_DESCRIPTIONS = {
     params: ["airline", "originIata", "destinationIata", "dateFrom", "dateTo", "force?"],
     eta: "~25s per destination at default rate (1 FARFND call)",
   },
+  "llm-chat-agent": {
+    label: "Wayfare AI chat agent",
+    summary:
+      "Runs the Wayfare travel-planning chat agent: an LLM (OpenAI/Anthropic) with function-calling tools for airport search, fare lookup, round-trip planning, multi-stop itineraries, crawl triggering, and favorites. Emits structured log events for each LLM turn, tool call, and tool result.",
+    params: ["messages[]", "model?", "maxIterations?"],
+    eta: "Variable — depends on LLM latency and number of tool calls (typically seconds to minutes)",
+  },
   "crawl-airlines-six-hours": {
     label: "Scheduled: crawl all airlines (every 6h)",
     summary:
