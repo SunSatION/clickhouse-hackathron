@@ -267,11 +267,17 @@
     }
     if (allPoints.length === 0) return;
     if (allPoints.length === 1) {
-      map.flyTo(allPoints[0], 12, { duration: 1 });
+      map.flyTo(allPoints[0], 6, { duration: 1 });
       return;
     }
+    const lats = allPoints.map((p) => p[0]);
+    const lons = allPoints.map((p) => p[1]);
+    const centroidLat = lats.reduce((s, v) => s + v, 0) / lats.length;
+    const centroidLon = lons.reduce((s, v) => s + v, 0) / lons.length;
     const bounds = L.latLngBounds(allPoints);
-    map.flyToBounds(bounds, { padding: [80, 80], maxZoom: 14, duration: 1 });
+    const fittingZoom = map.getBoundsZoom(bounds, false, [80, 80]);
+    const zoom = Math.min(fittingZoom, 14);
+    map.flyTo([centroidLat, centroidLon], zoom, { duration: 1 });
   }
 
   function toggleDestination(iata) {
