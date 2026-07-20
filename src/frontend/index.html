@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8fafc" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Hackathron Crawler — Control Center</title>
     <style>
       :root {
@@ -76,6 +77,7 @@
         font: 600 13px inherit; color: var(--muted);
         cursor: pointer; transition: all 120ms ease;
         display: inline-flex; align-items: center; gap: 6px;
+        text-decoration: none;
       }
       .tab-btn:hover { background: var(--surface-2); color: var(--fg); }
       .tab-btn.active { background: var(--accent-soft); color: var(--accent); }
@@ -222,9 +224,9 @@
       button.warn:hover:not(:disabled) { background: #d97706; }
       button.danger { background: var(--err); }
       button.danger:hover:not(:disabled) { background: #dc2626; }
-      button.ghost { background: transparent; color: var(--fg-soft); border: 0; padding: 6px 8px; font-weight: 500; }
-      button.ghost:hover:not(:disabled) { background: var(--surface-2); }
-      button.small { padding: 6px 10px; font-size: 12px; }
+      .ghost { background: transparent; color: var(--fg-soft); border: 0; padding: 6px 8px; border-radius: var(--radius-sm); font-weight: 500; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+      .ghost:hover { background: var(--surface-2); }
+      button.small, a.small { padding: 6px 10px; font-size: 12px; }
 
       details.advanced { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px; }
       details.advanced > summary {
@@ -410,7 +412,7 @@
         padding: 8px 14px;
         font: 600 13px inherit; color: var(--muted);
         cursor: pointer; border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
+        margin-bottom: -1px; text-decoration: none;
       }
       .subtab:hover { color: var(--fg); }
       .subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -482,13 +484,13 @@
           Hackathron <span style="color: var(--muted); font-weight: 500; margin-left: 4px;">control center</span>
         </div>
         <nav class="tabs" role="tablist">
-          <button class="tab-btn active" data-view="dashboard" role="tab">Dashboard</button>
-          <button class="tab-btn" data-view="trigger" role="tab">Trigger</button>
-          <button class="tab-btn" data-view="queue" role="tab">
+          <a class="tab-btn active" href="?view=dashboard" data-route data-view="dashboard" role="tab">Dashboard</a>
+          <a class="tab-btn" href="?view=trigger&amp;tab=single" data-route data-view="trigger" role="tab">Trigger</a>
+          <a class="tab-btn" href="?view=queue&amp;status=pending" data-route data-view="queue" role="tab">
             Queue <span class="badge" id="nav-queue-count">…</span>
-          </button>
-          <button class="tab-btn" data-view="traces" role="tab">Traces</button>
-          <button class="tab-btn" data-view="maintenance" role="tab">Maintenance</button>
+          </a>
+          <a class="tab-btn" href="?view=traces" data-route data-view="traces" role="tab">Traces</a>
+          <a class="tab-btn" href="?view=maintenance" data-route data-view="maintenance" role="tab">Maintenance</a>
         </nav>
         <div class="topbar-right">
           <span id="health-pill" class="pill"><span class="dot"></span><span>connecting…</span></span>
@@ -604,11 +606,11 @@
           </div>
 
           <div class="subtabs" role="tablist">
-            <button class="subtab active" data-sub="single">Single origin</button>
-            <button class="subtab" data-sub="full">Full scan</button>
-            <button class="subtab" data-sub="queue">Seed &amp; run queue</button>
-            <button class="subtab" data-sub="item">Run one pending item</button>
-            <button class="subtab" data-sub="sync">Sync Ryanair routes</button>
+            <a class="subtab active" href="?view=trigger&amp;tab=single" data-route data-sub="single" role="tab">Single origin</a>
+            <a class="subtab" href="?view=trigger&amp;tab=full" data-route data-sub="full" role="tab">Full scan</a>
+            <a class="subtab" href="?view=trigger&amp;tab=queue" data-route data-sub="queue" role="tab">Seed &amp; run queue</a>
+            <a class="subtab" href="?view=trigger&amp;tab=item" data-route data-sub="item" role="tab">Run one pending item</a>
+            <a class="subtab" href="?view=trigger&amp;tab=sync" data-route data-sub="sync" role="tab">Sync Ryanair routes</a>
           </div>
 
           <div id="trigger-tasks-meta" hidden></div>
@@ -774,6 +776,38 @@
           <!-- Run a single pending item -->
           <div class="subview" data-sub="item">
             <div class="card">
+              <h3>Resume worker on an existing run <span class="status executing">Trigger.dev</span></h3>
+              <p class="desc" data-desc>
+                Triggers the <code>crawl-queue-worker</code> task with an existing <code>crawlRunId</code>.
+                No re-seeding &mdash; the worker only drains pending rows already stamped with that run id
+                (plus any legacy empty-id rows as a fallback). Concurrency=1 + the airline Pacer keep the
+                effective rate unchanged.
+              </p>
+              <div class="row-3">
+                <div class="field">
+                  <label for="rw-airline">Airline <span class="req">*</span></label>
+                  <select id="rw-airline">
+                    <option value="Ryanair" selected>Ryanair</option>
+                    <option value="EasyJet">EasyJet</option>
+                  </select>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                  <label for="rw-runid">Existing run id (UUID) <span class="req">*</span></label>
+                  <input id="rw-runid" type="text" pattern="[0-9a-fA-F-]{36}" placeholder="paste crawl_run_id from a previous run" />
+                </div>
+              </div>
+              <div class="row-3">
+                <div class="field"><label for="rw-iter">Max iterations</label><input id="rw-iter" type="number" min="1" max="2000" value="1500" /></div>
+                <div class="field"><label for="rw-delay">requestDelayMs</label><input id="rw-delay" type="number" min="0" value="20000" /></div>
+                <div class="field"><label for="rw-jitter">requestJitterMs</label><input id="rw-jitter" type="number" min="0" value="10000" /></div>
+              </div>
+              <div class="actions">
+                <button id="btn-rw-run">Resume worker (no seed)</button>
+              </div>
+              <pre class="output" id="rw-output">// No run yet.</pre>
+            </div>
+
+            <div class="card">
               <h3>Run one pending queue item <span class="status executing">Trigger.dev</span></h3>
               <p class="desc" data-desc>Loading…</p>
               <div class="row-3">
@@ -878,11 +912,11 @@
           <div class="grid-4" id="queue-kpis"></div>
 
           <div class="card" style="margin-top: 16px;">
-            <div class="subtabs">
-              <button class="subtab active" data-queue-status="pending">Pending</button>
-              <button class="subtab" data-queue-status="processing">Processing</button>
-              <button class="subtab" data-queue-status="completed">Completed</button>
-              <button class="subtab" data-queue-status="failed">Failed</button>
+            <div class="subtabs" role="tablist">
+              <a class="subtab active" href="?view=queue&amp;status=pending" data-route data-queue-status="pending" role="tab">Pending</a>
+              <a class="subtab" href="?view=queue&amp;status=processing" data-route data-queue-status="processing" role="tab">Processing</a>
+              <a class="subtab" href="?view=queue&amp;status=completed" data-route data-queue-status="completed" role="tab">Completed</a>
+              <a class="subtab" href="?view=queue&amp;status=failed" data-route data-queue-status="failed" role="tab">Failed</a>
             </div>
             <div class="table-toolbar">
               <input id="queue-filter-origin" type="text" placeholder="Filter origin…" maxlength="3" style="text-transform:uppercase;width:120px" />
@@ -1243,29 +1277,162 @@
       /* ====================================================== */
       /* Tabs                                                     */
       /* ====================================================== */
-      document.querySelectorAll(".tab-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const view = btn.dataset.view;
-          document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
-          document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
-          if (view === "queue") refreshQueue();
-          if (view === "traces") $("trace-input")?.focus();
+      const VALID_VIEWS = new Set(["dashboard", "trigger", "queue", "traces", "maintenance"]);
+      const VALID_TRIGGER_TABS = new Set(["single", "full", "queue", "item", "sync"]);
+      const VALID_QUEUE_STATUSES = new Set(["pending", "processing", "completed", "failed"]);
+      const VALID_AIRLINES = new Set(["Ryanair", "EasyJet"]);
+      const VALID_TRACE_WINDOWS = new Set(["60", "1440", "10080", "43200"]);
+      const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+      function routeFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const requestedView = params.get("view") || "dashboard";
+        const requestedTab = params.get("tab") || "single";
+        const requestedStatus = params.get("status") || "pending";
+        const requestedAirline = params.get("airline") || "Ryanair";
+        const requestedOrigin = (params.get("origin") || "").trim().toUpperCase();
+        const requestedTrace = (params.get("trace") || "").trim();
+        const requestedWindow = params.get("window") || "1440";
+        return {
+          view: VALID_VIEWS.has(requestedView) ? requestedView : "dashboard",
+          tab: VALID_TRIGGER_TABS.has(requestedTab) ? requestedTab : "single",
+          status: VALID_QUEUE_STATUSES.has(requestedStatus) ? requestedStatus : "pending",
+          airline: VALID_AIRLINES.has(requestedAirline) ? requestedAirline : "Ryanair",
+          origin: /^[A-Z]{1,3}$/.test(requestedOrigin) ? requestedOrigin : "",
+          dateFrom: DATE_RE.test(params.get("dateFrom") || "") ? params.get("dateFrom") : "",
+          dateTo: DATE_RE.test(params.get("dateTo") || "") ? params.get("dateTo") : "",
+          trace: UUID_RE.test(requestedTrace) || TRACE_RE.test(requestedTrace) ? requestedTrace : "",
+          windowMinutes: VALID_TRACE_WINDOWS.has(requestedWindow) ? requestedWindow : "1440",
+        };
+      }
+
+      function routeUrl(route) {
+        const params = new URLSearchParams({ view: route.view });
+        if (route.view === "trigger") params.set("tab", route.tab || "single");
+        if (route.view === "queue") {
+          params.set("status", route.status || "pending");
+          params.set("airline", route.airline || "Ryanair");
+          if (route.origin) params.set("origin", route.origin);
+          if (route.dateFrom) params.set("dateFrom", route.dateFrom);
+          if (route.dateTo) params.set("dateTo", route.dateTo);
+        }
+        if (route.view === "traces") {
+          if (route.trace) params.set("trace", route.trace);
+          params.set("window", route.windowMinutes || "1440");
+        }
+        return `${window.location.pathname}?${params.toString()}`;
+      }
+
+      function routeForView(view, overrides = {}) {
+        if (view === "trigger") {
+          const tab = overrides.tab || document.querySelector("#view-trigger .subtab.active[data-sub]")?.dataset.sub || "single";
+          return routeUrl({ view, tab });
+        }
+        if (view === "queue") {
+          const status = overrides.status || document.querySelector("#view-queue .subtab.active[data-queue-status]")?.dataset.queueStatus || "pending";
+          const airline = overrides.airline || $("queue-airline").value || "Ryanair";
+          const origin = (overrides.origin ?? $("queue-filter-origin").value).trim().toUpperCase();
+          const dateFrom = overrides.dateFrom ?? $("queue-filter-date-from").value;
+          const dateTo = overrides.dateTo ?? $("queue-filter-date-to").value;
+          return routeUrl({ view, status, airline, origin, dateFrom, dateTo });
+        }
+        if (view === "traces") {
+          const trace = (overrides.trace ?? $("trace-input").value).trim();
+          const windowMinutes = overrides.windowMinutes || $("trace-window").value || "1440";
+          return routeUrl({ view, trace, windowMinutes });
+        }
+        return routeUrl({ view });
+      }
+
+      function traceRouteUrl(trace) {
+        return routeForView("traces", { trace });
+      }
+
+      function syncRouteLinks() {
+        document.querySelectorAll(".tab-btn[data-view]").forEach((link) => {
+          link.href = routeForView(link.dataset.view);
         });
+        document.querySelectorAll("#view-trigger .subtab[data-sub]").forEach((link) => {
+          link.href = routeForView("trigger", { tab: link.dataset.sub });
+        });
+        document.querySelectorAll("#view-queue .subtab[data-queue-status]").forEach((link) => {
+          link.href = routeForView("queue", { status: link.dataset.queueStatus });
+        });
+      }
+
+      function pushRouteUrl(url) {
+        const target = new URL(url, window.location.href);
+        const next = `${target.pathname}${target.search}${target.hash}`;
+        const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (next !== current) window.history.pushState(null, "", next);
+      }
+
+      async function applyRoute(loadData = true) {
+        const route = routeFromUrl();
+        document.querySelectorAll(".tab-btn[data-view]").forEach((link) => {
+          const active = link.dataset.view === route.view;
+          link.classList.toggle("active", active);
+          link.setAttribute("aria-selected", String(active));
+        });
+        document.querySelectorAll(".view").forEach((view) => {
+          view.classList.toggle("active", view.id === `view-${route.view}`);
+        });
+
+        if (route.view === "trigger") {
+          document.querySelectorAll("#view-trigger .subtab[data-sub]").forEach((link) => {
+            const active = link.dataset.sub === route.tab;
+            link.classList.toggle("active", active);
+            link.setAttribute("aria-selected", String(active));
+          });
+          document.querySelectorAll("#view-trigger .subview[data-sub]").forEach((view) => {
+            view.classList.toggle("active", view.dataset.sub === route.tab);
+          });
+        }
+
+        if (route.view === "queue") {
+          document.querySelectorAll("#view-queue .subtab[data-queue-status]").forEach((link) => {
+            const active = link.dataset.queueStatus === route.status;
+            link.classList.toggle("active", active);
+            link.setAttribute("aria-selected", String(active));
+          });
+          $("queue-airline").value = route.airline;
+          $("queue-filter-origin").value = route.origin;
+          $("queue-filter-date-from").value = route.dateFrom;
+          $("queue-filter-date-to").value = route.dateTo;
+        }
+
+        if (route.view === "traces") {
+          $("trace-input").value = route.trace;
+          $("trace-window").value = route.windowMinutes;
+          if (!route.trace) $("trace-result").classList.add("hidden");
+        }
+
+        syncRouteLinks();
+        if (!loadData) return;
+        if (route.view === "queue") await refreshQueue();
+        if (route.view === "traces") {
+          if (route.trace) await resolveTrace(false);
+          else $("trace-input")?.focus();
+        }
+      }
+
+      async function navigateTo(url) {
+        pushRouteUrl(url);
+        await applyRoute();
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const link = target?.closest("a[data-route]");
+        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (link.origin !== window.location.origin) return;
+        event.preventDefault();
+        event.stopPropagation();
+        navigateTo(link.href).catch((error) => toast.error("Navigation failed", String(error)));
       });
 
-      document.querySelectorAll(".subtab").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const parent = btn.closest("[role='tabpanel']");
-          if (!parent) return;
-          const tablist = btn.parentElement;
-          tablist.querySelectorAll(".subtab").forEach((b) => b.classList.toggle("active", b === btn));
-          parent.querySelectorAll(".subview").forEach((sv) => {
-            const subMatch = btn.dataset.sub !== undefined && sv.dataset.sub === btn.dataset.sub;
-            const queueMatch = btn.dataset.queueStatus !== undefined && sv.dataset.queueStatus === btn.dataset.queueStatus;
-            sv.classList.toggle("active", subMatch || queueMatch);
-          });
-          if (btn.dataset.queueStatus) refreshQueue();
-        });
+      window.addEventListener("popstate", () => {
+        applyRoute().catch((error) => toast.error("Navigation failed", String(error)));
       });
 
       /* ====================================================== */
@@ -1400,7 +1567,7 @@
               <td class="muted">${escapeHtml(fmtTs(r.startedAt || r.createdAt))}</td>
               <td>${escapeHtml(r.currentOrigin ? r.currentOrigin + (r.currentDestination ? "→" + r.currentDestination : "") : "—")}</td>
               <td class="actions">
-                <button class="ghost small js-open-trace" title="Resolve trace">Trace</button>
+                <a class="ghost small" href="${escapeHtml(traceRouteUrl(runId))}" data-route title="Resolve trace">Trace</a>
                 ${["QUEUED","EXECUTING"].includes((r.status || "").toUpperCase()) ? `<button class="danger small js-cancel-run" title="Cancel this run" data-runid="${escapeHtml(r.id)}">Cancel</button>` : ""}
               </td>
             </tr>
@@ -1408,14 +1575,6 @@
               <td colspan="5">${isExpanded ? `<div class="run-detail-loading">Refreshing…</div>` : `<div class="run-detail-loading">Click row to load run details…</div>`}</td>
             </tr>`;
         }).join("");
-        tbody.querySelectorAll(".js-open-trace").forEach((b) => {
-          b.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            const row = ev.target.closest("tr");
-            const runId = row.dataset.crawlrunid || row.dataset.runid;
-            openTraceFor(runId);
-          });
-        });
         tbody.querySelectorAll(".js-cancel-run").forEach((b) => {
           b.addEventListener("click", async (ev) => {
             ev.stopPropagation();
@@ -1443,7 +1602,8 @@
           });
         });
         tbody.querySelectorAll(".js-run-row").forEach((row) => {
-          row.addEventListener("click", async () => {
+          row.addEventListener("click", async (event) => {
+            if (event.target instanceof Element && event.target.closest("a, button")) return;
             const runId = row.dataset.runid;
             const detail = tbody.querySelector(`.js-run-detail[data-runid="${runId}"]`);
             if (!detail) return;
@@ -1617,7 +1777,7 @@
               <td class="muted">${escapeHtml(fmtTs(r.startedAt))}</td>
               <td>${escapeHtml(origin)}</td>
               <td class="actions">
-                <button class="ghost small js-open-trace" title="Resolve trace">Trace</button>
+                <a class="ghost small" href="${escapeHtml(traceRouteUrl(crawlRunId))}" data-route title="Resolve trace">Trace</a>
                 <button class="danger small js-cancel-run" title="Cancel this run" data-runid="${escapeHtml(r.id)}">Cancel</button>
               </td>
             </tr>
@@ -1625,14 +1785,6 @@
               <td colspan="7"><div class="run-detail-loading">Click row to load run details…</div></td>
             </tr>`;
         }).join("");
-        tbody.querySelectorAll(".js-open-trace").forEach((b) => {
-          b.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            const row = ev.target.closest("tr");
-            const runId = row.dataset.crawlrunid || row.dataset.runid;
-            openTraceFor(runId);
-          });
-        });
         tbody.querySelectorAll(".js-cancel-run").forEach((b) => {
           b.addEventListener("click", async (ev) => {
             ev.stopPropagation();
@@ -1660,7 +1812,8 @@
           });
         });
         tbody.querySelectorAll("tr.js-run-row").forEach((row) => {
-          row.addEventListener("click", async () => {
+          row.addEventListener("click", async (event) => {
+            if (event.target instanceof Element && event.target.closest("a, button")) return;
             const runId = row.dataset.runid;
             const detail = tbody.querySelector(`.js-run-detail[data-runid="${runId}"]`);
             if (!detail) return;
@@ -1732,8 +1885,7 @@
           toast.success(`Run triggered for ${body.origin}`, `crawl_run_id=${r.crawlRunId}`);
           if (r.crawlRunId) {
             const link = $(`single-output-hint`);
-            link.innerHTML = `<a class="muted" href="#" id="single-open-trace">View trace →</a>`;
-            link.querySelector("#single-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+            link.innerHTML = `<a class="muted" href="${escapeHtml(traceRouteUrl(r.crawlRunId))}" data-route>View trace →</a>`;
           }
         } catch (e) { setOutput($("single-output"), String(e), false); toast.error("Run failed", String(e)); }
       });
@@ -1766,8 +1918,7 @@
           setOutput($("scan-output"), r, r.ok);
           toast.success(`Scan triggered`, `${origins.length || "all"} origins`);
           if (r.crawlRunId) {
-            $("scan-output-hint").innerHTML = `<a class="muted" href="#" id="scan-open-trace">View trace →</a>`;
-            $("scan-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+            $("scan-output-hint").innerHTML = `<a class="muted" href="${escapeHtml(traceRouteUrl(r.crawlRunId))}" data-route>View trace →</a>`;
           }
         } catch (e) { setOutput($("scan-output"), String(e), false); toast.error("Scan failed", String(e)); }
       });
@@ -1793,8 +1944,7 @@
           setOutput($("seed-queue-output"), r, r.ok);
           toast.success("Queue seeded", `Worker started — crawl_run_id=${r.crawlRunId}`);
           if (r.crawlRunId) {
-            $("seed-output-hint").innerHTML = `<a class="muted" href="#" id="seed-open-trace">View trace →</a>`;
-            $("seed-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
+            $("seed-output-hint").innerHTML = `<a class="muted" href="${escapeHtml(traceRouteUrl(r.crawlRunId))}" data-route>View trace →</a>`;
           }
           refreshQueue();
         } catch (e) { setOutput($("seed-queue-output"), String(e), false); toast.error("Seed failed", String(e)); }
@@ -1860,9 +2010,8 @@
             const link = document.createElement("div");
             link.className = "muted";
             link.style.marginTop = "6px";
-            link.innerHTML = `<a href="#" id="pi-open-trace">View trace →</a>`;
+            link.innerHTML = `<a href="${escapeHtml(traceRouteUrl(r.crawlRunId))}" data-route>View trace →</a>`;
             hint.parentNode.insertBefore(link, hint.nextSibling);
-            link.querySelector("#pi-open-trace")?.addEventListener("click", (e) => { e.preventDefault(); openTraceFor(r.crawlRunId); });
           }
         } catch (e) {
           setOutput($("pi-output"), String(e), false);
@@ -1875,6 +2024,40 @@
       });
 
       $("seed-airline")?.addEventListener("change", () => loadOriginsDatalist($("seed-airline").value));
+
+      $("btn-rw-run")?.addEventListener("click", async () => {
+        const runId = $("rw-runid").value.trim();
+        if (!/^[0-9a-fA-F-]{36}$/.test(runId)) {
+          toast.warn("Bad run id", "Provide a UUID (with or without dashes).");
+          return;
+        }
+        const body = {
+          airline: $("rw-airline").value,
+          runId,
+          maxIterations: Number($("rw-iter").value),
+          requestDelayMs: Number($("rw-delay").value),
+          requestJitterMs: Number($("rw-jitter").value),
+        };
+        setOutput($("rw-output"), `Resuming worker on run ${runId}…`);
+        try {
+          const r = await postJson("/api/trigger/crawl-queue-worker", body);
+          setOutput($("rw-output"), r, r.ok);
+          if (r.ok) {
+            toast.success("Worker resumed", `crawl_run_id=${r.crawlRunId}`);
+            const hint = $("rw-output");
+            const link = document.createElement("div");
+            link.className = "muted";
+            link.style.marginTop = "6px";
+            link.innerHTML = `<a href="${escapeHtml(traceRouteUrl(r.crawlRunId))}" data-route>View trace →</a>`;
+            hint.parentNode.insertBefore(link, hint.nextSibling);
+          } else {
+            toast.error("Resume failed", r.error);
+          }
+        } catch (e) {
+          setOutput($("rw-output"), String(e), false);
+          toast.error("Resume failed", String(e));
+        }
+      });
 
       /* ====================================================== */
       /* Maintenance buttons                                      */
@@ -1965,7 +2148,6 @@
           $("queue-count").textContent = `${r.count} ${status} item${r.count === 1 ? "" : "s"}`;
           if (r.items.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No items.</td></tr>`; return; }
           tbody.innerHTML = r.items.map((it) => {
-            const hyperdx = it.traceId ? `?runId=${encodeURIComponent(it.crawlRunId || "")}` : "";
             const isCompleted = it.status === "completed";
             const resumeForce = (it.status === "pending") ? false : true;
             return `
@@ -1982,9 +2164,9 @@
                 <td>${it.rowsInserted ?? 0}</td>
                 <td class="actions">
                   ${isCompleted
-                    ? (it.traceId ? `<button class="ghost small js-trace">Trace</button>` : "—")
+                    ? (it.traceId ? `<a class="ghost small" href="${escapeHtml(traceRouteUrl(it.crawlRunId || it.traceId))}" data-route>Trace</a>` : "—")
                     : `<button class="primary small js-resume" data-force="${resumeForce}">Resume</button>`}
-                  ${!isCompleted && it.traceId ? `<button class="ghost small js-trace">Trace</button>` : ""}
+                  ${!isCompleted && it.traceId ? `<a class="ghost small" href="${escapeHtml(traceRouteUrl(it.crawlRunId || it.traceId))}" data-route>Trace</a>` : ""}
                 </td>
               </tr>`;
           }).join("");
@@ -2022,33 +2204,23 @@
               }
             });
           });
-          tbody.querySelectorAll(".js-trace").forEach((b) => {
-            b.addEventListener("click", (ev) => {
-              const row = ev.target.closest("tr");
-              const it = JSON.parse(row.dataset.row);
-              openTraceFor(it.crawlRunId);
-            });
-          });
         } catch (e) { tbody.innerHTML = `<tr><td colspan="7" class="empty-row">${escapeHtml(String(e))}</td></tr>`; }
       }
 
       $("btn-queue-refresh")?.addEventListener("click", refreshQueue);
-      $("queue-airline")?.addEventListener("change", refreshQueue);
+      $("queue-airline")?.addEventListener("change", () => {
+        navigateTo(routeForView("queue")).catch((error) => toast.error("Navigation failed", String(error)));
+      });
       ["queue-filter-origin","queue-filter-date-from","queue-filter-date-to"].forEach((id) => {
-        $(id)?.addEventListener("change", loadQueueItems);
+        $(id)?.addEventListener("change", () => {
+          navigateTo(routeForView("queue")).catch((error) => toast.error("Navigation failed", String(error)));
+        });
       });
 
       /* ====================================================== */
       /* Traces                                                   */
       /* ====================================================== */
-      async function openTraceFor(runId) {
-        if (!runId) return;
-        document.querySelector(".tab-btn[data-view='traces']")?.click();
-        $("trace-input").value = runId;
-        await resolveTrace();
-      }
-
-      async function resolveTrace() {
+      async function resolveTrace(updateRoute = true) {
         const raw = $("trace-input").value.trim();
         if (!raw) { toast.warn("Provide a run id"); return; }
         let runId = null, traceIdHint = null;
@@ -2056,6 +2228,10 @@
         else if (TRACE_RE.test(raw)) { traceIdHint = raw; }
         else { toast.warn("Unknown format", "Paste a UUID or a 32-char hex trace id."); return; }
         const windowMin = Number($("trace-window").value || 1440);
+        if (updateRoute) {
+          pushRouteUrl(routeForView("traces", { trace: raw, windowMinutes: String(windowMin) }));
+          syncRouteLinks();
+        }
         const qs = new URLSearchParams({ windowMinutes: String(windowMin) });
         if (runId) qs.set("runId", runId);
         if (traceIdHint) qs.set("traceId", traceIdHint);
@@ -2123,23 +2299,25 @@
               <td>${escapeHtml(t.service || "—")}</td>
               <td class="mono truncate" title="${escapeHtml(t.traceId)}">${escapeHtml(t.traceId.slice(0, 16))}…</td>
               <td class="actions">
-                <button class="ghost small js-load-trace">Load</button>
+                <a class="ghost small" href="${escapeHtml(traceRouteUrl(t.traceId))}" data-route>Load</a>
                 <a class="ghost small" href="${t.hyperdx?.search || '#'}" target="_blank" rel="noopener">HyperDX ↗</a>
               </td>
             </tr>`).join("");
-          tbody.querySelectorAll(".js-load-trace").forEach((b) => {
-            b.addEventListener("click", (ev) => {
-              const row = ev.target.closest("tr");
-              $("trace-input").value = row.dataset.trace;
-              resolveTrace();
-            });
-          });
         } catch (e) {
           tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${escapeHtml(String(e))}</td></tr>`;
         }
       }
 
-      $("btn-trace-resolve")?.addEventListener("click", resolveTrace);
+      $("btn-trace-resolve")?.addEventListener("click", () => resolveTrace());
+      $("trace-window")?.addEventListener("change", () => {
+        const trace = $("trace-input").value.trim();
+        if (UUID_RE.test(trace) || TRACE_RE.test(trace)) {
+          resolveTrace();
+          return;
+        }
+        pushRouteUrl(routeForView("traces", { trace: "" }));
+        syncRouteLinks();
+      });
       $("btn-trace-recent")?.addEventListener("click", loadRecentTraces);
       $("btn-trace-copy")?.addEventListener("click", async () => {
         const id = $("trace-id").textContent;
@@ -2156,8 +2334,10 @@
       /* Boot                                                     */
       /* ====================================================== */
       async function boot() {
+        await applyRoute(false);
         await Promise.all([loadConfig(), loadIatasDatalist(), loadOriginsDatalist(), loadTaskDescriptions(), refreshHealth()]);
         await refreshDashboard();
+        await applyRoute();
       }
 
       boot().catch((e) => toast.error("Boot failed", String(e)));

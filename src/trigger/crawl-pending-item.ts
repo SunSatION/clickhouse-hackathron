@@ -137,8 +137,9 @@ export const crawlPendingItem = schemaTask({
         force: payload.force,
         diagnostics,
       });
-      trace.finish({ claimed: false, rows_inserted: 0 });
-      throw new Error(msg);
+      const error = new Error(msg);
+      trace.fail(error, { claimed: false, rows_inserted: 0 });
+      throw error;
     }
 
     if (payload.force) {
@@ -177,6 +178,14 @@ export const crawlPendingItem = schemaTask({
           destination: claimed.destination_iata,
         }
       );
+
+      if (result.errors.length > 0) {
+        const crawlError = result.errors
+          .map((error) => `${error.origin}@${error.date}: ${error.message}`)
+          .join("; ")
+          .slice(0, 1000);
+        throw new Error(crawlError);
+      }
 
       await markProgressCompleted({
         airline: payload.airline,

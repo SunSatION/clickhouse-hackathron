@@ -45,6 +45,7 @@ export async function enqueuePendingRoutes(opts: {
   origins: string[];
   dateFrom: string;
   dateTo: string;
+  crawlRunId?: string;
 }): Promise<EnqueueResult> {
   const ch = getClickHouse();
 
@@ -60,7 +61,7 @@ export async function enqueuePendingRoutes(opts: {
     dateTo: opts.dateTo,
   });
 
-  const rows: Omit<QueueItem, "crawl_run_id" | "rows_inserted" | "error_message" | "started_at" | "completed_at">[] = [];
+  const rows: Omit<QueueItem, "rows_inserted" | "error_message" | "started_at" | "completed_at">[] = [];
 
   let alreadyTracked = 0;
   for (const [origin, destinations] of routesMap) {
@@ -78,6 +79,7 @@ export async function enqueuePendingRoutes(opts: {
         date_from: opts.dateFrom,
         date_to: opts.dateTo,
         status: "pending",
+        crawl_run_id: opts.crawlRunId ?? "",
         inserted_at: now,
         updated_at: now,
       });
@@ -332,17 +334,22 @@ export async function claimNextPendingItem(opts: {
   });
 
   // 2. SELECT the next pending row to claim.
+  // Picker scopes to the requested crawlRunId so resuming a specific run drains
+  // only its own pending rows. Empty-string crawl_run_id (orphan/legacy rows)
+  // remains claimable by any worker as a fallback.
   const nextResult = await ch.query({
     query: `
       SELECT airline, origin_iata, destination_iata, date_from, date_to
       FROM crawl_progress_latest FINAL
       WHERE airline = {airline:String}
         AND status = 'pending'
+        AND (crawl_run_id = '' OR crawl_run_id = {crawlRunId:String})
       ORDER BY inserted_at ASC
       LIMIT 1
     `,
     query_params: {
       airline: opts.airline,
+      crawlRunId: opts.crawlRunId,
     },
     format: "JSONEachRow",
   }).catch((e) => {
@@ -651,6 +658,7 @@ export async function requeueDestinations(opts: {
   destinations?: string[];
   includeFailed?: boolean;
   includeCompleted?: boolean;
+  crawlRunId?: string;
 }): Promise<number> {
   const includeFailed = opts.includeFailed ?? true;
   const includeCompleted = opts.includeCompleted ?? false;
@@ -692,7 +700,7 @@ export async function requeueDestinations(opts: {
         date_from,
         date_to,
         'pending' AS status,
-        '' AS crawl_run_id,
+        {crawlRunId:String} AS crawl_run_id,
         0 AS rows_inserted,
         '' AS error_message,
         now() AS started_at,
@@ -702,7 +710,7 @@ export async function requeueDestinations(opts: {
       FROM crawl_progress_latest
       WHERE ${conditions.join(" AND ")}
     `,
-    query_params: queryParams,
+    query_params: { ...queryParams, crawlRunId: opts.crawlRunId ?? "" },
   });
 
   const countResult = await getClickHouse().query({

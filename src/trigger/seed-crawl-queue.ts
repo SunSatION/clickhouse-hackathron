@@ -24,6 +24,7 @@ export const SeedCrawlQueuePayload = z.object({
   origins: z.array(z.string().length(3)).min(1),
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  crawlRunId: z.string().uuid().optional(),
 });
 
 export type SeedCrawlQueuePayloadT = z.infer<typeof SeedCrawlQueuePayload>;
@@ -53,11 +54,14 @@ export const seedCrawlQueue = schemaTask({
       dateTo: payload.dateTo,
     });
 
+    const crawlRunId = payload.crawlRunId ?? crypto.randomUUID();
+
     const result = await enqueuePendingRoutes({
       airline: payload.airline,
       origins: payload.origins,
       dateFrom: payload.dateFrom,
       dateTo: payload.dateTo,
+      crawlRunId,
     });
 
     emitGauge({
@@ -68,6 +72,7 @@ export const seedCrawlQueue = schemaTask({
 
     metadata.set("airline", payload.airline);
     metadata.set("origins", payload.origins.join(","));
+    metadata.set("crawlRunId", crawlRunId);
     metadata.set("enqueued", result.enqueued);
 
     logger.info("Crawl queue seeded", {

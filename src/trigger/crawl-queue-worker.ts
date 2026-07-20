@@ -25,7 +25,7 @@ installFetchInstrumentation();
 export const CrawlQueueWorkerPayload = z.object({
   airline: z.enum(["Ryanair", "EasyJet"]),
   crawlRunId: z.string().uuid(),
-  maxIterations: z.number().int().min(1).max(2000).default(1500),
+  maxIterations: z.number().int().min(1).max(5000).default(2500),
   adults: z.number().int().min(1).max(9).default(CRAWL_CONFIG.ryanair.adults),
   requestDelayMs: z.number().int().min(0).default(CRAWL_CONFIG.ryanair.requestDelayMs),
   requestJitterMs: z.number().int().min(0).default(CRAWL_CONFIG.ryanair.requestJitterMs),
@@ -117,6 +117,14 @@ export const crawlQueueWorker = schemaTask({
           },
           { "airline": payload.airline, "origin": item.origin_iata }
         );
+
+        if (result.errors.length > 0) {
+          const crawlError = result.errors
+            .map((error) => `${error.origin}@${error.date}: ${error.message}`)
+            .join("; ")
+            .slice(0, 1000);
+          throw new Error(crawlError);
+        }
 
         await markProgressCompleted({
           airline: payload.airline,

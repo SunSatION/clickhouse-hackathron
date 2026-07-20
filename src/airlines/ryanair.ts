@@ -48,9 +48,7 @@ async function fetchRyanairCheapestPerDay(
   monthDate: string,
   currency = "EUR"
 ): Promise<RyanairCheapestPerDayResponse> {
-  log.trace(">>> fetchRyanairCheapestPerDay enter", { cls: "Ryanair", fn: "fetchRyanairCheapestPerDay" });
-  const start = Date.now();
-  const url = `${RYANAIR_FARFND_URL}/${origin}/${destination}/cheapestPerDay?outboundMonthOfDate=${monthDate}&currency=${currency}&promoCode=undefined`;
+  const url = `${RYANAIR_FARFND_URL}/${origin}/${destination}/cheapestPerDay?outboundMonthOfDate=${monthDate}&currency=${currency}`;
   const res = await ryanairPacedFetch(url, {
     method: "GET",
     headers: {
@@ -71,11 +69,11 @@ async function fetchRyanairCheapestPerDay(
       "user-agent": RYANAIR_USER_AGENT,
     },
   });
+  log.info(`FARFND ${origin}→${destination} ${monthDate} → HTTP ${res.status}`);
   if (!res.ok) {
     throw new Error(`Ryanair farfnd HTTP ${res.status} ${res.statusText} for ${origin}→${destination} month ${monthDate}`);
   }
   const json = (await res.json()) as RyanairCheapestPerDayResponse;
-  log.trace("<<< fetchRyanairCheapestPerDay exit", { cls: "Ryanair", fn: "fetchRyanairCheapestPerDay", waitMs: Date.now() - start });
   return json;
 }
 

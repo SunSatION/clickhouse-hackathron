@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 import express from "express";
 
-import { auth, runs, tasks } from "@trigger.dev/sdk";
+import { runs, tasks } from "@trigger.dev/sdk";
 
 import { listTaskDescriptions } from "../trigger/task-descriptions";
 import { logger } from "../lib/logger";
@@ -56,6 +56,10 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (_req, res) => {
+  res.sendFile(join(import.meta.dirname, "map.html"));
+});
+
+app.get("/admin", (_req, res) => {
   res.sendFile(join(import.meta.dirname, "index.html"));
 });
 
@@ -72,16 +76,6 @@ function parseIataList(input: unknown): string[] {
   return input
     .map((s) => String(s).trim().toUpperCase())
     .filter((s) => /^[A-Z]{3}$/.test(s));
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function nextMonthIso(): string {
-  const d = new Date();
-  d.setUTCMonth(d.getUTCMonth() + 1);
-  return d.toISOString().slice(0, 10);
 }
 
 function nextMonthStartIso(): string {
@@ -109,9 +103,7 @@ async function resolveTraceId(runIdRaw: string): Promise<string> {
   return newTraceId(runIdRaw);
 }
 
-function clampString(s: unknown, max: number): string {
-  return String(s ?? "").slice(0, max);
-}
+
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -229,8 +221,8 @@ app.post("/api/trigger/full-scan", async (req, res) => {
     );
     const cooldownMs = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
     const maxIterations: number = Math.min(
-      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 1500))),
-      2000
+      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 2500))),
+      5000
     );
 
     if (origins.length === 0) {
@@ -247,6 +239,7 @@ app.post("/api/trigger/full-scan", async (req, res) => {
       origins,
       dateFrom,
       dateTo,
+      crawlRunId,
     });
 
     const handle = await tasks.trigger<
@@ -305,8 +298,8 @@ app.post("/api/trigger/single-origin", async (req, res) => {
     );
     const cooldownMs = Math.max(0, Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs)));
     const maxIterations: number = Math.min(
-      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 1500))),
-      2000
+      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 2500))),
+      5000
     );
 
     if (!/^[A-Z]{3}$/.test(origin)) {
@@ -320,6 +313,7 @@ app.post("/api/trigger/single-origin", async (req, res) => {
       origins: [origin],
       dateFrom,
       dateTo,
+      crawlRunId,
     });
 
     const handle = await tasks.trigger<
@@ -383,15 +377,16 @@ app.post("/api/trigger/seed-queue", async (req, res) => {
       return;
     }
 
+    const crawlRunId: string = req.body?.runId || crypto.randomUUID();
+
     const { enqueuePendingRoutes } = await import("../db/crawl-progress");
     const enqueueResult = await enqueuePendingRoutes({
       airline,
       origins,
       dateFrom,
       dateTo,
+      crawlRunId,
     });
-
-    const crawlRunId = crypto.randomUUID();
 
     const handle = await tasks.trigger<
       typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
@@ -478,6 +473,54 @@ app.post("/api/trigger/crawl-pending-item", async (req, res) => {
       publicAccessToken: handle.publicAccessToken,
       task: "crawl-pending-item",
       params: { airline, origin, destination, dateFrom, dateTo, force, adults, requestDelayMs, requestJitterMs, cooldownMs },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/trigger/crawl-queue-worker", async (req, res) => {
+  try {
+    const airline: "Ryanair" | "EasyJet" = req.body?.airline === "EasyJet" ? "EasyJet" : "Ryanair";
+    const crawlRunId: string = String(req.body?.runId ?? "").trim() || crypto.randomUUID();
+    const maxIterations: number = Math.min(
+      Math.max(1, Math.floor(Number(req.body?.maxIterations ?? 2500))),
+      5000
+    );
+    const adults = Math.max(1, Math.floor(Number(req.body?.adults ?? CRAWL_CONFIG.ryanair.adults)));
+    const requestDelayMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestDelayMs ?? CRAWL_CONFIG.ryanair.requestDelayMs))
+    );
+    const requestJitterMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.requestJitterMs ?? CRAWL_CONFIG.ryanair.requestJitterMs))
+    );
+    const cooldownMs = Math.max(
+      0,
+      Math.floor(Number(req.body?.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs))
+    );
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline,
+      crawlRunId,
+      maxIterations,
+      adults,
+      requestDelayMs,
+      requestJitterMs,
+      cooldownMs,
+    });
+
+    res.json({
+      ok: true,
+      runId: handle.id,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      publicAccessToken: handle.publicAccessToken,
+      task: "crawl-queue-worker",
+      params: { airline, maxIterations, adults, requestDelayMs, requestJitterMs, cooldownMs },
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
@@ -1118,6 +1161,441 @@ app.listen(PORT, () => {
   console.log(`Frontend listening on http://localhost:${PORT}`);
 });
 
-void auth;
-void todayIso;
-void nextMonthIso;
+/* ====================================================== */
+/* Map UI endpoints                                       */
+/* ====================================================== */
+
+app.get("/api/map/airports", async (req, res) => {
+  try {
+    const airline = typeof req.query.airline === "string" && req.query.airline
+      ? req.query.airline
+      : "Ryanair";
+    const { listAirportsForAirline } = await import("../db/airports");
+    const rows = await listAirportsForAirline(airline);
+    res.json({
+      ok: true,
+      airline,
+      count: rows.length,
+      airports: rows,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/airports/search", async (req, res) => {
+  try {
+    const q = String(req.query.q ?? "");
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 25)));
+    const { searchAirports } = await import("../db/airports");
+    const airports = searchAirports(q, limit);
+    res.json({ ok: true, query: q, count: airports.length, airports });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/airports/:iata/fares", async (req, res) => {
+  try {
+    const iata = String(req.params.iata ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(iata)) {
+      res.status(400).json({ ok: false, error: "iata must be a 3-letter code" });
+      return;
+    }
+    const airline = typeof req.query.airline === "string" && req.query.airline ? req.query.airline : undefined;
+    const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : "";
+    const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : "";
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit ?? 200)));
+    const { getAirport, listFaresForAirport } = await import("../db/airports");
+    const airport = getAirport(iata);
+    const fares = await listFaresForAirport({
+      iata,
+      airline,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      limit,
+    });
+    res.json({
+      ok: true,
+      iata,
+      airport,
+      count: fares.length,
+      fares,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/itinerary/generate", async (req, res) => {
+  try {
+    const prompt = String(req.body?.prompt ?? "").trim();
+    const homeIata = String(req.body?.homeIata ?? "MLA").trim().toUpperCase();
+    const dateFrom = String(req.body?.dateFrom ?? nextMonthStartIso());
+    const dateTo = String(req.body?.dateTo ?? monthAfterNextStartIso());
+    const daysPerCountry = Math.max(1, Math.floor(Number(req.body?.daysPerCountry ?? 3)));
+    const preferredAirlines = Array.isArray(req.body?.preferredAirlines)
+      ? (req.body.preferredAirlines as unknown[]).map((s) => String(s)).filter(Boolean)
+      : [];
+    const maxItineraries = Math.min(8, Math.max(1, Math.floor(Number(req.body?.maxItineraries ?? 4))));
+    const destinations = Array.isArray(req.body?.destinations)
+      ? (req.body.destinations as unknown[])
+          .map((s) => String(s).toUpperCase())
+          .filter((s) => /^[A-Z]{3}$/.test(s))
+      : [];
+    const plannerRaw = String(req.body?.planner ?? "sql").toLowerCase();
+    const planner: "sql" | "legacy" = plannerRaw === "legacy" ? "legacy" : "sql";
+
+    if (!prompt && destinations.length === 0) {
+      res.status(400).json({ ok: false, error: "prompt or destinations[] is required" });
+      return;
+    }
+    if (!/^[A-Z]{3}$/.test(homeIata)) {
+      res.status(400).json({ ok: false, error: "homeIata must be a 3-letter IATA code" });
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) {
+      res.status(400).json({ ok: false, error: "dateFrom and dateTo must be YYYY-MM-DD" });
+      return;
+    }
+
+    const { getAirport } = await import("../db/airports");
+
+    let itineraries: Array<{
+      id: string;
+      title: string;
+      totalPrice: number;
+      currency: string;
+      totalDurationMinutes: number | null;
+      legs: Array<Record<string, unknown>>;
+      summary: string;
+      recommendationScore: number;
+    }>;
+
+    if (planner === "sql" && destinations.length >= 1) {
+      // New SQL-only planner: single ClickHouse pass over all permutations with
+      // arrival+buffer date constraints. Respects actual prices + timing.
+      const { planBestItinerary } = await import("../db/itinerary-planner");
+      const sqlResults = await planBestItinerary({
+        home: homeIata,
+        stops: destinations,
+        dateFrom,
+        dateTo,
+        bufferDays: daysPerCountry,
+        preferredAirlines,
+        topK: maxItineraries,
+      });
+      itineraries = sqlResults.map((it) => ({
+        id: it.permutation.join("-") + "-" + it.legs[0]?.date + "-" + it.legs.at(-1)?.date,
+        title: `${homeIata} → ${it.permutation.join(" → ")} → ${homeIata}`,
+        totalPrice: it.totalPrice,
+        currency: it.currency,
+        totalDurationMinutes: it.totalDurationMinutes,
+        legs: it.legs.map((leg) => ({
+          origin: leg.origin,
+          destination: leg.destination,
+          date: leg.date,
+          departureDatetime: leg.departureDatetime,
+          arrivalDatetime: leg.arrivalDatetime,
+          price: leg.price,
+          currency: leg.currency,
+          airline: leg.airline,
+          durationMinutes: leg.durationMinutes,
+          originAirport: getAirport(leg.origin),
+          destinationAirport: getAirport(leg.destination),
+        })),
+        summary: `Cheapest valid itinerary across ${destinations.length} stops. ` +
+          `Total flight time: ${it.totalDurationMinutes ?? "—"} min.`,
+        recommendationScore: Math.max(0, Math.round(100 - it.totalPrice)),
+      }));
+    } else {
+      // Legacy prompt-driven planner.
+      const { generateItineraries } = await import("../db/itinerary");
+      const legacy = await generateItineraries({
+        prompt: prompt || undefined,
+        homeIata,
+        dateFrom,
+        dateTo,
+        daysPerCountry,
+        preferredAirlines,
+        maxItineraries,
+        destinations,
+      });
+      itineraries = legacy.map((it) => ({
+        ...it,
+        legs: it.legs.map((leg) => ({
+          ...leg,
+          originAirport: getAirport(leg.origin),
+          destinationAirport: getAirport(leg.destination),
+        })) as Array<Record<string, unknown>>,
+      }));
+    }
+
+    res.json({
+      ok: true,
+      planner,
+      request: {
+        prompt,
+        homeIata,
+        dateFrom,
+        dateTo,
+        daysPerCountry,
+        preferredAirlines,
+        destinations,
+        maxItineraries,
+      },
+      count: itineraries.length,
+      itineraries,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/map/itinerary/favorites", async (_req, res) => {
+  try {
+    const { listFavorites } = await import("../db/itinerary");
+    res.json({ ok: true, count: listFavorites().length, favorites: listFavorites() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/itinerary/favorites", async (req, res) => {
+  try {
+    const itinerary = req.body?.itinerary;
+    if (!itinerary || !itinerary.id || !Array.isArray(itinerary.legs)) {
+      res.status(400).json({ ok: false, error: "itinerary { id, legs, ... } is required" });
+      return;
+    }
+    const { saveFavorite } = await import("../db/itinerary");
+    const fav = saveFavorite(itinerary);
+    res.json({ ok: true, favorite: fav });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.delete("/api/map/itinerary/favorites/:id", async (req, res) => {
+  try {
+    const { removeFavorite } = await import("../db/itinerary");
+    const ok = removeFavorite(req.params.id);
+    res.json({ ok, removed: ok });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/tools", async (_req, res) => {
+  try {
+    const { listTools } = await import("../trigger/tools/registry");
+    const tools = listTools().map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
+    res.json({ ok: true, count: tools.length, tools });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/llm/byok", async (req, res) => {
+  try {
+    const userId = String(req.body?.userId ?? "").trim();
+    const provider = String(req.body?.provider ?? "").trim();
+    const apiKey = String(req.body?.apiKey ?? "").trim();
+    const model = req.body?.model ? String(req.body.model) : undefined;
+    if (!userId) { res.status(400).json({ ok: false, error: "userId is required" }); return; }
+    if (!apiKey) { res.status(400).json({ ok: false, error: "apiKey is required" }); return; }
+    if (!provider) { res.status(400).json({ ok: false, error: "provider is required" }); return; }
+    const { setUserKey } = await import("../llm/key-vault");
+    setUserKey(userId, { provider, apiKey, model });
+    res.json({ ok: true, userId, provider });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.delete("/api/llm/byok", async (req, res) => {
+  try {
+    const userId = String(req.body?.userId ?? req.query.userId ?? "").trim();
+    if (!userId) { res.status(400).json({ ok: false, error: "userId is required" }); return; }
+    const { deleteUserKey } = await import("../llm/key-vault");
+    res.json({ ok: true, removed: deleteUserKey(userId) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get("/api/llm/status", async (req, res) => {
+  try {
+    const userId = String(req.query.userId ?? "").trim() || undefined;
+    const { resolveCredentials } = await import("../llm/key-vault");
+    const creds = resolveCredentials(userId);
+    const usingByok = creds.source === "byok";
+    res.json({
+      ok: true,
+      configured: Boolean(creds.apiKey),
+      source: creds.source,
+      provider: usingByok ? creds.provider : (creds.apiKey ? creds.provider : null),
+      hasByok: usingByok,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/llm/chat", async (req, res) => {
+  try {
+    const userId = String(req.body?.userId ?? "").trim() || undefined;
+    const messages = Array.isArray(req.body?.messages) ? req.body.messages : null;
+    if (!messages || messages.length === 0) {
+      res.status(400).json({ ok: false, error: "messages[] is required" });
+      return;
+    }
+    const { resolveCredentials } = await import("../llm/key-vault");
+    const { runLlmAgent } = await import("../llm/client");
+    const creds = resolveCredentials(userId);
+    const result = await runLlmAgent(
+      {
+        messages,
+        model: req.body?.model,
+        maxIterations: req.body?.maxIterations,
+        userId,
+      },
+      { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/tools/:id", async (req, res) => {
+  try {
+    const { getTool } = await import("../trigger/tools/registry");
+    const tool = getTool(req.params.id);
+    if (!tool) {
+      res.status(404).json({ ok: false, error: `unknown tool: ${req.params.id}` });
+      return;
+    }
+    const parsed = tool.schema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ ok: false, error: "invalid parameters", issues: parsed.error.issues });
+      return;
+    }
+    const result = await tool.handler(parsed.data as never);
+    res.json({ ok: true, tool: tool.id, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/round-trip", async (req, res) => {
+  try {
+    const origin = String(req.body?.origin ?? "").trim().toUpperCase();
+    const destination = String(req.body?.destination ?? "").trim().toUpperCase();
+    const dateFrom = String(req.body?.dateFrom ?? "");
+    const dateTo = String(req.body?.dateTo ?? "");
+    const minDays = req.body?.minDays != null ? Math.max(1, Math.floor(Number(req.body.minDays))) : undefined;
+    const maxDays = req.body?.maxDays != null ? Math.max(1, Math.floor(Number(req.body.maxDays))) : undefined;
+    const limit = req.body?.limit != null ? Math.min(20, Math.max(1, Math.floor(Number(req.body.limit)))) : 5;
+
+    if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) {
+      res.status(400).json({ ok: false, error: "origin and destination must be 3-letter IATA codes" });
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) {
+      res.status(400).json({ ok: false, error: "dateFrom and dateTo must be YYYY-MM-DD" });
+      return;
+    }
+    if (origin === destination) {
+      res.status(400).json({ ok: false, error: "origin and destination must differ" });
+      return;
+    }
+
+    const { findCheapestRoundTrip, getAirport } = await import("../db/airports");
+    const trips = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
+    const options = trips.slice(0, limit).map((t) => ({
+      ...t,
+      originAirport: getAirport(t.origin),
+      destinationAirport: getAirport(t.destination),
+    }));
+    res.json({
+      ok: true,
+      origin,
+      destination,
+      count: options.length,
+      options,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/itinerary/refresh-crawl", async (req, res) => {
+  try {
+    const legs = Array.isArray(req.body?.legs) ? (req.body.legs as Array<Record<string, unknown>>) : [];
+    if (legs.length === 0) {
+      res.status(400).json({ ok: false, error: "legs array is required" });
+      return;
+    }
+    const crawlRunId = String(req.body?.runId ?? crypto.randomUUID());
+    const airline: "Ryanair" | "EasyJet" = req.body?.airline === "EasyJet" ? "EasyJet" : "Ryanair";
+
+    const triggers: Array<{ origin: string; destination: string; dateFrom: string; dateTo: string }> = [];
+    for (const leg of legs) {
+      const origin = String(leg.origin ?? "").trim().toUpperCase();
+      const destination = String(leg.destination ?? "").trim().toUpperCase();
+      const dateFrom = String(leg.date ?? nextMonthStartIso());
+      const dateTo = String(leg.dateTo ?? monthAfterNextStartIso());
+      if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) continue;
+      triggers.push({ origin, destination, dateFrom, dateTo });
+    }
+    if (triggers.length === 0) {
+      res.status(400).json({ ok: false, error: "no valid legs to crawl" });
+      return;
+    }
+
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const allOrigins = Array.from(new Set(triggers.map((t) => t.origin)));
+    const firstLeg = triggers[0];
+    if (!firstLeg) {
+      res.status(400).json({ ok: false, error: "no legs to crawl" });
+      return;
+    }
+    const enqueue = await enqueuePendingRoutes({
+      airline,
+      origins: allOrigins,
+      dateFrom: firstLeg.dateFrom,
+      dateTo: firstLeg.dateTo,
+      crawlRunId,
+    });
+
+    const handle = await tasks.trigger<
+      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+    >("crawl-queue-worker", {
+      airline,
+      crawlRunId,
+      maxIterations: triggers.length * 2,
+    });
+
+    res.json({
+      ok: true,
+      crawlRunId,
+      traceId: uuidToTraceId(crawlRunId),
+      runId: handle.id,
+      task: "crawl-queue-worker",
+      enqueued: enqueue.enqueued,
+      alreadyPending: enqueue.already_pending,
+      legsQueued: triggers.length,
+      legs: triggers,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+

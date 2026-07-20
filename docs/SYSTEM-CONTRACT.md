@@ -199,6 +199,14 @@ All `MergeTree`, partitioned by day, 30-day TTL via
 - `claimSpecificPendingItem({ force: true })` is the only path that
   can overwrite a row in any state; everything else respects the
   current state.
+- `crawl_run_id` is stamped on **every** row — including pending
+  ones. `enqueuePendingRoutes({ crawlRunId })` writes the requested
+  id; the dashboard queue view shows `crawl_run_id` on pending rows.
+- `claimNextPendingItem` scopes its picker to
+  `crawl_run_id = '' OR crawl_run_id = {crawlRunId}` so that a worker
+  re-fired with `runId=X` drains **only** its own pending rows
+  (plus legacy empty-id rows as a fallback). This makes resume
+  scoped instead of cross-pollinating.
 
 ## 4. Airline crawler contract
 
@@ -270,6 +278,7 @@ Stable HTTP contract (frontend + operator workflows depend on these):
 | `POST /api/trigger/single-origin`        | Same as `/api/trigger/full-scan` but seeds only `body.origin` (1 origin) before triggering the worker. |
 | `POST /api/trigger/seed-queue`           | Equivalent to `/api/trigger/full-scan` (kept for back-compat). |
 | `POST /api/trigger/crawl-pending-item`   | Triggers `crawl-pending-item` — claims and processes a single row by `(airline, origin, destination, dateFrom, dateTo)`. Pass `force: true` to steal a row currently in `processing`. |
+| `POST /api/trigger/crawl-queue-worker`   | Triggers `crawl-queue-worker` directly with `body.runId` (crawl run id, falls back to a fresh UUID). **No re-seeding.** The worker drains pending rows stamped with that id (or empty ids for legacy), processes each, and exits when no more match. Use this to resume an existing run without reseeding. |
 | `POST /api/trigger/sync-ryanair-routes`  | Triggers `sync-ryanair-routes`. |
 
 The script-spawning endpoints (`/api/scripts/*`) exist as operator
@@ -280,9 +289,10 @@ clients.
 
 | Frontend endpoint | Backend tasks |
 |---|---|
-| `/api/trigger/full-scan` | `enqueuePendingRoutes()` → `crawl-queue-worker` |
-| `/api/trigger/single-origin` | `enqueuePendingRoutes()` → `crawl-queue-worker` |
-| `/api/trigger/seed-queue` | `enqueuePendingRoutes()` → `crawl-queue-worker` |
+| `/api/trigger/full-scan` | `enqueuePendingRoutes(crawlRunId)` → `crawl-queue-worker` |
+| `/api/trigger/single-origin` | `enqueuePendingRoutes(crawlRunId)` → `crawl-queue-worker` |
+| `/api/trigger/seed-queue` | `enqueuePendingRoutes(crawlRunId)` → `crawl-queue-worker` |
+| `/api/trigger/crawl-queue-worker` | `crawl-queue-worker` (no seed; resume only) |
 | `/api/trigger/crawl-pending-item` | `crawl-pending-item` |
 | `/api/trigger/sync-ryanair-routes` | `sync-ryanair-routes` |
 

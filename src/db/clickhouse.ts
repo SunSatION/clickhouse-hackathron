@@ -16,7 +16,7 @@ export function getClickHouse(): ClickHouseClient {
   client = createClient({
     url,
     database,
-    request_timeout: 30_000,
+    request_timeout: 90_000,
     max_open_connections: 10,
     compression: { request: true, response: true },
     username: process.env.CLICKHOUSE_USERNAME,
@@ -34,7 +34,7 @@ export function getClickHouseForOtel(): ClickHouseClient {
   otelClient = createClient({
     url,
     database,
-    request_timeout: 30_000,
+    request_timeout: 90_000,
     max_open_connections: 10,
     compression: { request: true, response: true },
     username: process.env.CLICKHOUSE_USERNAME,
