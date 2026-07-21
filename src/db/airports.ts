@@ -196,23 +196,22 @@ export async function listAirportsForAirline(
   const r = await ch.query({
     query: `
       SELECT
-        a.iata AS iata,
-        a.name AS name,
-        a.city AS city,
-        a.country AS country,
-        a.region AS region,
-        a.lat AS lat,
-        a.lon AS lon,
-        a.type AS type,
-        countDistinct(fl.destination_iata) AS origin_count
-      FROM airports a
-      INNER JOIN flight_listings fl ON fl.origin_iata = a.iata AND fl.airline = {airline:String}
-      WHERE length(a.iata) = 3
-      GROUP BY a.iata, a.name, a.city, a.country, a.region, a.lat, a.lon, a.type
-      HAVING countDistinct(fl.destination_iata) > 0
-      ORDER BY origin_count DESC, a.iata ASC
+        ar.origin_iata AS iata,
+        any(a.name) AS name,
+        any(a.city) AS city,
+        any(a.country) AS country,
+        any(a.region) AS region,
+        any(a.lat) AS lat,
+        any(a.lon) AS lon,
+        any(a.type) AS type,
+        countDistinct(ar.destination_iata) AS origin_count
+      FROM flights.airline_routes_latest ar
+      LEFT JOIN flights.airports a ON ar.origin_iata = a.iata
+      WHERE ar.airline_code = {airline:String}
+      GROUP BY ar.origin_iata
+      ORDER BY origin_count DESC, ar.origin_iata ASC
     `,
-    query_params: { airline },
+    query_params: { airline: airline.toUpperCase() },
     format: "JSONEachRow",
   });
   const rows = (await r.json()) as Array<{
@@ -344,11 +343,10 @@ export async function listFaresForAirport(q: FareQuery): Promise<FareRow[]> {
   }
   const limit = Math.min(Math.max(1, q.limit ?? 200), 1000);
   params.limit = limit;
+  const queryStr = `${FARE_BASE_QUERY}\n      WHERE ${conditions.join(" AND ")}\n      ORDER BY departure_date ASC\n      LIMIT {limit:UInt32}`;
+  console.log("[listFaresForAirport]", queryStr, params);
   const r = await ch.query({
-    query: `${FARE_BASE_QUERY}
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY departure_date ASC, price ASC
-      LIMIT {limit:UInt32}`,
+    query: queryStr,
     query_params: params,
     format: "JSONEachRow",
   });
@@ -371,6 +369,53 @@ export async function listFaresForAirport(q: FareQuery): Promise<FareRow[]> {
     seatsLeft: row.seats_left != null ? Number(row.seats_left) : null,
     observedAt: String(row.observed_at ?? ""),
     crawlRunId: String(row.crawl_run_id ?? ""),
+  }));
+}
+
+export interface AirportRoute {
+  airline: string;
+  airlineCode: string;
+  originIata: string;
+  destinationIata: string;
+  lat: number;
+  lon: number;
+  city: string;
+  country: string;
+}
+
+export async function getRoutesForAirport(iata: string): Promise<AirportRoute[]> {
+  const ch = getClickHouse();
+  const upperIata = iata.toUpperCase();
+  const queryStr = `
+    SELECT DISTINCT
+      f.airline,
+      f.airline_code,
+      f.origin_iata,
+      f.destination_iata,
+      a.lat,
+      a.lon,
+      a.city,
+      a.country
+    FROM flights.flight_listings_latest f
+    LEFT JOIN flights.airports a ON f.origin_iata = a.iata
+    WHERE f.origin_iata = {iata:String}
+  `;
+  console.log("[getRoutesForAirport]", queryStr, { iata: upperIata });
+  const r = await ch.query({
+    query: queryStr,
+    query_params: { iata: upperIata },
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    airline: String(row.airline ?? ""),
+    airlineCode: String(row.airline_code ?? ""),
+    originIata: String(row.origin_iata ?? "").toUpperCase(),
+    destinationIata: String(row.destination_iata ?? "").toUpperCase(),
+    lat: Number(row.lat ?? 0),
+    lon: Number(row.lon ?? 0),
+    city: String(row.city ?? ""),
+    country: String(row.country ?? ""),
   }));
 }
 

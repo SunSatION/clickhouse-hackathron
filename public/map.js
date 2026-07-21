@@ -320,16 +320,12 @@
       state.mapFilterOrigin = iata;
       state.mapFilterDestinations.clear();
       try {
-        const params = new URLSearchParams({ limit: "500" });
-        const r = await getJson(`/api/map/airports/${encodeURIComponent(iata)}/fares?${params.toString()}`);
-        const fares = r.fares || [];
-        for (const f of fares) {
-          if (f.origin === iata) state.mapFilterDestinations.add(f.destination);
-          else state.mapFilterDestinations.add(f.origin);
-        }
+        const r = await getJson(`/api/map/airports/${encodeURIComponent(iata)}/routes`);
+        const routes = r.routes || [];
+        for (const rt of routes) state.mapFilterDestinations.add(rt.destinationIata);
         drawPins();
       } catch (e) {
-        console.warn("handlePinClick: failed to load fares for filter:", e);
+        console.warn("handlePinClick: failed to load routes for filter:", e);
       }
       return;
     }
@@ -343,17 +339,13 @@
     state.mapFilterOrigin = iata;
     state.mapFilterDestinations.clear();
     try {
-      const params = new URLSearchParams({ limit: "500" });
-      const r = await getJson(`/api/map/airports/${encodeURIComponent(iata)}/fares?${params.toString()}`);
-      const fares = r.fares || [];
-      for (const f of fares) {
-        if (f.origin === iata) state.mapFilterDestinations.add(f.destination);
-        else state.mapFilterDestinations.add(f.origin);
-      }
+      const r = await getJson(`/api/map/airports/${encodeURIComponent(iata)}/routes`);
+      const routes = r.routes || [];
+      for (const rt of routes) state.mapFilterDestinations.add(rt.destinationIata);
       drawPins();
       fitToDestinations(iata);
     } catch (e) {
-      console.warn("handlePinClick: failed to load fares for filter:", e);
+      console.warn("handlePinClick: failed to load routes for filter:", e);
     }
     toggleDestination(iata);
   }
@@ -366,15 +358,11 @@
     state.mapFilterDestinations.clear();
     clearDestinationArrows();
     try {
-      const params = new URLSearchParams({ limit: "500" });
-      const r = await getJson(`/api/map/airports/${encodeURIComponent(code)}/fares?${params.toString()}`);
-      const fares = r.fares || [];
-      for (const f of fares) {
-        if (f.origin === code) state.mapFilterDestinations.add(f.destination);
-        else state.mapFilterDestinations.add(f.origin);
-      }
+      const r = await getJson(`/api/map/airports/${encodeURIComponent(code)}/routes`);
+      const routes = r.routes || [];
+      for (const rt of routes) state.mapFilterDestinations.add(rt.destinationIata);
     } catch (e) {
-      console.warn("selectOriginOnMap: failed to load fares:", e);
+      console.warn("selectOriginOnMap: failed to load routes:", e);
     }
     drawPins();
     const ap = state.airportsByIata.get(code);

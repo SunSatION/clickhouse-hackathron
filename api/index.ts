@@ -26,6 +26,12 @@ const log = logger('api/index.ts');
 
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+  next();
+});
 
 app.use((req, _res, next) => {
   log.info('>>> request', { method: req.method, path: req.originalUrl, ip: req.ip ?? req.socket.remoteAddress });
@@ -685,6 +691,18 @@ app.get('/api/map/airports/:iata/fares', async (req, res) => {
     const airport = await getAirport(iata);
     const fares = await listFaresForAirport({ iata, airline, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, limit });
     res.json({ ok: true, iata, airport, count: fares.length, fares });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.get('/api/map/airports/:iata/routes', async (req, res) => {
+  try {
+    const iata = String(req.params.iata ?? '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(iata)) { res.status(400).json({ ok: false, error: 'iata must be a 3-letter code' }); return; }
+    const { getRoutesForAirport } = await import('../src/db/airports.js');
+    const routes = await getRoutesForAirport(iata);
+    res.json({ ok: true, iata, count: routes.length, routes });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
