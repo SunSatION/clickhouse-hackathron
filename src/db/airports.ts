@@ -193,7 +193,7 @@ export async function listAirportsForAirline(
   airline: string = "Ryanair",
 ): Promise<AirportWithRouteCount[]> {
   const ch = getClickHouse();
-  const code = airline.toUpperCase();
+  const airlineCode = airline.toUpperCase();
   const r = await ch.query({
     query: `
       SELECT
@@ -207,14 +207,14 @@ export async function listAirportsForAirline(
         a.type AS type,
         countDistinct(r.destination_iata) AS origin_count
       FROM airports a
-      INNER JOIN airline_routes_latest r ON r.airline_code = {code:String} AND r.origin_iata = a.iata
-      INNER JOIN flight_listings fl ON fl.origin_iata = a.iata AND fl.airline_code = {code:String}
+      INNER JOIN airline_routes_latest r ON r.airline_code = {airlineCode:String} AND r.origin_iata = a.iata
+      INNER JOIN flight_listings fl ON fl.origin_iata = a.iata AND fl.airline = {airline:String}
       WHERE length(a.iata) = 3
       GROUP BY a.iata, a.name, a.city, a.country, a.region, a.lat, a.lon, a.type
       HAVING origin_count > 0
       ORDER BY origin_count DESC, a.iata ASC
     `,
-    query_params: { code },
+    query_params: { airlineCode, airline },
     format: "JSONEachRow",
   });
   const rows = (await r.json()) as Array<{
