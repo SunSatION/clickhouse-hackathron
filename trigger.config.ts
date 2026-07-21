@@ -6,10 +6,10 @@ export default defineConfig({
   logLevel: "log",
   environments: {
     production: {
-      name: "Production",
+      name: "Production – clickhouse-hackathron",
     },
     staging: {
-      name: "Staging",
+      name: "Staging – clickhouse-hackathron",
     },
   },
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
