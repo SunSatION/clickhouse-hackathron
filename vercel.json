@@ -8,7 +8,7 @@
     },
     {
       "source": "/admin",
-      "destination": "/index.html"
+      "destination": "/admin.html"
     },
     {
       "source": "/api/:path*",
