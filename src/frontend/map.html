@@ -220,41 +220,74 @@
         padding: 8px 0;
       }
 
-      /* === AI progress banner (silent-mode chat) === */
+      /* === AI progress popup (top-center overlay) === */
       .ai-progress {
+        position: fixed;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1200;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow-lg);
+        padding: 14px 18px 12px;
+        min-width: 280px;
+        max-width: 420px;
         display: none;
-        align-items: center;
+        align-items: flex-start;
         gap: 10px;
-        padding: 10px 14px;
-        margin: -16px -20px 12px -20px;
-        background: linear-gradient(135deg, var(--accent-soft), transparent);
-        border-bottom: 1px solid var(--accent);
-        border-radius: 12px 12px 0 0;
         font-size: 13px;
         color: var(--fg);
+        animation: ai-progress-in 180ms ease;
       }
-      .ai-progress.show { display: flex; }
+      .ai-progress.open { display: flex; }
+      .ai-progress.hidden { display: none; }
       .ai-progress .spinner {
-        width: 14px; height: 14px;
-        border: 2px solid var(--accent);
-        border-top-color: transparent;
+        width: 16px; height: 16px;
+        border: 2.5px solid var(--accent-soft);
+        border-top-color: var(--accent);
         border-radius: 50%;
-        animation: ai-spin 0.8s linear infinite;
+        animation: ai-spin 0.7s linear infinite;
         flex-shrink: 0;
+        margin-top: 1px;
       }
-      .ai-progress.done .spinner { display: none; }
-      .ai-progress.done::before {
-        content: "✓";
-        color: var(--ok);
-        font-weight: 700;
-        font-size: 14px;
+      .ai-progress.done .spinner {
+        animation: none;
+        border-color: var(--ok);
+        background: var(--ok);
+        position: relative;
+      }
+      .ai-progress.done .spinner::after {
+        content: "";
+        position: absolute;
+        left: 4px; top: 1px;
+        width: 5px; height: 9px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
       }
       @keyframes ai-spin { to { transform: rotate(360deg); } }
-      .ai-progress-text { flex: 1; line-height: 1.35; }
-      .ai-progress-text .tool { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: var(--muted); }
-
-      /* === Chat bar — hidden unless debug === */
-      body:not(.debug) .chat-quick { display: none; }
+      @keyframes ai-progress-in {
+        from { opacity: 0; transform: translate(-50%, -8px); }
+        to   { opacity: 1; transform: translate(-50%, 0); }
+      }
+      .ai-progress-text { flex: 1; line-height: 1.35; min-width: 0; }
+      .ai-progress-text .label { font-weight: 700; }
+      .ai-progress-text .tool { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
+      .ai-progress-history {
+        margin: 8px 0 0;
+        padding: 8px 0 0;
+        list-style: none;
+        max-height: 140px;
+        overflow-y: auto;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .ai-progress-history li { padding: 2px 0; }
+      .ai-progress-history li.current { color: var(--fg); }
+      .ai-progress-history li.current::before { content: "▸ "; color: var(--accent); }
 
       /* === Clarification modal === */
       #ai-clarification .modal-body p { margin: 0 0 12px 0; line-height: 1.5; }
@@ -769,6 +802,7 @@
 
     <div class="map-controls">
       <button id="btn-toggle-airline" class="on" title="Show only Ryanair airports">Ryanair</button>
+      <button id="btn-clear-airport" title="Clear selected airport">Clear</button>
       <button id="btn-fit-itinerary" title="Fit itinerary on map" hidden>Fit</button>
     </div>
 
@@ -796,13 +830,6 @@
         <label class="checkbox-pill" id="pill-easyjet"><input type="checkbox" id="f-easyjet" /> EasyJet</label>
       </div>
       <div class="sidebar-body" id="sidebar-body">
-        <div class="ai-progress" id="ai-progress" hidden>
-          <div class="spinner"></div>
-          <div class="ai-progress-text">
-            <div id="ai-progress-label">Working on it…</div>
-            <div class="tool" id="ai-progress-tool"></div>
-          </div>
-        </div>
         <div class="empty">
           <h4>Plan a multi-stop trip</h4>
           <p>Click any pin to add it to your trip. Click again to remove. Right-click a pin to view its fares.</p>
@@ -829,6 +856,16 @@
     </div>
 
     <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <!-- AI progress popup: top-center overlay, visible during LLM calls -->
+    <div class="ai-progress hidden" id="ai-progress" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="ai-progress-text">
+        <div class="label" id="ai-progress-label">Working on it…</div>
+        <div class="tool" id="ai-progress-tool"></div>
+        <ul class="ai-progress-history" id="ai-progress-history"></ul>
+      </div>
+    </div>
 
     <a id="operator-link" href="/admin" target="_blank" rel="noopener" style="display:none;position:fixed;left:12px;bottom:8px;z-index:600;font-size:10px;letter-spacing:.04em;color:var(--muted-2);text-transform:uppercase;text-decoration:none;opacity:.5">control center</a>
 

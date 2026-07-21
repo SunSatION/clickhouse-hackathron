@@ -334,22 +334,26 @@ export async function claimNextPendingItem(opts: {
   });
 
   // 2. SELECT the next pending row to claim.
-  // Picker scopes to the requested crawlRunId so resuming a specific run drains
-  // only its own pending rows. Empty-string crawl_run_id (orphan/legacy rows)
-  // remains claimable by any worker as a fallback.
+  // Picker does NOT scope by crawl_run_id — the canonical "drain pending" path
+  // is crawl-queue-worker, which the dashboard invokes via /api/trigger/crawl-queue-worker
+  // (mints a fresh UUID each click) and which must therefore drain whatever was
+  // seeded by any prior seed/queue/scan run. Scoping by crawl_run_id here caused
+  // the worker to exit on iteration 1 ("No more pending items") while the
+  // dashboard reported >0 pending because getQueueStats counts all rows for the
+  // airline regardless of runId. The worker's crawl_run_id is still written on
+  // the resulting 'processing' row (step 3 below) so HyperDX trace correlation
+  // per run is preserved.
   const nextResult = await ch.query({
     query: `
       SELECT airline, origin_iata, destination_iata, date_from, date_to
       FROM crawl_progress_latest FINAL
       WHERE airline = {airline:String}
         AND status = 'pending'
-        AND (crawl_run_id = '' OR crawl_run_id = {crawlRunId:String})
       ORDER BY inserted_at ASC
       LIMIT 1
     `,
     query_params: {
       airline: opts.airline,
-      crawlRunId: opts.crawlRunId,
     },
     format: "JSONEachRow",
   }).catch((e) => {

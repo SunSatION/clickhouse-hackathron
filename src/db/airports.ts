@@ -58,6 +58,12 @@ export function searchAirports(query: string, limit = 25): Airport[] {
   return hits;
 }
 
+const LONDON_IATAS = ["STN", "LGW", "LTN", "LHR", "LCY", "SEN"] as const;
+
+export function londonAirports(): string[] {
+  return [...LONDON_IATAS];
+}
+
 export interface AirportWithRouteCount extends Airport {
   originCount: number;
   destinationCount: number;

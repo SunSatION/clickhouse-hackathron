@@ -28,7 +28,15 @@ export interface PlanBestItineraryInput {
   stops: string[];
   dateFrom: string;
   dateTo: string;
+  /** Base number of days to spend at each stop (minimum enforced when flexDays=0). Default 3. */
   bufferDays?: number;
+  /**
+   * Flex ± around bufferDays. Stay at each stop is constrained to
+   * [bufferDays - flexDays, bufferDays + flexDays] days.
+   * A flex of 1 means ±1 day (e.g. 3±1 → 2 to 4 days).
+   * Default 1.
+   */
+  flexDays?: number;
   preferredAirlines?: string[];
   topK?: number;
   /**
@@ -105,7 +113,10 @@ function buildItineraryQuery(input: PlanBestItineraryInput): {
   if (stops.length < 1) throw new Error("stops must contain at least 1 airport");
   if (stops.length > 5) throw new Error(`stops supports up to 5 destinations, got ${stops.length}`);
   const n = stops.length;
-  const bufferDays = Math.max(0, Math.min(30, input.bufferDays ?? 1));
+  const bufferDays = Math.max(0, Math.min(30, input.bufferDays ?? 3));
+  const flexDays = Math.max(0, Math.min(15, input.flexDays ?? 1));
+  const minStay = bufferDays >= flexDays ? bufferDays - flexDays : 0;
+  const maxStay = bufferDays + flexDays;
   const topK = Math.max(1, Math.min(50, input.topK ?? 1));
   const maxCombinations = Math.max(
     1_000_000,
@@ -142,6 +153,10 @@ function buildItineraryQuery(input: PlanBestItineraryInput): {
     n,
     perms: perms.length,
     legCount,
+    bufferDays,
+    flexDays,
+    minStay,
+    maxStay,
     maxCandidatesPerLeg,
     autoCandidates,
     estCombinations: perms.length * Math.pow(maxCandidatesPerLeg, legCount),
@@ -154,6 +169,8 @@ function buildItineraryQuery(input: PlanBestItineraryInput): {
   const params: Record<string, unknown> = {
     home,
     bufferDays,
+    minStay,
+    maxStay,
     dateFrom: input.dateFrom,
     dateTo: input.dateTo,
     topK,
@@ -194,7 +211,7 @@ function buildItineraryQuery(input: PlanBestItineraryInput): {
     const isReturnLeg = i === n;
     const constraint = isReturnLeg
       ? `${next}.departure_datetime >= ${prev}.arrival_datetime`
-      : `${next}.departure_datetime >= ${prev}.arrival_datetime + INTERVAL {bufferDays:UInt32} DAY`;
+      : `${next}.departure_datetime >= ${prev}.arrival_datetime + INTERVAL {minStay:UInt32} DAY AND ${next}.departure_datetime <= ${prev}.arrival_datetime + INTERVAL {maxStay:UInt32} DAY`;
     joinParts.push(
       `INNER JOIN ${next} ON ${next}.perm_id = ${prev}.perm_id AND ${constraint}`,
     );
@@ -352,6 +369,8 @@ export async function planBestItinerary(
   log.info("itinerary planner SQL", {
     home: input.home,
     stops: input.stops,
+    bufferDays: input.bufferDays,
+    flexDays: input.flexDays,
     rows: rows.length,
     ms: Date.now() - startedAt,
   });

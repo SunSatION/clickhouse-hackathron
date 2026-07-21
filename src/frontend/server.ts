@@ -1367,6 +1367,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
     const dateFrom = String(req.body?.dateFrom ?? nextMonthStartIso());
     const dateTo = String(req.body?.dateTo ?? monthAfterNextStartIso());
     const daysPerCountry = Math.max(1, Math.floor(Number(req.body?.daysPerCountry ?? 3)));
+    const flexDays = Math.max(0, Math.floor(Number(req.body?.flexDays ?? 1)));
     const preferredAirlines = Array.isArray(req.body?.preferredAirlines)
       ? (req.body.preferredAirlines as unknown[]).map((s) => String(s)).filter(Boolean)
       : [];
@@ -1415,6 +1416,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
         dateFrom,
         dateTo,
         bufferDays: daysPerCountry,
+        flexDays,
         preferredAirlines,
         topK: maxItineraries,
       });
@@ -1473,6 +1475,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
         dateFrom,
         dateTo,
         daysPerCountry,
+        flexDays,
         preferredAirlines,
         destinations,
         maxItineraries,
@@ -1637,30 +1640,37 @@ app.post("/api/llm/chat", async (req, res) => {
         messages,
         model: req.body?.model,
         maxIterations: req.body?.maxIterations,
+        homeIata: typeof req.body?.homeIata === "string" ? req.body.homeIata.toUpperCase() : undefined,
+        homeLocation: {
+          ip: req.ip ?? req.socket.remoteAddress ?? undefined,
+          country: req.body?.homeLocation?.country,
+          lat: req.body?.homeLocation?.lat,
+          lon: req.body?.homeLocation?.lon,
+        },
       },
       { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },
       (event) => {
-        const map: Record<string, string> = {
-          status: "status",
-          assistant_delta: "assistant_delta",
-          tool_call: "tool_call",
-          tool_result: "tool_result",
-          assistant_message: "assistant_message",
-          run_triggered: "run_triggered",
-          error: "error",
-          done: "done",
-        };
-        const ev = map[event.type as string] ?? "agent";
-        sseSend(res, ev, event);
-
-        if (event.type === "run_triggered" && typeof event.runId === "string") {
+        if (event.type === "status") { sseSend(res, "status", event); return; }
+        if (event.type === "tool_progress") { sseSend(res, "tool_progress", event); return; }
+        if (event.type === "answer") { sseSend(res, "answer", event); return; }
+        if (event.type === "error") { sseSend(res, "error", { error: event.error }); return; }
+        if (event.type === "done") { sseSend(res, "done", event); return; }
+        if (event.type === "run_triggered") {
+          sseSend(res, "run_triggered", event);
           runPollers.push(pollRunUntilTerminal(event.runId, res, ac.signal));
         }
       },
     );
 
     await Promise.allSettled(runPollers);
-    sseSend(res, "final", { ok: result.ok, content: result.content, iterations: result.iterations, error: result.error ?? null, provider: result.provider, model: result.model });
+    sseSend(res, "final", {
+      ok: result.ok,
+      answer: result.answer,
+      iterations: result.iterations,
+      error: result.error ?? null,
+      provider: result.provider,
+      model: result.model,
+    });
     res.end();
   } catch (err) {
     try { sseSend(res, "error", { error: (err as Error).message }); res.end(); } catch { /* aborted */ }

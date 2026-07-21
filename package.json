@@ -14,9 +14,12 @@
     "@trigger.dev/build": "^4.5.4",
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "trigger.dev": "^4.5.4",
     "tsx": "^4.23.1",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -24,6 +27,9 @@
     "frontend": "tsx src/frontend/server.ts",
     "frontend:dev": "tsx watch src/frontend/server.ts",
     "deploy:trigger": "trigger deploy",
-    "deploy:trigger:staging": "trigger deploy --env staging"
+    "deploy:trigger:staging": "trigger deploy --env staging",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   }
 }

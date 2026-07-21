@@ -20,7 +20,7 @@ let globalDepth = 0;
 
 export function formatLog(entry: LogEntry): string {
   const tab = "  ".repeat(entry.depth);
-  const parts = [`${tab}${entry.msg}`];
+  const parts = [`${tab}[${entry.t}] ${entry.msg}`];
   parts.push(`[${entry.level.padEnd(5)}]`);
   if (entry.waitMs !== undefined) parts.push(`wait:${entry.waitMs}ms`);
   if (entry.cls) parts.push(`[${entry.cls}]`);

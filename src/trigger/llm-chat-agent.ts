@@ -71,7 +71,7 @@ export const llmChatAgent = schemaTask({
     logger.info("llm-chat-agent finished", {
       ok: result.ok,
       iterations: result.iterations,
-      contentLength: result.content?.length ?? 0,
+      answerKind: result.answer?.kind ?? null,
       toolCallsCount: result.toolCalls.length,
       error: result.error ?? null,
     });
@@ -80,7 +80,7 @@ export const llmChatAgent = schemaTask({
       ok: result.ok,
       provider: result.provider,
       model: result.model,
-      content: result.content,
+      answer: result.answer,
       toolCalls: result.toolCalls,
       iterations: result.iterations,
       source: result.source,

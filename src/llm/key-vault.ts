@@ -111,8 +111,6 @@ export function resolveCredentials(userId?: string): { provider: string; apiKey:
   }
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) return { provider: "openai", apiKey: openaiKey, model: process.env.OPENAI_MODEL, source: "env" };
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (anthropicKey) return { provider: "anthropic", apiKey: anthropicKey, model: process.env.ANTHROPIC_MODEL, source: "env" };
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   if (openrouterKey) return { provider: "openrouter", apiKey: openrouterKey, model: process.env.OPENROUTER_MODEL, source: "env" };
   const minimaxKey = process.env.MINIMAX_API_KEY;

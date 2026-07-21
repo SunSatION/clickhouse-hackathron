@@ -73,6 +73,7 @@
     faresFilters: { ryanair: true, easyjet: false, origin: "", dest: "", date: "" },
     mapFilterOrigin: null,
     mapFilterDestinations: new Set(),
+    destinationArrowsLayer: null,
     builder: {
       mode: localStorage.getItem("wayfarer.builder.mode") || "multi",
       planner: localStorage.getItem("wayfarer.builder.planner") || "sql",
@@ -80,6 +81,7 @@
       dateFrom: localStorage.getItem("wayfarer.builder.dateFrom") || nextStartIso(),
       dateTo: localStorage.getItem("wayfarer.builder.dateTo") || monthAfterNextIso(),
       daysPerStop: Number(localStorage.getItem("wayfarer.builder.daysPerStop")) || 3,
+      flexDays: Number(localStorage.getItem("wayfarer.builder.flexDays")) || 1,
       minDays: Number(localStorage.getItem("wayfarer.builder.minDays")) || 3,
       maxDays: Number(localStorage.getItem("wayfarer.builder.maxDays")) || 14,
     },
@@ -356,6 +358,79 @@
     toggleDestination(iata);
   }
 
+  async function selectOriginOnMap(iata) {
+    const code = String(iata || "").toUpperCase();
+    if (!IATA_RE.test(code)) return false;
+    if (!state.airportsByIata.has(code)) return false;
+    state.mapFilterOrigin = code;
+    state.mapFilterDestinations.clear();
+    clearDestinationArrows();
+    try {
+      const params = new URLSearchParams({ limit: "500" });
+      const r = await getJson(`/api/map/airports/${encodeURIComponent(code)}/fares?${params.toString()}`);
+      const fares = r.fares || [];
+      for (const f of fares) {
+        if (f.origin === code) state.mapFilterDestinations.add(f.destination);
+        else state.mapFilterDestinations.add(f.origin);
+      }
+    } catch (e) {
+      console.warn("selectOriginOnMap: failed to load fares:", e);
+    }
+    drawPins();
+    const ap = state.airportsByIata.get(code);
+    if (ap && Number.isFinite(ap.lat) && Number.isFinite(ap.lon)) {
+      map.flyTo([ap.lat, ap.lon], Math.max(map.getZoom(), 5), { duration: 0.6 });
+    }
+    return true;
+  }
+
+  function clearDestinationArrows() {
+    if (state.destinationArrowsLayer) {
+      map.removeLayer(state.destinationArrowsLayer);
+      state.destinationArrowsLayer = null;
+    }
+  }
+
+  function drawDestinationArrows(origin, deals) {
+    clearDestinationArrows();
+    const oa = state.airportsByIata.get(origin);
+    if (!oa || !Number.isFinite(oa.lat) || !Number.isFinite(oa.lon)) return;
+    const coords = [];
+    for (const d of deals) {
+      const iata = String(d.iata || "").toUpperCase();
+      const da = state.airportsByIata.get(iata);
+      if (da && Number.isFinite(da.lat) && Number.isFinite(da.lon)) coords.push([oa, da, d]);
+    }
+    if (coords.length === 0) return;
+    const lines = [];
+    const labels = [];
+    const bounds = L.latLngBounds([[oa.lat, oa.lon]]);
+    for (const [o, d, deal] of coords) {
+      lines.push(L.polyline([[o.lat, o.lon], [d.lat, d.lon]], {
+        color: "#4f46e5",
+        weight: 2,
+        opacity: 0.65,
+      }));
+      const mid = [(o.lat + d.lat) / 2, (o.lon + d.lon) / 2];
+      const price = Number(deal.bestPrice || 0).toFixed(0);
+      const currency = deal.currency || "EUR";
+      const mins = Number(deal.bestDurationMinutes || 0);
+      const dur = mins > 0 ? `${Math.floor(mins / 60)}h${mins % 60 ? mins % 60 + "m" : ""}` : "";
+      const date = deal.bestDate ? fmtMonthDay(deal.bestDate) : "";
+      const labelParts = [`${currency} ${price}`];
+      if (dur) labelParts.push(dur);
+      if (date) labelParts.push(date);
+      const labelHtml = `<div style="background:rgba(255,255,255,0.95);border:1px solid #4f46e5;border-radius:6px;padding:2px 6px;font-size:10px;font-weight:600;color:#4f46e5;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.18);">${escapeHtml(d.iata)}<br/><span style="color:#64748b;font-weight:500">${escapeHtml(labelParts.join(" · "))}</span></div>`;
+      labels.push(L.marker(mid, {
+        icon: L.divIcon({ className: "leg-label", html: labelHtml, iconSize: null, iconAnchor: [0, 0] }),
+        interactive: false,
+      }));
+      bounds.extend([d.lat, d.lon]);
+    }
+    state.destinationArrowsLayer = L.layerGroup([...lines, ...labels]).addTo(map);
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [80, 80], maxZoom: 6, animate: true });
+  }
+
   async function viewFaresForAirport(iata) {
     const ap = state.airportsByIata.get(iata);
     if (ap) map.flyTo([ap.lat, ap.lon], Math.max(map.getZoom(), 6), { duration: 0.6 });
@@ -413,7 +488,6 @@
     }).join("");
 
     const planDisabled = isRound ? n !== 1 : n === 0;
-    const isSqlPlanner = state.builder.planner === "sql";
     const dateInputs = `
       <div class="builder-row">
         <div><label>Depart from</label><input type="date" id="b-from" value="${state.builder.dateFrom}" /></div>
@@ -422,20 +496,11 @@
       <div class="builder-row" style="margin-top:8px">
         ${isRound
           ? `<div><label>Min trip days</label><input type="number" id="b-min-days" min="1" max="60" value="${state.builder.minDays}" /></div>
-             <div><label>Max trip days</label><input type="number" id="b-max-days" min="1" max="60" value="${state.builder.maxDays}" /></div>`
-          : `<div><label>Days per stop</label><input type="number" id="b-days" min="1" max="30" value="${state.builder.daysPerStop}" /></div>
-             <div><label>Max itineraries</label><input type="number" id="b-max" min="1" max="8" value="${state.builder.maxItineraries}" /></div>`}
-      </div>
-      ${!isRound ? `
-      <div class="builder-row" style="margin-top:8px">
-        <div style="flex:1">
-          <label>Planner</label>
-          <select id="b-planner">
-            <option value="sql" ${isSqlPlanner ? "selected" : ""}>SQL — single ClickHouse pass over all permutations</option>
-            <option value="legacy" ${!isSqlPlanner ? "selected" : ""}>Legacy — JS-side permutation loop (slower)</option>
-          </select>
-        </div>
-      </div>` : ""}
+             <div><label>Max trip days</label><input type="number" id="b-max-days" min="1" max="60" value="${state.builder.maxDays}" /></div>
+             <div><label>Max itineraries</label><input type="number" id="b-max" min="1" max="8" value="${state.builder.maxItineraries}" /></div></div>`
+            : `<div><label>Days per stop</label><input type="number" id="b-days" min="1" max="30" value="${state.builder.daysPerStop}" /></div>
+               <div><label>± flex days</label><input type="number" id="b-flex" min="0" max="10" value="${state.builder.flexDays}" /></div>
+               <div><label>Max itineraries</label><input type="number" id="b-max" min="1" max="8" value="${state.builder.maxItineraries}" /></div></div>`}
     `;
 
     body.innerHTML = `
@@ -480,6 +545,13 @@
     $("b-days")?.addEventListener("change", (e) => {
       const v = Math.max(1, Math.min(30, Number(e.target.value) || 3));
       state.builder.daysPerStop = v;
+      localStorage.setItem("wayfarer.builder.daysPerStop", String(v));
+      e.target.value = String(v);
+    });
+    $("b-flex")?.addEventListener("change", (e) => {
+      const v = Math.max(0, Math.min(10, Number(e.target.value) || 0));
+      state.builder.flexDays = v;
+      localStorage.setItem("wayfarer.builder.flexDays", String(v));
       e.target.value = String(v);
     });
     $("b-min-days")?.addEventListener("change", (e) => {
@@ -497,11 +569,6 @@
       state.builder.maxItineraries = v;
       localStorage.setItem("wayfarer.builder.maxItineraries", String(v));
       e.target.value = String(v);
-    });
-    $("b-planner")?.addEventListener("change", (e) => {
-      state.builder.planner = e.target.value === "legacy" ? "legacy" : "sql";
-      localStorage.setItem("wayfarer.builder.planner", state.builder.planner);
-      toast.info("Planner set", state.builder.planner === "sql" ? "SQL — single ClickHouse pass" : "Legacy — JS permutation loop");
     });
     $("b-clear")?.addEventListener("click", () => {
       state.destinations = [];
@@ -529,7 +596,9 @@
     }
     const stops = state.destinations.join(" → ");
     const totalDays = Math.max(1, daysBetween(state.builder.dateFrom, state.builder.dateTo));
-    return `Route: <strong>${escapeHtml(home)} → ${escapeHtml(stops)} → ${escapeHtml(home)}</strong><br/>${totalDays} days, ~${state.builder.daysPerStop} per stop.`;
+    const flex = state.builder.flexDays;
+    const stayRange = flex > 0 ? `${state.builder.daysPerStop - flex}–${state.builder.daysPerStop + flex}` : `${state.builder.daysPerStop}`;
+    return `Route: <strong>${escapeHtml(home)} → ${escapeHtml(stops)} → ${escapeHtml(home)}</strong><br/>${totalDays} days, ${stayRange} days per stop${flex > 0 ? ` (±${flex})` : ""}.`;
   }
 
   function daysBetween(a, b) {
@@ -696,10 +765,7 @@
     $("sidebar-subtitle").textContent = `${home} → ${stops} → ${home}`;
     $("sidebar-toolbar").hidden = true;
     const body = $("sidebar-body");
-    const plannerLabel = state.builder.planner === "sql"
-      ? `Single ClickHouse pass over all ${permutationsCount(state.destinations.length)} permutations.`
-      : `Legacy JS-side loop over ${permutationsCount(state.destinations.length)} permutations.`;
-    body.innerHTML = `<div class="empty"><h4>Generating itineraries…</h4><p>Computing ${state.destinations.length} stop${state.destinations.length === 1 ? "" : "s"} across ${permutationsCount(state.destinations.length)} permutations.</p><p style="font-size:11px;color:var(--muted);margin-top:6px">Planner: <strong>${state.builder.planner === "sql" ? "SQL" : "Legacy"}</strong> — ${plannerLabel}</p></div>`;
+    body.innerHTML = `<div class="empty"><h4>Generating itineraries…</h4><p>Computing ${state.destinations.length} stop${state.destinations.length === 1 ? "" : "s"} across ${permutationsCount(state.destinations.length)} permutations.</p><p style="font-size:11px;color:var(--muted);margin-top:6px">SQL planner — single ClickHouse pass</p></div>`;
 
     try {
       const r = await postJson("/api/map/itinerary/generate", {
@@ -708,8 +774,9 @@
         dateFrom: state.builder.dateFrom,
         dateTo: state.builder.dateTo,
         daysPerCountry: state.builder.daysPerStop,
+        flexDays: state.builder.flexDays,
         maxItineraries: state.builder.maxItineraries,
-        planner: state.builder.planner,
+        planner: "sql",
       });
       state.itineraries = r.itineraries || [];
       if (state.itineraries.length === 0) {
@@ -794,13 +861,45 @@
   /* ====================================================== */
   /* SSE loop shared between debug + silent chat modes      */
   /* ====================================================== */
+  let homeLocationPromise = null;
+  async function requestHomeLocation() {
+    if (homeLocationPromise) return homeLocationPromise;
+    homeLocationPromise = (async () => {
+      const result = { homeIata: state.homeIata, lat: null, lon: null, country: null };
+      if (typeof navigator === "undefined" || !navigator.geolocation) return result;
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 4000,
+            maximumAge: 60 * 60 * 1000,
+          });
+        });
+        result.lat = pos?.coords?.latitude ?? null;
+        result.lon = pos?.coords?.longitude ?? null;
+      } catch { /* permission denied or unavailable — fall through */ }
+      return result;
+    })();
+    return homeLocationPromise;
+  }
+
   async function runLlmStream(messages, handlers) {
+    const home = await requestHomeLocation();
     let resp;
     try {
       resp = await fetch("/api/llm/chat", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "text/event-stream" },
-        body: JSON.stringify({ messages, maxIterations: 6 }),
+        body: JSON.stringify({
+          messages,
+          maxIterations: 6,
+          homeIata: home.homeIata || undefined,
+          homeLocation: {
+            lat: home.lat ?? undefined,
+            lon: home.lon ?? undefined,
+            country: home.country ?? undefined,
+          },
+        }),
       });
     } catch (e) {
       handlers.onError?.(new Error(String(e)));
@@ -847,209 +946,229 @@
     chatSend.disabled = true;
     const messages = [{ role: "user", content: prompt }];
 
-    if (chatDebug) {
-      await runChatDebug(messages, prompt);
-    } else {
-      await runChatSilent(messages, prompt);
-    }
+    await runChat(messages, prompt);
 
     chatSend.disabled = false;
     chatInput.value = "";
     autoResize();
   }
 
-  /* --- debug mode: full conversation thread (legacy) --- */
-  async function runChatDebug(messages, prompt) {
-    setSidebarMode("itineraries");
-    $("sidebar-toolbar").hidden = true;
-    $("sidebar-title").textContent = "Assistant";
-    $("sidebar-subtitle").textContent = prompt;
-    const body = $("sidebar-body");
-    const conversation = document.createElement("div");
-    conversation.className = "chat-thread";
-    conversation.innerHTML = `
-      <div class="chat-msg user">${escapeHtml(prompt)}</div>
-      <div class="chat-msg assistant assistant-text" data-role="assistant-text"><span class="thinking">Thinking…</span></div>
-      <div class="chat-events" data-role="events"></div>
-    `;
-    body.innerHTML = "";
-    body.appendChild(conversation);
-    const assistantEl = conversation.querySelector("[data-role=assistant-text]");
-    const eventsEl = conversation.querySelector("[data-role=events]");
-    const runCards = new Map();
-    let assistantText = "";
-
-    const subscribeRunPolls = (runId) => {
-      fetch(`/api/runs/${encodeURIComponent(runId)}/stream`).catch(() => { /* ignore */ });
-    };
+  async function runChat(messages, prompt) {
+    aiProgressShow("Thinking…");
+    aiProgressAppendStep("Thinking", "");
+    let finalAnswer = null;
+    let hadError = false;
+    let pendingClarification = null;
 
     await runLlmStream(messages, {
       onEvent: (evtName, data) => {
-        if (evtName === "status") return;
-        if (evtName === "assistant_delta") {
-          if (typeof data.content === "string") {
-            assistantText += data.content;
-            assistantEl.innerHTML = escapeHtml(assistantText).replace(/\n/g, "<br/>");
+        if (evtName === "status") {
+          if (data && data.status === "answering") {
+            aiProgressMarkCurrentDone();
+            aiProgressAppendStep("Composing answer", "");
+            aiProgressUpdate("Composing answer…", "");
           }
           return;
         }
-        if (evtName === "tool_call") {
-          const card = document.createElement("div");
-          card.className = "chat-tool-card";
-          card.dataset.tool = data.name;
-          card.innerHTML = `<div class="chat-tool-head"><span class="chat-tool-name">${escapeHtml(data.name)}</span><span class="status pending" data-status-for="${data.id}">running…</span></div><pre class="chat-tool-args">${escapeHtml(JSON.stringify(data.arguments ?? {}, null, 2))}</pre>`;
-          eventsEl.appendChild(card);
-          card.dataset.toolCallId = data.id;
+        if (evtName === "tool_progress") {
+          if (data && typeof data.label === "string") {
+            aiProgressMarkCurrentDone();
+            aiProgressAppendStep(data.label, data.tool || "");
+            aiProgressUpdate(data.label, data.tool || "");
+          }
           return;
         }
-        if (evtName === "tool_result") {
-          const card = eventsEl.querySelector(`.chat-tool-card[data-tool-call-id="${data.id}"]`);
-          if (!card) return;
-          const status = card.querySelector(`[data-status-for="${data.id}"]`);
-          if (status) status.outerHTML = `<span class="status ok">ok</span>`;
-          const pre = document.createElement("pre");
-          pre.className = "chat-tool-result";
-          const summary = summarizeToolResult(data.name, data.result);
-          pre.innerHTML = `<details><summary>${escapeHtml(summary)}</summary><code>${escapeHtml(JSON.stringify(data.result ?? {}, null, 2)).slice(0, 2000)}</code></details>`;
-          card.appendChild(pre);
-          const result = data.result;
-          if (result && typeof result === "object") {
-            const flights = Array.isArray(result.itineraries) ? result.itineraries : Array.isArray(result.options) ? result.options : [];
-            if (flights.length > 0) {
-              const wrapped = flights.map((it, i) => ({
-                id: String(it.id || `llm-${i}-${Date.now()}`),
-                title: String(it.title || `Option ${i + 1}`),
-                totalPrice: Number(it.totalPrice ?? 0),
-                currency: String(it.currency ?? "EUR"),
-                totalDurationMinutes: it.totalDurationMinutes ?? null,
-                legs: it.legs || [],
-                summary: String(it.summary || ""),
-                recommendationScore: Number(it.recommendationScore ?? 0),
-              }));
-              state.itineraries = wrapped;
-              state.activeItineraryId = wrapped[0].id;
-            }
+        if (evtName === "answer") {
+          aiProgressMarkCurrentDone();
+          finalAnswer = data && data.answer;
+          if (finalAnswer) applyAnswerToUi(finalAnswer);
+          if (finalAnswer && finalAnswer.kind === "question") {
+            pendingClarification = finalAnswer;
           }
           return;
         }
         if (evtName === "run_triggered") {
-          const card = document.createElement("div");
-          card.className = "chat-run-card";
-          card.dataset.runId = data.runId;
-          card.innerHTML = `
-            <div class="chat-run-head">
-              <span class="status queued" data-run-status>QUEUED</span>
-              <strong>${escapeHtml(data.task || data.toolName || "task")}</strong>
-              <span class="muted mono">${escapeHtml(String(data.runId).slice(0, 8))}…</span>
-            </div>
-            <div class="chat-run-meta muted" data-run-meta>just triggered</div>
-          `;
-          eventsEl.appendChild(card);
-          runCards.set(data.runId, card);
-          subscribeRunPolls(data.runId);
-          return;
-        }
-        if (evtName === "run_status" || evtName === "run_final") {
-          const card = runCards.get(data.runId);
-          if (!card) return;
-          const status = String(data.status || "UNKNOWN").toLowerCase();
-          const badge = card.querySelector("[data-run-status]");
-          if (badge) { badge.className = `status ${status}`; badge.textContent = data.status; }
-          const meta = card.querySelector("[data-run-meta]");
-          if (meta) {
-            const parts = [];
-            if (data.taskIdentifier) parts.push(escapeHtml(String(data.taskIdentifier)));
-            if (data.costInCents != null) parts.push(`cost $${(Number(data.costInCents) / 100).toFixed(4)}`);
-            if (data.durationMs != null) parts.push(`${Math.round(Number(data.durationMs) / 1000)}s`);
-            meta.innerHTML = parts.length ? parts.join(" · ") : `<span class="muted">live · ${escapeHtml(evtName === "run_final" ? "finished" : "watching…")}</span>`;
-          }
-          if (evtName === "run_final" && /COMPLETED|FAILED|CANCEL|CRASH|TIMEOUT|EXPIRED/.test(String(data.status).toUpperCase())) {
-            card.classList.add("run-done");
+          if (data && data.runId) {
+            aiProgressMarkCurrentDone();
+            aiProgressAppendStep("Triggered background run", data.runId?.slice(0, 8) || "");
+            aiProgressUpdate("Triggered background run…", data.runId?.slice(0, 8) || "");
+            fetch(`/api/runs/${encodeURIComponent(data.runId)}/stream`).catch(() => { /* ignore */ });
           }
           return;
         }
         if (evtName === "error") {
-          assistantEl.innerHTML = `<span class="err">${escapeHtml(String(data.error || "Assistant error"))}</span>`;
+          hadError = true;
+          aiProgressDone(`Error: ${data?.error || "assistant error"}`);
+          toast.error("Assistant error", String(data?.error || ""));
         }
       },
       onError: (err) => {
-        assistantEl.innerHTML = `<span class="err">${escapeHtml(String(err.message || err))}</span>`;
-      },
-    });
-
-    if (assistantText) {
-      $("sidebar-title").textContent = "Assistant";
-      $("sidebar-subtitle").textContent = `Plan ready · ${runCards.size} live task${runCards.size === 1 ? "" : "s"}`;
-    } else if (!assistantEl.innerHTML.includes("err")) {
-      assistantEl.innerHTML = `<span class="muted">(no reply)</span>`;
-    }
-    refreshHotAirportsFromRuns(runCards);
-  }
-
-  /* --- silent mode: drive UI, pop up only on clarification --- */
-  async function runChatSilent(messages, prompt) {
-    aiProgressShow("Thinking…");
-    let assistantText = "";
-    let hadQuestion = false;
-
-    await runLlmStream(messages, {
-      onEvent: (evtName, data) => {
-        if (evtName === "status") return;
-        if (evtName === "assistant_delta") {
-          if (typeof data.content === "string") assistantText += data.content;
-          return;
-        }
-        if (evtName === "tool_call") {
-          const desc = describeToolCall(data.name, data.arguments || {});
-          aiProgressUpdate(desc.label, desc.tool);
-          return;
-        }
-        if (evtName === "tool_result") {
-          applyToolResultToUi(data.name, data.result);
-          return;
-        }
-        if (evtName === "error") {
-          aiProgressDone(`Error: ${data.error || "assistant error"}`);
-          toast.error("Assistant error", String(data.error || ""));
-        }
-      },
-      onError: (err) => {
+        hadError = true;
         aiProgressDone("Couldn't reach assistant");
-        toast.error("Network error", String(err.message || err));
+        toast.error("Network error", String(err?.message || err));
       },
     });
 
-    if (hadQuestion) return;
-
-    if (assistantText && isAssistantQuestion(assistantText)) {
+    if (pendingClarification) {
       aiProgressDone("I need a bit more info");
-      hadQuestion = true;
-      const nextMessages = [...messages, { role: "assistant", content: assistantText }];
-      showClarification(assistantText, async (reply) => {
+      const q = pendingClarification;
+      const nextMessages = [...messages, { role: "user", content: prompt }, { role: "assistant", content: JSON.stringify(q) }];
+      showClarification(q.text || "", async (reply) => {
         nextMessages.push({ role: "user", content: reply });
-        await runChatSilent(nextMessages, reply);
+        await runChat(nextMessages, reply);
       });
       return;
     }
 
-    aiProgressDone(assistantText ? "Done" : "No reply");
-    if (assistantText && !assistantText.endsWith("?") && assistantText.length < 240) {
-      toast.info("Assistant", assistantText.slice(0, 120));
+    if (hadError) return;
+
+    if (finalAnswer && finalAnswer.kind === "summary" && finalAnswer.text) {
+      aiProgressDone("Done");
+      const t = String(finalAnswer.text);
+      if (t.length < 240) toast.info("Assistant", t.slice(0, 200));
+    } else {
+      aiProgressDone("Done");
     }
   }
 
-
-  function summarizeToolResult(name, result) {
-    if (!result || typeof result !== "object") return `result`;
-    if (result.ok === false) return `error: ${result.error || "unknown"}`;
-    if (name === "search_airports") return `${result.count ?? 0} airport${(result.count ?? 0) === 1 ? "" : "s"}`;
-    if (name === "get_airport_fares") return `${result.count ?? 0} fare${(result.count ?? 0) === 1 ? "" : "s"} for ${result.iata || ""}`;
-    if (name === "plan_round_trip") return `${result.count ?? 0} round trip${(result.count ?? 0) === 1 ? "" : "s"}`;
-    if (name === "plan_multi_stop") return `${result.count ?? 0} itinerary options`;
-    if (name === "trigger_refresh_crawl") return `enqueued ${result.enqueued ?? 0}, queued worker run ${(result.runId || "").slice(0, 8)}…`;
-    if (name === "list_favorites") return `${result.count ?? 0} favorite${(result.count ?? 0) === 1 ? "" : "s"}`;
-    if (name === "save_favorite" || name === "remove_favorite") return "ok";
-    return "result";
+  function applyAnswerToUi(answer) {
+    if (!answer || typeof answer !== "object") return;
+    switch (answer.kind) {
+      case "summary":
+        return;
+      case "question":
+        return;
+      case "error":
+        toast.error("Assistant error", String(answer.message || ""));
+        return;
+      case "set_origin": {
+        const code = String(answer.iata || "").toUpperCase();
+        if (!/^[A-Z]{3}$/.test(code)) return;
+        state.mapFilterOrigin = code;
+        state.mapFilterDestinations = new Set();
+        clearDestinationArrows();
+        drawPins();
+        const ap = state.airportsByIata.get(code);
+        if (ap && Number.isFinite(ap.lat) && Number.isFinite(ap.lon)) {
+          map.flyTo([ap.lat, ap.lon], Math.max(map.getZoom(), 5), { duration: 0.6 });
+        }
+        const label = answer.label || (ap ? `${ap.iata} — ${ap.city || ap.name || ""}` : code);
+        toast.success(`Origin selected: ${label}`);
+        return;
+      }
+      case "destinations": {
+        const origin = String(answer.origin || "").toUpperCase();
+        const deals = (answer.arrows || []).filter((d) => d && d.iata);
+        if (deals.length === 0) return;
+        state.mapFilterOrigin = origin;
+        state.mapFilterDestinations = new Set(deals.map((d) => String(d.iata).toUpperCase()));
+        drawPins();
+        drawDestinationArrows(origin, deals);
+        setSidebarMode("builder");
+        $("sidebar-title").textContent = `Destinations from ${origin}`;
+        const winNote = answer.window ? ` · ${answer.window.dateFrom} → ${answer.window.dateTo}` : "";
+        $("sidebar-subtitle").textContent = `${deals.length} route${deals.length === 1 ? "" : "s"} · arrows show price + duration${winNote}`;
+        const body = $("sidebar-body");
+        body.innerHTML = `<div class="empty"><h4>Map updated</h4><p>${deals.length} destination${deals.length === 1 ? "" : "s"} drawn from <strong>${escapeHtml(origin)}</strong> with price and duration.${answer.note ? `</p><p style="font-size:12px;color:var(--muted);margin-top:6px">${escapeHtml(answer.note)}` : ""}</p><p style="font-size:11px;color:var(--muted);margin-top:6px">Click any pin to inspect, or ask the assistant to filter further (e.g. "cheapest 3 from here").</p></div>`;
+        toast.success(`Drew ${deals.length} destination${deals.length === 1 ? "" : "s"} from ${origin}`);
+        return;
+      }
+      case "cheapest_fares": {
+        const origin = String(answer.origin || state.homeIata || "").toUpperCase();
+        const deals = (answer.deals || []).filter((d) => d && d.iata);
+        if (deals.length === 0) return;
+        state.mapFilterOrigin = origin;
+        state.mapFilterDestinations = new Set(deals.map((d) => String(d.iata).toUpperCase()));
+        drawPins();
+        drawDestinationArrows(origin, deals);
+        renderCheapestDeals(origin, deals, answer.window || {});
+        if (origin && state.airportsByIata.has(origin)) {
+          const h = state.airportsByIata.get(origin);
+          map.flyTo([h.lat, h.lon], Math.max(map.getZoom(), 5), { duration: 0.6 });
+        }
+        const top = deals[0];
+        const topLabel = top ? `${top.iata} · ${top.currency || "EUR"} ${Number(top.bestPrice || 0).toFixed(2)}` : "";
+        toast.success(`Top ${deals.length} cheapest fare${deals.length === 1 ? "" : "s"} from ${origin}`, topLabel);
+        return;
+      }
+      case "fares": {
+        const iata = String(answer.iata || "").toUpperCase();
+        if (!iata) return;
+        state.faresAirport = iata;
+        state.fares = (answer.fares || []).map((f) => ({
+          origin: String(f.origin || "").toUpperCase(),
+          destination: String(f.destination || "").toUpperCase(),
+          price: Number(f.price || 0),
+          currency: String(f.currency || "EUR"),
+          departureDate: String(f.departureDate || ""),
+          departureDatetime: f.departureDatetime || null,
+          durationMinutes: f.durationMinutes ?? null,
+          airline: f.airline || null,
+          airlineCode: f.airlineCode || null,
+        }));
+        renderFares(state.fares);
+        if (answer.note && state.fares.length > 0) toast.info("Fares", String(answer.note));
+        return;
+      }
+      case "fastest_routes": {
+        const destination = String(answer.destination || "").toUpperCase();
+        const routes = (answer.routes || []).map((r) => ({
+          origin: String(r.origin).toUpperCase(),
+          destination: String(r.destination || destination).toUpperCase(),
+          price: Number(r.price || 0),
+          currency: String(r.currency || "EUR"),
+          durationMinutes: Number(r.durationMinutes || 0),
+          departureDate: r.departureDate || null,
+        }));
+        if (routes.length === 0) return;
+        renderFastestRoutes(routes, destination, routes.map((r) => r.origin), answer.window || {});
+        const winner = routes[0];
+        toast.success(`Fastest: ${winner.origin} → ${destination}`, `${Math.floor((winner.durationMinutes || 0) / 60)}h · ${winner.currency} ${Number(winner.price || 0).toFixed(0)}`);
+        return;
+      }
+      case "origin_compare": {
+        const destination = String(answer.destination || "").toUpperCase();
+        const rows = (answer.rows || []).map((r) => ({
+          origin: String(r.origin).toUpperCase(),
+          price: Number(r.price || 0),
+          currency: String(r.currency || "EUR"),
+          durationMinutes: r.durationMinutes ?? null,
+          departureDate: r.departureDate || null,
+        }));
+        if (rows.length === 0) return;
+        renderOriginCompare(rows, destination, rows.map((r) => r.origin), answer.window || {});
+        toast.success(`Comparing ${rows.length} origins → ${destination}`);
+        return;
+      }
+      case "itineraries": {
+        const items = (answer.itineraries || []).map((it) => ({
+          id: String(it.id),
+          title: String(it.title || ""),
+          totalPrice: Number(it.totalPrice || 0),
+          currency: String(it.currency || "EUR"),
+          totalDurationMinutes: it.totalDurationMinutes ?? null,
+          legs: (it.legs || []).map((l) => ({
+            origin: String(l.origin).toUpperCase(),
+            destination: String(l.destination).toUpperCase(),
+            date: String(l.date),
+            price: Number(l.price || 0),
+            currency: String(l.currency || "EUR"),
+            airline: l.airline || null,
+            crawlRunId: l.crawlRunId || null,
+          })),
+          summary: String(it.summary || ""),
+          recommendationScore: Number(it.recommendationScore || 0),
+        }));
+        if (items.length === 0) return;
+        state.itineraries = items;
+        state.activeItineraryId = items[0].id;
+        renderItineraries();
+        if (state.activeItineraryId) renderItineraryOnMap(state.activeItineraryId);
+        return;
+      }
+      default:
+        return;
+    }
   }
 
   /* ====================================================== */
@@ -1058,98 +1177,253 @@
   const aiProgressEl = () => $("ai-progress");
   const aiProgressLabel = () => $("ai-progress-label");
   const aiProgressTool = () => $("ai-progress-tool");
+  const aiProgressHistory = () => $("ai-progress-history");
+  const aiProgressClose = () => $("ai-progress-close");
+
+  let aiProgressAutoHideTimer = null;
+
+  function aiProgressReset() {
+    if (aiProgressAutoHideTimer) { clearTimeout(aiProgressAutoHideTimer); aiProgressAutoHideTimer = null; }
+    const list = aiProgressHistory();
+    if (list) list.innerHTML = "";
+  }
 
   function aiProgressShow(label) {
     const el = aiProgressEl();
     if (!el) return;
-    el.hidden = false;
-    el.classList.remove("done");
+    aiProgressReset();
+    el.classList.remove("hidden", "done");
+    el.classList.add("open");
     if (aiProgressLabel()) aiProgressLabel().textContent = label || "Working on it…";
     if (aiProgressTool()) aiProgressTool().textContent = "";
+    aiProgressRenderHistory([]);
   }
   function aiProgressUpdate(label, tool) {
     if (aiProgressLabel() && label) aiProgressLabel().textContent = label;
     if (aiProgressTool() && tool) aiProgressTool().textContent = tool;
+    const el = aiProgressEl();
+    if (!el) return;
+    el.classList.remove("hidden", "done");
+    el.classList.add("open");
   }
   function aiProgressDone(label) {
     const el = aiProgressEl();
     if (!el) return;
     el.classList.add("done");
     if (aiProgressLabel() && label) aiProgressLabel().textContent = label;
+    const list = aiProgressHistory();
+    if (list) list.querySelectorAll("li.current").forEach((li) => li.classList.remove("current"));
+    if (aiProgressAutoHideTimer) clearTimeout(aiProgressAutoHideTimer);
+    aiProgressAutoHideTimer = setTimeout(() => aiProgressHide(), 2400);
+  }
+  function aiProgressHide() {
+    const el = aiProgressEl();
+    if (!el) return;
+    el.classList.remove("open");
+    el.classList.add("hidden");
+    if (aiProgressAutoHideTimer) { clearTimeout(aiProgressAutoHideTimer); aiProgressAutoHideTimer = null; }
   }
 
-  function describeToolCall(name, args) {
-    if (!args || typeof args !== "object") return { label: "Working…", tool: name };
-    const a = args;
-    switch (name) {
-      case "find_cheapest_destinations":
-        return { label: `Searching cheapest fares from ${a.origin || "your home airport"}…`, tool: name };
-      case "find_cheapest_dates":
-        return { label: `Checking prices by date for ${a.origin || ""} → ${a.destination || ""}…`, tool: name };
-      case "find_best_round_trip":
-        return { label: `Building round-trip bundles ${a.origin || ""} ⇄ ${a.destination || ""}…`, tool: name };
-      case "find_best_one_way":
-        return { label: `Finding one-way fares ${a.origin || ""} → ${a.destination || ""}…`, tool: name };
-      case "find_weekend_deals":
-        return { label: `Looking for weekend trips to ${a.destination || a.origin || ""}…`, tool: name };
-      case "find_cheapest_from_any_origin":
-        return { label: `Comparing from ${(a.origins || []).join(", ")}…`, tool: name };
-      case "plan_round_trip":
-        return { label: `Planning round trip ${a.origin || ""} ⇄ ${a.destination || ""}…`, tool: name };
-      case "plan_multi_stop":
-        return { label: `Planning multi-stop trip from ${a.homeIata || ""}…`, tool: name };
-      case "trigger_refresh_crawl":
-        return { label: `Crawling prices for ${(a.legs || []).length} route${(a.legs || []).length === 1 ? "" : "s"}…`, tool: name };
-      case "get_dataset_freshness":
-        return { label: "Checking how fresh the data is…", tool: name };
-      case "search_airports":
-        return { label: `Looking up "${a.query || ""}"…`, tool: name };
-      case "save_favorite":
-        return { label: "Saving favorite…", tool: name };
-      default:
-        return { label: "Working…", tool: name };
-    }
+  function aiProgressAppendStep(label, tool) {
+    const list = aiProgressHistory();
+    if (!list) return;
+    list.querySelectorAll("li.current").forEach((li) => li.classList.remove("current"));
+    const li = document.createElement("li");
+    li.className = "current";
+    const text = tool ? `${label} · ${tool}` : label;
+    li.textContent = text;
+    list.appendChild(li);
+    list.scrollTop = list.scrollHeight;
   }
 
-  function applyToolResultToUi(name, result) {
-    if (!result || result.ok === false) return;
-    if (name === "find_cheapest_destinations" && Array.isArray(result.destinations) && result.destinations.length > 0) {
-      const home = String(result.origin || state.homeIata || "").toUpperCase();
-      const dests = result.destinations
-        .map((d) => String(d.destination || "").toUpperCase())
-        .filter((iata) => IATA_RE.test(iata) && iata !== home);
-      const unique = Array.from(new Set(dests)).slice(0, 12);
-      if (unique.length === 0) return;
-      state.builder.mode = "multi";
-      state.destinations = unique;
-      saveDestinations();
-      drawPins();
-      fitToDestinations(state.homeIata);
-      renderBuilder();
-      toast.success(`Found ${result.count ?? unique.length} destinations`, unique.slice(0, 4).join(" · "));
-      return;
-    }
-    if (name === "trigger_refresh_crawl") {
-      toast.info("Crawling prices in background…", `Run ${String(result.runId || "").slice(0, 8)}…`);
-      return;
-    }
-    if (name === "save_favorite" && result.favorite) {
-      toast.success("Saved to favorites", result.favorite.title || "");
-      return;
-    }
-    if (name === "remove_favorite") {
-      toast.info("Removed from favorites");
-      return;
+  function aiProgressMarkCurrentDone() {
+    const list = aiProgressHistory();
+    if (!list) return;
+    list.querySelectorAll("li.current").forEach((li) => li.classList.remove("current"));
+  }
+
+  function aiProgressRenderHistory(items) {
+    const list = aiProgressHistory();
+    if (!list) return;
+    list.innerHTML = "";
+    for (const it of items) {
+      const li = document.createElement("li");
+      if (it.current) li.className = "current";
+      li.textContent = it.tool ? `${it.label} · ${it.tool}` : it.label;
+      list.appendChild(li);
     }
   }
 
-  function isAssistantQuestion(text) {
-    if (!text) return false;
-    const t = String(text).trim();
-    if (t.length < 12 || t.length > 400) return false;
-    const q = /(which|what|when|where|how many|how long|any preference|could you|can you|tell me)/i;
-    return (q.test(t) && /\?/.test(t)) || (t.endsWith("?") && t.split(/\s+/).length <= 60);
+  aiProgressClose()?.addEventListener("click", () => aiProgressHide());
+
+  const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function fmtMonthDay(iso) {
+    if (!iso || typeof iso !== "string") return "";
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return iso;
+    const idx = Math.max(0, Math.min(11, parseInt(m[2], 10) - 1));
+    return `${MONTH_ABBR[idx]} ${parseInt(m[3], 10)}`;
   }
+  function fmtWindowRange(win) {
+    if (!win || !win.dateFrom || !win.dateTo) return "";
+    const a = fmtMonthDay(win.dateFrom);
+    const b = fmtMonthDay(win.dateTo);
+    const yearA = String(win.dateFrom).slice(0, 4);
+    if (!a || !b) return `${win.dateFrom} → ${win.dateTo}`;
+    return `${a} → ${b}, ${yearA}`;
+  }
+  function renderCheapestDeals(origin, deals, win) {
+    state.faresAirport = origin || null;
+    setSidebarMode("fares");
+    const ap = origin ? state.airportsByIata.get(origin) : null;
+    $("sidebar-title").textContent = `Cheapest fares from ${origin}`;
+    $("sidebar-subtitle").textContent = `${fmtWindowRange(win)} · ${deals.length} result${deals.length === 1 ? "" : "s"}${ap && ap.country ? " · " + ap.country : ""}`;
+    const body = $("sidebar-body");
+    body.innerHTML = deals.map((d, i) => {
+      const iata = String(d.iata || "").toUpperCase();
+      const city = d.city || (state.airportsByIata.get(iata)?.city) || "";
+      const country = d.country || (state.airportsByIata.get(iata)?.country) || "";
+      const place = city ? `${iata} · ${city}` : iata;
+      const price = Number(d.bestPrice || 0).toFixed(2);
+      const currency = d.currency || "EUR";
+      const bestDate = d.bestDate ? fmtMonthDay(d.bestDate) : "—";
+      const airline = d.bestAirline || "";
+      const flights = d.nFlights != null ? `${d.nFlights} fare${d.nFlights === 1 ? "" : "s"}` : "";
+      const inTrip = state.destinations.includes(iata) ? " · in trip" : "";
+      return `<div class="fare-card deal-card${i === 0 ? " active" : ""}" data-deal-iata="${escapeHtml(iata)}" data-deal-rank="${i + 1}">
+        <div class="fare-route"><span style="color:var(--muted);font-weight:600;margin-right:6px;font-size:11px">#${i + 1}</span>${escapeHtml(origin || "")} <span class="arrow">→</span> ${escapeHtml(place)}${country ? ` <span style="color:var(--muted);font-weight:500">· ${escapeHtml(country)}</span>` : ""}</div>
+        <div class="fare-meta">
+          <span>${escapeHtml(bestDate)}${airline ? " · " + escapeHtml(airline) : ""}${flights ? " · " + escapeHtml(flights) : ""}${escapeHtml(inTrip)}</span>
+          <span class="fare-price">${escapeHtml(currency)} ${escapeHtml(price)}</span>
+        </div>
+      </div>`;
+    }).join("");
+
+    $("fares-back")?.remove();
+    const back = document.createElement("div");
+    back.id = "fares-back";
+    back.style.cssText = "padding:8px 20px 0;font-size:12px;display:flex;gap:6px;align-items:center";
+    back.innerHTML = `<button class="ghost small" id="b-back-builder">← trip builder</button><span style="color:var(--muted);font-size:11px;margin-left:auto">Click a row to fly the map</span>`;
+    body.parentNode?.insertBefore(back, body);
+    back.querySelector("#b-back-builder").addEventListener("click", exitFaresToBuilder);
+
+    body.querySelectorAll(".deal-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        body.querySelectorAll(".deal-card").forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
+        const iata = card.dataset.dealIata;
+        if (iata && state.airportsByIata.has(iata)) {
+          const ap2 = state.airportsByIata.get(iata);
+          map.flyTo([ap2.lat, ap2.lon], Math.max(map.getZoom(), 6), { duration: 0.6 });
+        }
+      });
+    });
+  }
+
+  function renderFastestRoutes(routes, destination, origins, win) {
+    setSidebarMode("fares");
+    $("sidebar-title").textContent = `Fastest to ${destination}`;
+    $("sidebar-subtitle").textContent = `${(origins || []).join(", ")} → ${destination} · ${fmtWindowRange(win)} · ranked by duration`;
+    const body = $("sidebar-body");
+    if (!routes || routes.length === 0) {
+      body.innerHTML = `<div class="empty"><h4>No routes</h4><p>No priced flights from ${(origins || []).join(", ")} to ${escapeHtml(destination)} in this window.</p></div>`;
+      return;
+    }
+    const winner = routes[0];
+    body.innerHTML = routes.map((r, i) => {
+      const winnerCls = i === 0 ? " winner" : "";
+      const dur = r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h${r.durationMinutes % 60 ? " " + (r.durationMinutes % 60) + "m" : ""}` : "—";
+      const price = Number(r.price || 0).toFixed(2);
+      const date = r.bestDate ? fmtMonthDay(r.bestDate) : "—";
+      const ap = state.airportsByIata.get(r.origin);
+      const city = ap?.city || "";
+      return `<div class="fare-card${winnerCls}${i === 0 ? " active" : ""}" data-origin="${escapeHtml(r.origin)}">
+        <div class="fare-route"><span style="color:var(--muted);font-weight:600;margin-right:6px;font-size:11px">#${i + 1}</span>${escapeHtml(r.origin)} <span class="arrow">→</span> ${escapeHtml(destination)}${city ? ` <span style="color:var(--muted);font-weight:500">· ${escapeHtml(city)}</span>` : ""}</div>
+        <div class="fare-meta">
+          <span><strong>${escapeHtml(dur)}</strong> · ${escapeHtml(date)}${r.airline ? " · " + escapeHtml(r.airline) : ""}</span>
+          <span class="fare-price">${escapeHtml(r.currency)} ${escapeHtml(price)}</span>
+        </div>
+      </div>`;
+    }).join("");
+    $("fares-back")?.remove();
+    const back = document.createElement("div");
+    back.id = "fares-back";
+    back.style.cssText = "padding:8px 20px 0;font-size:12px;display:flex;gap:6px;align-items:center";
+    back.innerHTML = `<button class="ghost small" id="b-back-builder">← trip builder</button><span style="color:var(--muted);font-size:11px;margin-left:auto">Fastest highlighted</span>`;
+    body.parentNode?.insertBefore(back, body);
+    back.querySelector("#b-back-builder").addEventListener("click", exitFaresToBuilder);
+    const winnerAirport = state.airportsByIata.get(winner.origin);
+    const destAirport = state.airportsByIata.get(destination);
+    if (winnerAirport && destAirport) {
+      clearDestinationArrows();
+      const line = L.polyline([[winnerAirport.lat, winnerAirport.lon], [destAirport.lat, destAirport.lon]], {
+        color: "#10b981",
+        weight: 4,
+        opacity: 0.9,
+      });
+      const label = L.marker([(winnerAirport.lat + destAirport.lat) / 2, (winnerAirport.lon + destAirport.lon) / 2], {
+        icon: L.divIcon({
+          className: "leg-label",
+          html: `<div style="background:#10b981;color:#fff;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25);">⚡ ${escapeHtml(dur)}${winner.price ? " · " + escapeHtml(winner.currency) + " " + Number(winner.price).toFixed(0) : ""}</div>`,
+          iconSize: null,
+          iconAnchor: [0, 0],
+        }),
+        interactive: false,
+      });
+      state.destinationArrowsLayer = L.layerGroup([line, label]).addTo(map);
+      const b = L.latLngBounds([[winnerAirport.lat, winnerAirport.lon], [destAirport.lat, destAirport.lon]]);
+      map.fitBounds(b, { padding: [80, 80], maxZoom: 7, animate: true });
+    }
+  }
+
+  function renderOriginCompare(rows, destination, origins, win) {
+    setSidebarMode("fares");
+    $("sidebar-title").textContent = `Compare origins → ${destination}`;
+    $("sidebar-subtitle").textContent = `${(origins || []).join(", ")} → ${destination} · ${fmtWindowRange(win)}`;
+    const body = $("sidebar-body");
+    if (!rows || rows.length === 0) {
+      body.innerHTML = `<div class="empty"><h4>No comparison</h4><p>None of ${(origins || []).join(", ")} have priced flights to ${escapeHtml(destination)} in this window.</p></div>`;
+      return;
+    }
+    body.innerHTML = rows.map((r, i) => {
+      const dur = r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h${r.durationMinutes % 60 ? " " + (r.durationMinutes % 60) + "m" : ""}` : "—";
+      const price = Number(r.bestPrice || 0).toFixed(2);
+      const date = r.bestDate ? fmtMonthDay(r.bestDate) : "—";
+      const ap = state.airportsByIata.get(r.origin);
+      const city = ap?.city || "";
+      return `<div class="fare-card${i === 0 ? " active" : ""}" data-origin="${escapeHtml(r.origin)}">
+        <div class="fare-route">${escapeHtml(r.origin)} <span class="arrow">→</span> ${escapeHtml(destination)}${city ? ` <span style="color:var(--muted);font-weight:500">· ${escapeHtml(city)}</span>` : ""}</div>
+        <div class="fare-meta">
+          <span>${escapeHtml(date)}${r.bestAirline ? " · " + escapeHtml(r.bestAirline) : ""}${dur !== "—" ? " · " + escapeHtml(dur) : ""}</span>
+          <span class="fare-price">${escapeHtml(r.currency)} ${escapeHtml(price)}</span>
+        </div>
+      </div>`;
+    }).join("");
+    $("fares-back")?.remove();
+    const back = document.createElement("div");
+    back.id = "fares-back";
+    back.style.cssText = "padding:8px 20px 0;font-size:12px;display:flex;gap:6px;align-items:center";
+    back.innerHTML = `<button class="ghost small" id="b-back-builder">← trip builder</button>`;
+    body.parentNode?.insertBefore(back, body);
+    back.querySelector("#b-back-builder").addEventListener("click", exitFaresToBuilder);
+    body.querySelectorAll(".fare-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        body.querySelectorAll(".fare-card").forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
+        const o = card.dataset.origin;
+        const oa = state.airportsByIata.get(o);
+        const da = state.airportsByIata.get(destination);
+        if (oa && da) {
+          clearDestinationArrows();
+          const line = L.polyline([[oa.lat, oa.lon], [da.lat, da.lon]], { color: "#6366f1", weight: 3, opacity: 0.85 });
+          state.destinationArrowsLayer = L.layerGroup([line]).addTo(map);
+          const b = L.latLngBounds([[oa.lat, oa.lon], [da.lat, da.lon]]);
+          map.fitBounds(b, { padding: [80, 80], maxZoom: 7, animate: true });
+        }
+      });
+    });
+  }
+
 
   function showClarification(question, onSubmit) {
     const modal = $("ai-clarification");
@@ -1289,14 +1563,31 @@
 
     const lines = [];
     const labels = [];
+    const routeCounts = new Map();
     for (const [oa, da, leg] of coords) {
+      const key = [oa.iata, da.iata].sort().join("|");
+      routeCounts.set(key, (routeCounts.get(key) ?? 0) + 1);
+    }
+      const routeOffsets = new Map();
+    for (const [oa, da, leg] of coords) {
+      const key = [oa.iata, da.iata].sort().join("|");
+      const count = routeCounts.get(key) ?? 1;
+      if (!routeOffsets.has(key)) routeOffsets.set(key, 0);
+      const offset = routeOffsets.get(key) ?? 0;
+      routeOffsets.set(key, offset + 1);
+      const dLat = da.lat - oa.lat;
+      const dLon = da.lon - oa.lon;
+      const len = Math.sqrt(dLat * dLat + dLon * dLon) || 1;
+      const perpLat = (-dLon / len) * 0.6;
+      const perpLon = (dLat / len) * 0.6;
+      const stackOffset = count > 1 ? (offset % 2 === 0 ? 1 : -1) : 0;
+      const mid = [(oa.lat + da.lat) / 2 + perpLat * stackOffset, (oa.lon + da.lon) / 2 + perpLon * stackOffset];
       lines.push(L.polyline([[oa.lat, oa.lon], [da.lat, da.lon]], {
         color: leg.price > 0 ? "#6366f1" : "#94a3b8",
         weight: 3,
         opacity: 0.9,
         dashArray: leg.price > 0 ? null : "6 6",
       }));
-      const mid = [(oa.lat + da.lat) / 2, (oa.lon + da.lon) / 2];
       const priceLabel = leg.price > 0 ? `${leg.currency} ${leg.price.toFixed(0)}` : "no data";
       labels.push(L.marker(mid, {
         icon: L.divIcon({
@@ -1392,6 +1683,13 @@
   });
   $("btn-fit-itinerary")?.addEventListener("click", () => {
     if (state.activeItineraryId) renderItineraryOnMap(state.activeItineraryId);
+  });
+  $("btn-clear-airport")?.addEventListener("click", () => {
+    if (state.mapFilterOrigin == null) return;
+    state.mapFilterOrigin = null;
+    state.mapFilterDestinations.clear();
+    clearDestinationArrows();
+    drawPins();
   });
   syncAirlineToggle();
 

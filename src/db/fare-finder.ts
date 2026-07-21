@@ -25,8 +25,29 @@ export interface DestinationDeal {
   bestAirline: string;
   nFlights: number;
   nDates: number;
+  bestDurationMinutes: number | null;
   city: string | null;
   country: string | null;
+}
+
+export interface FastestRoute {
+  origin: string;
+  destination: string;
+  bestDate: string;
+  durationMinutes: number | null;
+  price: number;
+  currency: string;
+  airline: string;
+}
+
+export interface OriginCompareRow {
+  origin: string;
+  destination: string;
+  bestPrice: number;
+  currency: string;
+  bestDate: string;
+  bestAirline: string;
+  durationMinutes: number | null;
 }
 
 export async function findCheapestDestinations(q: InspirationQuery): Promise<DestinationDeal[]> {
@@ -56,6 +77,7 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
         any(currency) AS currency,
         argMin(departure_date, price) AS best_date,
         any(airline) AS best_airline,
+        argMin(duration_minutes, price) AS best_duration_minutes,
         count() AS n_flights,
         uniqExact(departure_date) AS n_dates
       FROM flight_listings_latest
@@ -85,6 +107,10 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
       bestAirline: String(row.best_airline ?? ""),
       nFlights: Number(row.n_flights ?? 0),
       nDates: Number(row.n_dates ?? 0),
+      bestDurationMinutes:
+        row.best_duration_minutes != null && row.best_duration_minutes !== 0
+          ? Number(row.best_duration_minutes)
+          : null,
       city: ap?.city ?? null,
       country: ap?.country ?? null,
     };
@@ -431,6 +457,125 @@ export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<Mu
   return Array.from(grouped.values())
     .sort((a, b) => a.bestPrice - b.bestPrice)
     .slice(0, limit);
+}
+
+export interface FastestQuery {
+  origins: string[];
+  destination: string;
+  dateFrom: string;
+  dateTo: string;
+  airlineCode?: string;
+  limit?: number;
+}
+
+export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<FastestRoute[]> {
+  const ch = getClickHouse();
+  const origins = Array.from(new Set(q.origins.map((o) => o.toUpperCase())));
+  if (origins.length === 0) return [];
+  const destination = q.destination.toUpperCase();
+  const limit = Math.max(1, Math.min(20, q.limit ?? 5));
+  const airlineCode = (q.airlineCode ?? "").toUpperCase();
+  const useAirline = airlineCode.length > 0 ? 1 : 0;
+
+  const r = await ch.query({
+    query: `
+      SELECT
+        origin_iata,
+        argMin(departure_date, duration_minutes) AS best_date,
+        min(duration_minutes) AS duration_minutes,
+        argMin(price, duration_minutes) AS price,
+        any(currency) AS currency,
+        argMin(airline, duration_minutes) AS airline
+      FROM flight_listings_latest
+      WHERE origin_iata IN {origins:Array(String)}
+        AND destination_iata = {destination:String}
+        AND departure_date BETWEEN {dateFrom:Date} AND {dateTo:Date}
+        AND price > 0
+        AND duration_minutes > 0
+        AND ({useAirline:UInt8} = 0 OR airline_code = {airlineCode:String})
+      GROUP BY origin_iata
+      ORDER BY duration_minutes ASC
+      LIMIT {limit:UInt32}
+    `,
+    query_params: {
+      origins,
+      destination,
+      dateFrom: q.dateFrom,
+      dateTo: q.dateTo,
+      airlineCode,
+      useAirline,
+    },
+    format: "JSONEachRow",
+  });
+
+  const rows = (await r.json()) as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    origin: String(row.origin_iata ?? "").toUpperCase(),
+    destination,
+    bestDate: String(row.best_date ?? "").slice(0, 10),
+    durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
+    price: Number(row.price ?? 0),
+    currency: String(row.currency ?? "EUR"),
+    airline: String(row.airline ?? ""),
+  }));
+}
+
+export interface CompareOriginsQuery {
+  origins: string[];
+  destination: string;
+  dateFrom: string;
+  dateTo: string;
+  airlineCode?: string;
+}
+
+export async function compareOrigins(q: CompareOriginsQuery): Promise<OriginCompareRow[]> {
+  const ch = getClickHouse();
+  const origins = Array.from(new Set(q.origins.map((o) => o.toUpperCase())));
+  if (origins.length === 0) return [];
+  const destination = q.destination.toUpperCase();
+  const airlineCode = (q.airlineCode ?? "").toUpperCase();
+  const useAirline = airlineCode.length > 0 ? 1 : 0;
+
+  const r = await ch.query({
+    query: `
+      SELECT
+        origin_iata,
+        min(price) AS best_price,
+        any(currency) AS currency,
+        argMin(departure_date, price) AS best_date,
+        any(airline) AS best_airline,
+        argMin(duration_minutes, price) AS duration_minutes
+      FROM flight_listings_latest
+      WHERE origin_iata IN {origins:Array(String)}
+        AND destination_iata = {destination:String}
+        AND departure_date BETWEEN {dateFrom:Date} AND {dateTo:Date}
+        AND price > 0
+        AND ({useAirline:UInt8} = 0 OR airline_code = {airlineCode:String})
+      GROUP BY origin_iata
+      ORDER BY best_price ASC
+    `,
+    query_params: {
+      origins,
+      destination,
+      dateFrom: q.dateFrom,
+      dateTo: q.dateTo,
+      airlineCode,
+      useAirline,
+    },
+    format: "JSONEachRow",
+  });
+
+  const rows = (await r.json()) as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    origin: String(row.origin_iata ?? "").toUpperCase(),
+    destination,
+    bestPrice: Number(row.best_price ?? 0),
+    currency: String(row.currency ?? "EUR"),
+    bestDate: String(row.best_date ?? "").slice(0, 10),
+    bestAirline: String(row.best_airline ?? ""),
+    durationMinutes:
+      row.duration_minutes != null && row.duration_minutes !== 0 ? Number(row.duration_minutes) : null,
+  }));
 }
 
 export interface WeekendQuery {
