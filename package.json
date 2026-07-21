@@ -1,7 +1,7 @@
 {
   "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@clickhouse/client": "^1.23.1",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@trigger.dev/build": "4.5.4",
     "@types/express": "^5.0.6",
-    "@types/node": "^22.10.0",
+    "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.1.10",
     "trigger.dev": "4.5.4",
