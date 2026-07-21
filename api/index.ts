@@ -21,7 +21,7 @@ import { CRAWL_CONFIG } from 'src/config/crawl';
 import { RYANAIR_DEFAULT_BASES } from 'src/airlines/ryanair';
 import { newTraceId } from 'src/observability/ids';
 
-const HYPERDX_URL = (process.env.HYPERDX_URL ?? 'http://localhost:8090').replace(//$/, '');
+const HYPERDX_URL = (process.env.HYPERDX_URL ?? 'http://localhost:8090').replace(/\/$/, '');
 const log = logger('api/index.ts');
 
 const app = express();
