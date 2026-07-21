@@ -35,7 +35,7 @@ export async function getDestinationsForAirlineOrigin(
   origin: string
 ): Promise<Set<string>> {
   const rs = await getClickHouse().query({
-    query: `SELECT destination_iata FROM airline_routes FINAL WHERE airline_code = {airline:String} AND origin_iata = {origin:String}`,
+    query: `SELECT destination_iata FROM airline_routes_latest WHERE airline_code = {airline:String} AND origin_iata = {origin:String}`,
     query_params: {
       airline: airlineCode.toUpperCase(),
       origin: origin.toUpperCase(),
@@ -53,7 +53,7 @@ export async function getDestinationsWithNamesForAirlineOrigin(
   const rs = await getClickHouse().query({
     query: `
       SELECT destination_iata, destination_name
-      FROM airline_routes FINAL
+      FROM airline_routes_latest
       WHERE airline_code = {airline:String}
         AND origin_iata = {origin:String}
     `,
@@ -79,7 +79,7 @@ export async function getRoutesForAirlineOrigins(
   for (const o of origins) map.set(o.toUpperCase(), new Set());
   if (origins.length === 0) return map;
   const rs = await getClickHouse().query({
-    query: `SELECT origin_iata, destination_iata FROM airline_routes FINAL WHERE airline_code = {airline:String} AND origin_iata IN {origins:Array(String)}`,
+    query: `SELECT origin_iata, destination_iata FROM airline_routes_latest WHERE airline_code = {airline:String} AND origin_iata IN {origins:Array(String)}`,
     query_params: {
       airline: airlineCode.toUpperCase(),
       origins: origins.map((o) => o.toUpperCase()),
@@ -100,8 +100,8 @@ export async function getRoutesForAirlineOrigins(
 export async function countAirlineRoutes(airlineCode?: string): Promise<number> {
   const rs = await getClickHouse().query({
     query: airlineCode
-      ? `SELECT count() AS n FROM airline_routes FINAL WHERE airline_code = {airline:String}`
-      : "SELECT count() AS n FROM airline_routes FINAL",
+      ? `SELECT count() AS n FROM airline_routes_latest WHERE airline_code = {airline:String}`
+      : "SELECT count() AS n FROM airline_routes_latest",
     query_params: airlineCode ? { airline: airlineCode.toUpperCase() } : undefined,
     format: "JSONEachRow",
   });

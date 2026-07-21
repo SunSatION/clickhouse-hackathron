@@ -156,7 +156,7 @@ export async function claimSpecificPendingItem(opts: {
   const existingResult = await ch.query({
     query: `
       SELECT airline, origin_iata, destination_iata, date_from, date_to
-      FROM crawl_progress_latest FINAL
+      FROM crawl_progress_latest
       WHERE airline = {airline:String}
         AND origin_iata = {origin:String}
         AND destination_iata = {destination:String}
@@ -346,7 +346,7 @@ export async function claimNextPendingItem(opts: {
   const nextResult = await ch.query({
     query: `
       SELECT airline, origin_iata, destination_iata, date_from, date_to
-      FROM crawl_progress_latest FINAL
+      FROM crawl_progress_latest
       WHERE airline = {airline:String}
         AND status = 'pending'
       ORDER BY inserted_at ASC

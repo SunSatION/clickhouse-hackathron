@@ -330,7 +330,7 @@ app.get('/api/origins', async (req, res) => {
     const r = await ch.query({
       query: `
         SELECT origin_iata AS iata, count() AS n
-        FROM airline_routes FINAL
+        FROM airline_routes_latest
         ${filter}
         GROUP BY origin_iata
         ORDER BY origin_iata
@@ -356,7 +356,7 @@ app.get('/api/destinations', async (req, res) => {
     const r = await ch.query({
       query: `
         SELECT destination_iata AS iata, any(destination_name) AS name
-        FROM airline_routes FINAL
+        FROM airline_routes_latest
         WHERE origin_iata = {origin:String}
         ${extra}
         GROUP BY destination_iata
@@ -377,10 +377,10 @@ app.get('/api/iatas', async (req, res) => {
     const ch = getClickHouse();
     const result = await ch.query({
       query: `
-        SELECT origin_iata AS iata FROM airline_routes FINAL WHERE origin_iata != ''
+        SELECT origin_iata AS iata FROM airline_routes_latest WHERE origin_iata != ''
         ${airline ? 'AND airline_code = {airline:String}' : ''}
         UNION DISTINCT
-        SELECT destination_iata AS iata FROM airline_routes FINAL WHERE destination_iata != ''
+        SELECT destination_iata AS iata FROM airline_routes_latest WHERE destination_iata != ''
         ${airline ? 'AND airline_code = {airline:String}' : ''}
         ORDER BY iata
       `, query_params: airline ? { airline } : undefined, format: 'JSONEachRow',
