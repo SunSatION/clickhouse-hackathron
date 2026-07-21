@@ -298,8 +298,6 @@ export function describeToolCall(name: string, args: unknown): { label: string; 
       const legs = Array.isArray(a.legs) ? a.legs.length : 0;
       return { label: `Crawling prices for ${legs} route${legs === 1 ? "" : "s"}…`, tool: name };
     }
-    case "get_dataset_freshness":
-      return { label: "Checking how fresh the data is…", tool: name };
     case "search_airports":
       return { label: `Looking up "${String(a.query || "")}"…`, tool: name };
     case "get_home_airport":

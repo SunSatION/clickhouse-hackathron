@@ -79,7 +79,7 @@ import { ToolBestRoundTrip } from "./find-best-round-trip";
 import { ToolBestOneWay } from "./find-best-one-way";
 import { ToolCheapestFromAny } from "./find-cheapest-from-any-origin";
 import { ToolWeekendDeals } from "./find-weekend-deals";
-import { ToolDatasetFreshness } from "./get-dataset-freshness";
+
 import { ToolListFavorites } from "./list-favorites";
 import { ToolSaveFavorite } from "./save-favorite";
 import { ToolRemoveFavorite } from "./remove-favorite";
@@ -101,7 +101,6 @@ export {
   ToolBestOneWay,
   ToolCheapestFromAny,
   ToolWeekendDeals,
-  ToolDatasetFreshness,
   ToolListFavorites,
   ToolSaveFavorite,
   ToolRemoveFavorite,
@@ -121,7 +120,6 @@ const ALL_TOOLS = [
   ToolBestRoundTrip,
   ToolCheapestFromAny,
   ToolWeekendDeals,
-  ToolDatasetFreshness,
   ToolRoundTrip,
   ToolMultiStop,
   ToolRefreshCrawl,
