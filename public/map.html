@@ -220,6 +220,92 @@
         padding: 8px 0;
       }
 
+      /* === AI progress popup (top-center overlay) === */
+      .ai-progress {
+        position: fixed;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1200;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow-lg);
+        padding: 14px 18px 12px;
+        min-width: 280px;
+        max-width: 420px;
+        display: none;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--fg);
+        animation: ai-progress-in 180ms ease;
+      }
+      .ai-progress.open { display: flex; }
+      .ai-progress.hidden { display: none; }
+      .ai-progress .spinner {
+        width: 16px; height: 16px;
+        border: 2.5px solid var(--accent-soft);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: ai-spin 0.7s linear infinite;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .ai-progress.done .spinner {
+        animation: none;
+        border-color: var(--ok);
+        background: var(--ok);
+        position: relative;
+      }
+      .ai-progress.done .spinner::after {
+        content: "";
+        position: absolute;
+        left: 4px; top: 1px;
+        width: 5px; height: 9px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+      @keyframes ai-spin { to { transform: rotate(360deg); } }
+      @keyframes ai-progress-in {
+        from { opacity: 0; transform: translate(-50%, -8px); }
+        to   { opacity: 1; transform: translate(-50%, 0); }
+      }
+      .ai-progress-text { flex: 1; line-height: 1.35; min-width: 0; }
+      .ai-progress-text .label { font-weight: 700; }
+      .ai-progress-text .tool { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
+      .ai-progress-history {
+        margin: 8px 0 0;
+        padding: 8px 0 0;
+        list-style: none;
+        max-height: 140px;
+        overflow-y: auto;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .ai-progress-history li { padding: 2px 0; }
+      .ai-progress-history li.current { color: var(--fg); }
+      .ai-progress-history li.current::before { content: "▸ "; color: var(--accent); }
+
+      /* === Clarification modal === */
+      #ai-clarification .modal-body p { margin: 0 0 12px 0; line-height: 1.5; }
+      #ai-clarification .modal-body textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        font-family: inherit;
+        font-size: 13px;
+        resize: vertical;
+      }
+      #ai-clarification .modal-body textarea:focus {
+        outline: 2px solid var(--accent-soft);
+        border-color: var(--accent);
+      }
+
       /* === Bottom chat input === */
       .chat-bar {
         background: rgba(255, 255, 255, 0.96);
@@ -293,6 +379,49 @@
         backdrop-filter: blur(8px);
       }
       .chat-chip:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+      /* === Chat thread (sidebar conversation) === */
+      .chat-thread { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+      .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; max-width: 100%; word-wrap: break-word; }
+      .chat-msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+      .chat-msg.assistant { background: var(--surface-2); color: var(--fg); align-self: flex-start; border-bottom-left-radius: 4px; }
+      .chat-msg.assistant .err { color: #b91c1c; font-weight: 600; }
+      .chat-msg.assistant .thinking { color: var(--muted); font-style: italic; }
+      .chat-events { display: flex; flex-direction: column; gap: 8px; }
+
+      .chat-tool-card, .chat-run-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+      .chat-tool-head, .chat-run-head {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .chat-tool-name { font-family: ui-monospace, SFMono-Regular, monospace; }
+      .chat-tool-args, .chat-tool-result {
+        background: var(--surface-2); border-radius: 6px; padding: 8px 10px;
+        font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
+        white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
+        margin: 6px 0 0; color: var(--fg-soft);
+      }
+      .chat-run-card .muted { color: var(--muted); font-size: 11px; }
+      .chat-run-card.run-done { border-color: var(--ok); }
+      .chat-run-card.run-done .status { background: var(--ok-soft); color: #047857; }
+      .chat-run-card[data-failed="1"] { border-color: var(--err); }
+      .chat-run-card[data-failed="1"] .status { background: var(--err-soft); color: #b91c1c; }
+      .chat-run-card .live-dot {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--running); margin-right: 6px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .chat-run-card.run-done .live-dot { display: none; }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.9); }
+        50%      { opacity: 1;   transform: scale(1.1); }
+      }
 
       /* === Sidebar items === */
       .empty {
@@ -480,135 +609,6 @@
       @keyframes toast-in {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
-      }
-
-      /* === AI progress popup (spinner + step history) === */
-      .ai-progress {
-        position: fixed;
-        top: 18px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1200;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        box-shadow: var(--shadow-lg);
-        padding: 14px 18px 12px;
-        min-width: 280px;
-        max-width: 420px;
-        display: none;
-        animation: ai-progress-in 180ms ease;
-      }
-      .ai-progress.open { display: block; }
-      .ai-progress.hidden { display: none; }
-      .ai-progress-head {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-      .ai-progress-spinner {
-        width: 18px; height: 18px;
-        border-radius: 50%;
-        border: 2.5px solid var(--accent-soft);
-        border-top-color: var(--accent);
-        animation: ai-spin 0.7s linear infinite;
-        flex-shrink: 0;
-      }
-      .ai-progress.done .ai-progress-spinner {
-        animation: none;
-        border: 2.5px solid var(--ok);
-        background: var(--ok);
-        position: relative;
-      }
-      .ai-progress.done .ai-progress-spinner::after {
-        content: "";
-        position: absolute;
-        left: 4px; top: 1px;
-        width: 5px; height: 9px;
-        border: solid #fff;
-        border-width: 0 2px 2px 0;
-        transform: rotate(45deg);
-      }
-      @keyframes ai-spin {
-        to { transform: rotate(360deg); }
-      }
-      .ai-progress-title {
-        font-weight: 700;
-        font-size: 13px;
-        color: var(--fg);
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .ai-progress-tool {
-        font-size: 11px;
-        color: var(--muted);
-        margin-left: 28px;
-        min-height: 14px;
-      }
-      .ai-progress-history {
-        margin: 10px 0 0;
-        padding: 0;
-        list-style: none;
-        max-height: 180px;
-        overflow-y: auto;
-        border-top: 1px solid var(--border);
-        padding-top: 8px;
-      }
-      .ai-progress-history:empty { display: none; }
-      .ai-progress-history li {
-        font-size: 11.5px;
-        color: var(--fg-soft);
-        padding: 3px 0 3px 22px;
-        position: relative;
-        line-height: 1.35;
-        opacity: 0.85;
-      }
-      .ai-progress-history li::before {
-        content: "✓";
-        position: absolute;
-        left: 4px;
-        top: 3px;
-        color: var(--ok);
-        font-weight: 700;
-        font-size: 11px;
-      }
-      .ai-progress-history li.current {
-        opacity: 1;
-        font-weight: 600;
-        color: var(--fg);
-      }
-      .ai-progress-history li.current::before {
-        content: "";
-        left: 6px;
-        top: 8px;
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: var(--accent);
-        animation: ai-pulse 1.2s ease-in-out infinite;
-      }
-      @keyframes ai-pulse {
-        0%, 100% { opacity: 0.35; transform: scale(0.85); }
-        50%      { opacity: 1;    transform: scale(1.15); }
-      }
-      .ai-progress-close {
-        position: absolute;
-        top: 8px; right: 8px;
-        background: transparent;
-        border: 0;
-        color: var(--muted);
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 6px;
-        line-height: 0;
-      }
-      .ai-progress-close:hover { background: var(--surface-2); color: var(--fg); }
-      @keyframes ai-progress-in {
-        from { opacity: 0; transform: translate(-50%, -8px); }
-        to   { opacity: 1; transform: translate(-50%, 0); }
       }
 
       /* === Modal === */
@@ -802,6 +802,7 @@
 
     <div class="map-controls">
       <button id="btn-toggle-airline" class="on" title="Show only Ryanair airports">Ryanair</button>
+      <button id="btn-clear-airport" title="Clear selected airport">Clear</button>
       <button id="btn-fit-itinerary" title="Fit itinerary on map" hidden>Fit</button>
     </div>
 
@@ -856,17 +857,14 @@
 
     <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
-    <!-- AI progress popup: shown during LLM calls, lists step history -->
+    <!-- AI progress popup: top-center overlay, visible during LLM calls -->
     <div class="ai-progress hidden" id="ai-progress" role="status" aria-live="polite">
-      <button class="ai-progress-close" id="ai-progress-close" title="Dismiss" aria-label="Dismiss">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <div class="ai-progress-head">
-        <div class="ai-progress-spinner" aria-hidden="true"></div>
-        <div class="ai-progress-title" id="ai-progress-label">Working on it…</div>
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="ai-progress-text">
+        <div class="label" id="ai-progress-label">Working on it…</div>
+        <div class="tool" id="ai-progress-tool"></div>
+        <ul class="ai-progress-history" id="ai-progress-history"></ul>
       </div>
-      <div class="ai-progress-tool" id="ai-progress-tool"></div>
-      <ul class="ai-progress-history" id="ai-progress-history"></ul>
     </div>
 
     <a id="operator-link" href="/admin" target="_blank" rel="noopener" style="display:none;position:fixed;left:12px;bottom:8px;z-index:600;font-size:10px;letter-spacing:.04em;color:var(--muted-2);text-transform:uppercase;text-decoration:none;opacity:.5">control center</a>
@@ -886,23 +884,9 @@
             <input id="set-home" placeholder="MLA" maxlength="3" style="text-transform:uppercase" />
           </div>
           <div class="form-row">
-            <label for="set-byok-provider">LLM provider (BYOK)</label>
-            <select id="set-byok-provider">
-              <option value="">(use server default)</option>
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="openrouter">OpenRouter</option>
-            </select>
-            <div class="hint">If unset, the server uses <code>OPENAI_API_KEY</code> from its env. Per-user BYOK keys are encrypted at rest on the server (AES-256-GCM) and never sent back to the browser.</div>
-          </div>
-          <div class="form-row">
-            <label for="set-byok-key">API key (BYOK)</label>
-            <input id="set-byok-key" type="password" placeholder="sk-…" autocomplete="off" />
-            <div class="hint">Stored server-side, encrypted with <code>BYOK_VAULT_SECRET</code>. Cleared by saving an empty value.</div>
-          </div>
-          <div class="form-row">
-            <label for="set-byok-model">Model override (optional)</label>
-            <input id="set-byok-model" placeholder="gpt-4o-mini" />
+            <label>AI assistant</label>
+            <div class="hint" id="set-llm-status">Checking…</div>
+            <div class="hint" style="margin-top:6px">All requests are routed through Wayfare's hosted LLM keys — no API key required from you. Trigger.dev tasks (crawl, sync) are also hosted on our account, so the assistant can fire them and stream results back to this page in real time.</div>
           </div>
           <div class="form-row">
             <label class="checkbox-pill" id="pill-operator"><input type="checkbox" id="set-operator" /> Show operator link (control center)</label>
@@ -912,6 +896,26 @@
         <div class="modal-foot">
           <button class="secondary" data-close-modal>Cancel</button>
           <button class="primary" id="btn-save-settings">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI clarification modal (silent-mode chat → question) -->
+    <div class="modal-bg" id="ai-clarification">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>I need a bit more info</h3>
+          <button class="icon-btn" data-close-clarification>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="ai-clarification-question"></p>
+          <textarea id="ai-clarification-reply" placeholder="Type your answer…"></textarea>
+        </div>
+        <div class="modal-foot">
+          <button class="secondary" data-close-clarification>Skip</button>
+          <button class="primary" id="btn-clarification-send">Send</button>
         </div>
       </div>
     </div>
