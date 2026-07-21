@@ -5,7 +5,7 @@ import type {
 } from "./types.js";
 import type { FlightListingInput } from "../lib/flight-listing.js";
 import { pacedFetch, Pacer } from "../lib/paced-fetch.js";
-import { CRAWL_CONFIG } from "../config";
+import { CRAWL_CONFIG } from "../config/index.js";
 
 const EASYJET_AVAILABILITY_URL =
   "https://www.easyjet.com/homepage/api/availability";

@@ -6,7 +6,7 @@ import {
   emitGauge,
   installFetchInstrumentation,
   traceTask,
-} from "../observability";
+} from "../observability/index.js";
 import { syncRyanairRoutesFromAirports } from "../airlines/ryanair.js";
 import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 

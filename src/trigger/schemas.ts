@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CRAWL_CONFIG } from "../config";
+import { CRAWL_CONFIG } from "../config/index.js";
 
 export const IATA = z.string().length(3).regex(/^[A-Z]{3}$/);
 export const DateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);

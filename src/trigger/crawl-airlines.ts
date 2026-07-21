@@ -5,13 +5,13 @@ import {
   schemaTask,
 } from "@trigger.dev/sdk";
 
-import { CRAWL_CONFIG } from "../config";
+import { CRAWL_CONFIG } from "../config/index.js";
 import {
   configureOtel,
   incCounter,
   installFetchInstrumentation,
   traceTask,
-} from "../observability";
+} from "../observability/index.js";
 import { crawlRyanair } from "./crawl-ryanair.js";
 import {
   CrawlAirlinesInput,

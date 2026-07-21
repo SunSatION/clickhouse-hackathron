@@ -1,13 +1,13 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 
-import { CRAWL_CONFIG } from "../config";
+import { CRAWL_CONFIG } from "../config/index.js";
 import {
   configureOtel,
   emitGauge,
   installFetchInstrumentation,
   traceTask,
-} from "../observability";
+} from "../observability/index.js";
 import { enqueuePendingRoutes } from "../db/crawl-progress.js";
 import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 

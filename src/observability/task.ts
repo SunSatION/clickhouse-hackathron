@@ -1,4 +1,4 @@
-import { emitGauge, emitLog, emitSpan, isOtelEnabled, nowNs, setActiveTaskContext } from ".";
+import { emitGauge, emitLog, emitSpan, isOtelEnabled, nowNs, setActiveTaskContext } from "./index.js";
 import { newSpanId } from "./ids.js";
 import { newTraceId } from "./ids.js";
 import type { TraceContext } from "./context.js";

@@ -5,7 +5,7 @@ import type {
 } from "./types.js";
 import type { FlightListingInput } from "../lib/flight-listing.js";
 import { pacedFetch, Pacer } from "../lib/paced-fetch.js";
-import { CRAWL_CONFIG } from "../config";
+import { CRAWL_CONFIG } from "../config/index.js";
 import { logger } from "../lib/logger.js";
 
 const FILE = "src/airlines/ryanair.ts";

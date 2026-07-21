@@ -14,7 +14,7 @@ import {
   otelLogger,
   traceTask,
   withSpan,
-} from "../observability";
+} from "../observability/index.js";
 import {
   RyanairFanOutOutput,
   RyanairFanOutPayload,
