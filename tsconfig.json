@@ -16,5 +16,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "trigger.config.ts"]
+  "include": ["src/**/*.ts", "api/**/*.ts", "trigger.config.ts"]
 }
