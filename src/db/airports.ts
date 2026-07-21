@@ -207,7 +207,8 @@ export async function listAirportsForAirline(
         a.type AS type,
         countDistinct(r.destination_iata) AS origin_count
       FROM airports a
-      LEFT JOIN airline_routes_latest r ON r.airline_code = {code:String} AND r.origin_iata = a.iata
+      INNER JOIN airline_routes_latest r ON r.airline_code = {code:String} AND r.origin_iata = a.iata
+      INNER JOIN flight_listings fl ON fl.origin_iata = a.iata AND fl.airline_code = {code:String}
       WHERE length(a.iata) = 3
       GROUP BY a.iata, a.name, a.city, a.country, a.region, a.lat, a.lon, a.type
       HAVING origin_count > 0
