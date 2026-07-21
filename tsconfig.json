@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "verbatimModuleSyntax": false,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": ["node"]
   },
