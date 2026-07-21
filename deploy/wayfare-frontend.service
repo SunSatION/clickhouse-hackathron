@@ -1,0 +1,28 @@
+[Unit]
+Description=Wayfare frontend (Express)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/wayfare
+EnvironmentFile=/opt/wayfare/.env
+Environment=NODE_ENV=production
+Environment=PORT=3030
+Environment=FRONTEND_PORT=3030
+ExecStart=/usr/bin/tsx /opt/wayfare/src/frontend/server.ts
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wayfare-frontend
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

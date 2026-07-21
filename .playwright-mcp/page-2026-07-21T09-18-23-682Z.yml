@@ -1,0 +1,222 @@
+- generic [active] [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - link [ref=f3e3] [cursor=pointer]:
+      - /url: /
+      - img "Wayfare" [ref=f3e4]
+      - text: Wayfare
+    - navigation [ref=f3e5]:
+      - link "Explore" [ref=f3e6] [cursor=pointer]:
+        - /url: /
+      - link "Favorites" [ref=f3e7] [cursor=pointer]:
+        - /url: "#favorites"
+    - generic [ref=f3e8]:
+      - button "Settings (BYOK, account)" [ref=f3e9] [cursor=pointer]
+      - button "Account" [ref=f3e13] [cursor=pointer]
+  - generic [ref=f3e17]:
+    - generic:
+      - generic:
+        - button "STN" [ref=f3e566] [cursor=pointer]
+        - button "DUB" [ref=f3e568] [cursor=pointer]
+        - button "MAN" [ref=f3e570] [cursor=pointer]
+        - button "MLA" [ref=f3e572] [cursor=pointer]
+        - button "EDI" [ref=f3e574] [cursor=pointer]
+        - button "BHX" [ref=f3e576] [cursor=pointer]
+        - button "BRS" [ref=f3e578] [cursor=pointer]
+        - button "LPL" [ref=f3e580] [cursor=pointer]
+        - button "EMA" [ref=f3e582] [cursor=pointer]
+        - button "LTN" [ref=f3e584] [cursor=pointer]
+        - button "LBA" [ref=f3e586] [cursor=pointer]
+        - button "NCL" [ref=f3e588] [cursor=pointer]
+        - button "GLA" [ref=f3e590] [cursor=pointer]
+        - button "CWL" [ref=f3e592] [cursor=pointer]
+        - button "BHX EUR 15 · Jul 22":
+          - generic: BHXEUR 15 · Jul 22
+        - button "BRS EUR 15 · Jul 29":
+          - generic: BRSEUR 15 · Jul 29
+        - button "CWL EUR 15 · Jul 30":
+          - generic: CWLEUR 15 · Jul 30
+        - button "LPL EUR 15 · Jul 28":
+          - generic: LPLEUR 15 · Jul 28
+        - button "MAN EUR 15 · Jul 29":
+          - generic: MANEUR 15 · Jul 29
+        - button "LTN EUR 15 · Jul 29":
+          - generic: LTNEUR 15 · Jul 29
+        - button "GLA EUR 15 · Jul 28":
+          - generic: GLAEUR 15 · Jul 28
+        - button "LBA EUR 15 · Jul 30":
+          - generic: LBAEUR 15 · Jul 30
+        - button "STN EUR 15 · Jul 29":
+          - generic: STNEUR 15 · Jul 29
+        - button "EDI EUR 16 · Aug 10":
+          - generic: EDIEUR 16 · Aug 10
+        - button "EMA EUR 16 · Aug 3":
+          - generic: EMAEUR 16 · Aug 3
+        - button "NCL EUR 16 · Aug 8":
+          - generic: NCLEUR 16 · Aug 8
+    - generic:
+      - generic [ref=f3e466]:
+        - button "Zoom in" [ref=f3e467] [cursor=pointer]: +
+        - button "Zoom out" [ref=f3e468] [cursor=pointer]: −
+      - generic [ref=f3e469]:
+        - link "Leaflet" [ref=f3e470] [cursor=pointer]:
+          - /url: https://leafletjs.com
+        - text: "| © OpenStreetMap contributors, © CARTO"
+  - generic [ref=f3e475]:
+    - button "Ryanair" [ref=f3e476] [cursor=pointer]
+    - button "Clear" [ref=f3e477] [cursor=pointer]
+  - complementary [ref=f3e478]:
+    - button "Toggle sidebar" [ref=f3e479] [cursor=pointer]
+    - generic [ref=f3e482]:
+      - heading "Cheapest fares from DUB" [level=3] [ref=f3e594]
+      - paragraph [ref=f3e484]: May 14 → Aug 14, 2026 · 12 results · IE
+    - generic [ref=f3e485]:
+      - combobox "Sort" [ref=f3e486]:
+        - option "Price ↑"
+        - option "Price ↓"
+        - option "Date ↑"
+        - option "Date ↓"
+        - option "Duration ↑"
+        - option "Recommendation" [selected]
+      - textbox "Origin" [ref=f3e487]
+      - textbox "Dest" [ref=f3e488]
+      - textbox [ref=f3e489]
+      - generic [ref=f3e490] [cursor=pointer]:
+        - checkbox "Ryanair" [checked] [ref=f3e491]
+        - text: Ryanair
+      - generic [ref=f3e492] [cursor=pointer]:
+        - checkbox "EasyJet" [ref=f3e493]
+        - text: EasyJet
+    - generic [ref=f3e595]:
+      - button "← trip builder" [ref=f3e596] [cursor=pointer]
+      - generic [ref=f3e597]: Click a row to fly the map
+    - generic [ref=f3e494]:
+      - generic [ref=f3e598] [cursor=pointer]:
+        - generic [ref=f3e599]:
+          - generic [ref=f3e600]: "#1"
+          - text: DUB
+          - generic [ref=f3e601]: →
+          - text: BHX · Birmingham, West Midlands
+          - generic [ref=f3e602]: · GB
+        - generic [ref=f3e603]:
+          - generic [ref=f3e604]: Jul 22 · Ryanair
+          - generic [ref=f3e605]: EUR 14.99
+      - generic [ref=f3e606] [cursor=pointer]:
+        - generic [ref=f3e607]:
+          - generic [ref=f3e608]: "#2"
+          - text: DUB
+          - generic [ref=f3e609]: →
+          - text: BRS · Bristol
+          - generic [ref=f3e610]: · GB
+        - generic [ref=f3e611]:
+          - generic [ref=f3e612]: Jul 29 · Ryanair
+          - generic [ref=f3e613]: EUR 14.99
+      - generic [ref=f3e614] [cursor=pointer]:
+        - generic [ref=f3e615]:
+          - generic [ref=f3e616]: "#3"
+          - text: DUB
+          - generic [ref=f3e617]: →
+          - text: CWL · Cardiff
+          - generic [ref=f3e618]: · GB
+        - generic [ref=f3e619]:
+          - generic [ref=f3e620]: Jul 30 · Ryanair
+          - generic [ref=f3e621]: EUR 14.99
+      - generic [ref=f3e622] [cursor=pointer]:
+        - generic [ref=f3e623]:
+          - generic [ref=f3e624]: "#4"
+          - text: DUB
+          - generic [ref=f3e625]: →
+          - text: LPL · Liverpool
+          - generic [ref=f3e626]: · GB
+        - generic [ref=f3e627]:
+          - generic [ref=f3e628]: Jul 28 · Ryanair
+          - generic [ref=f3e629]: EUR 14.99
+      - generic [ref=f3e630] [cursor=pointer]:
+        - generic [ref=f3e631]:
+          - generic [ref=f3e632]: "#5"
+          - text: DUB
+          - generic [ref=f3e633]: →
+          - text: MAN · Manchester, Greater Manchester
+          - generic [ref=f3e634]: · GB
+        - generic [ref=f3e635]:
+          - generic [ref=f3e636]: Jul 29 · Ryanair
+          - generic [ref=f3e637]: EUR 14.99
+      - generic [ref=f3e638] [cursor=pointer]:
+        - generic [ref=f3e639]:
+          - generic [ref=f3e640]: "#6"
+          - text: DUB
+          - generic [ref=f3e641]: →
+          - text: LTN · Luton, Luton
+          - generic [ref=f3e642]: · GB
+        - generic [ref=f3e643]:
+          - generic [ref=f3e644]: Jul 29 · Ryanair
+          - generic [ref=f3e645]: EUR 14.99
+      - generic [ref=f3e646] [cursor=pointer]:
+        - generic [ref=f3e647]:
+          - generic [ref=f3e648]: "#7"
+          - text: DUB
+          - generic [ref=f3e649]: →
+          - text: GLA · Glasgow
+          - generic [ref=f3e650]: · GB
+        - generic [ref=f3e651]:
+          - generic [ref=f3e652]: Jul 28 · Ryanair
+          - generic [ref=f3e653]: EUR 14.99
+      - generic [ref=f3e654] [cursor=pointer]:
+        - generic [ref=f3e655]:
+          - generic [ref=f3e656]: "#8"
+          - text: DUB
+          - generic [ref=f3e657]: →
+          - text: LBA · Leeds, West Yorkshire
+          - generic [ref=f3e658]: · GB
+        - generic [ref=f3e659]:
+          - generic [ref=f3e660]: Jul 30 · Ryanair
+          - generic [ref=f3e661]: EUR 14.99
+      - generic [ref=f3e662] [cursor=pointer]:
+        - generic [ref=f3e663]:
+          - generic [ref=f3e664]: "#9"
+          - text: DUB
+          - generic [ref=f3e665]: →
+          - text: STN · London, Essex
+          - generic [ref=f3e666]: · GB
+        - generic [ref=f3e667]:
+          - generic [ref=f3e668]: Jul 29 · Ryanair
+          - generic [ref=f3e669]: EUR 14.99
+      - generic [ref=f3e670] [cursor=pointer]:
+        - generic [ref=f3e671]:
+          - generic [ref=f3e672]: "#10"
+          - text: DUB
+          - generic [ref=f3e673]: →
+          - text: EDI · Edinburgh
+          - generic [ref=f3e674]: · GB
+        - generic [ref=f3e675]:
+          - generic [ref=f3e676]: Aug 10 · Ryanair
+          - generic [ref=f3e677]: EUR 15.99
+      - generic [ref=f3e678] [cursor=pointer]:
+        - generic [ref=f3e679]:
+          - generic [ref=f3e680]: "#11"
+          - text: DUB
+          - generic [ref=f3e681]: →
+          - text: EMA · Nottingham, Leicestershire
+          - generic [ref=f3e682]: · GB
+        - generic [ref=f3e683]:
+          - generic [ref=f3e684]: Aug 3 · Ryanair
+          - generic [ref=f3e685]: EUR 15.99
+      - generic [ref=f3e686] [cursor=pointer]:
+        - generic [ref=f3e687]:
+          - generic [ref=f3e688]: "#12"
+          - text: DUB
+          - generic [ref=f3e689]: →
+          - text: NCL · Newcastle upon Tyne, Tyne and Wear
+          - generic [ref=f3e690]: · GB
+        - generic [ref=f3e691]:
+          - generic [ref=f3e692]: Aug 8 · Ryanair
+          - generic [ref=f3e693]: EUR 15.99
+  - generic [ref=f3e532]:
+    - generic [ref=f3e533]:
+      - 'textbox "Ask Wayfarer to plan your next trip — try: ‘Visit France, Spain and Italy from Malta in one holiday, 2-3 days each.’" [ref=f3e534]'
+      - button "Send" [ref=f3e535] [cursor=pointer]
+    - generic [ref=f3e539]:
+      - button "Clear" [ref=f3e540] [cursor=pointer]
+      - 'button "Sample: capitals" [ref=f3e541] [cursor=pointer]'
+      - 'button "Sample: 5 cities" [ref=f3e542] [cursor=pointer]'
+  - link "control center" [ref=f3e543] [cursor=pointer]:
+    - /url: /admin
