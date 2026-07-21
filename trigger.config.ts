@@ -4,6 +4,14 @@ export default defineConfig({
   project: "proj_owjhucduaoxtjdadhkad",
   runtime: "node",
   logLevel: "log",
+  environments: {
+    production: {
+      name: "Production",
+    },
+    staging: {
+      name: "Staging",
+    },
+  },
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
   // You can override this on an individual task.
   // See https://trigger.dev/docs/runs/max-duration
