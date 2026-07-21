@@ -12,7 +12,7 @@ export const ToolSearchAirports = defineTool({
     airline: z.string().optional().describe("Restrict to airports reachable by this airline (default Ryanair)."),
   }),
   handler: async ({ query, airline }) => {
-    const local = searchAirports(query, 25);
+    const local = await searchAirports(query, 25);
     if (local.length > 0) return { ok: true, count: local.length, airports: local };
     if (airline) {
       const rows = await listAirportsForAirline(airline);

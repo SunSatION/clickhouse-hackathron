@@ -3,8 +3,7 @@ config({ path: ".env" });
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getClickHouse } from "../src/db/clickhouse";
-import { installFetchInstrumentation } from "../src/observability/fetch-instrumentation";
+import { getClickHouse } from "../src/db/clickhouse.js";
 
 interface AirportRow {
   iata: string;
@@ -33,7 +32,6 @@ function loadAirports(): AirportRow[] {
 }
 
 async function main() {
-  installFetchInstrumentation();
   const ch = getClickHouse();
 
   const airports = loadAirports();

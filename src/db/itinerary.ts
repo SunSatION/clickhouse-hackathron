@@ -29,8 +29,8 @@ interface CountryStop {
   airport: string;
 }
 
-function pickHomeAirport(homeIata: string): Airport | null {
-  const all = listAllAirports();
+async function pickHomeAirport(homeIata: string): Promise<Airport | null> {
+  const all = await listAllAirports();
   return all.find((a) => a.iata === homeIata.toUpperCase()) ?? null;
 }
 
@@ -109,7 +109,7 @@ export async function generateItineraries(req: ItineraryRequest): Promise<Itiner
     promptNote = `Detected countries: ${detected.join(", ")}. `;
   }
 
-  const home = pickHomeAirport(homeIata);
+  const home = await pickHomeAirport(homeIata);
   if (!home) {
     return [
       {

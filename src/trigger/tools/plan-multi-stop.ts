@@ -32,14 +32,14 @@ export const ToolMultiStop = defineTool({
     return {
       ok: true,
       count: result.length,
-      itineraries: result.map((it) => ({
+      itineraries: await Promise.all(result.map(async (it) => ({
         ...it,
-        legs: it.legs.map((leg) => ({
+        legs: await Promise.all(it.legs.map(async (leg) => ({
           ...leg,
-          originAirport: getAirport(leg.origin),
-          destinationAirport: getAirport(leg.destination),
-        })),
-      })),
+          originAirport: await getAirport(leg.origin),
+          destinationAirport: await getAirport(leg.destination),
+        }))),
+      }))),
       coverage: {
         legs: legsFlat.length,
       },

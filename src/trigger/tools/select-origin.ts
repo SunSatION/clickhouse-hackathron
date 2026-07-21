@@ -12,7 +12,7 @@ export const ToolSelectOrigin = defineTool({
   }),
   handler: async ({ iata }) => {
     const code = iata.toUpperCase();
-    const airport = getAirport(code);
+    const airport = await getAirport(code);
     if (!airport) return { ok: false, error: `unknown IATA: ${code}` };
     const fares = await listFaresForAirport({ iata: code, limit: 500 });
     const destinations = new Set<string>();

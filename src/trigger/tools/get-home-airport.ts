@@ -32,7 +32,7 @@ export const ToolGetHomeAirport = defineTool({
     const ch = getClickHouse();
 
     if (iata) {
-      const airport = getAirport(iata.toUpperCase());
+      const airport = await getAirport(iata.toUpperCase());
       if (!airport) return { ok: false, error: `unknown IATA: ${iata}` };
       return { ok: true, source: "explicit", iata: airport.iata, airport };
     }
@@ -114,7 +114,7 @@ export const ToolGetHomeAirport = defineTool({
     const top = (await defaultRows.json()) as Array<{ iata: string }>;
     const topRow = top[0];
     if (topRow) {
-      const airport = getAirport(String(topRow.iata));
+      const airport = await getAirport(String(topRow.iata));
       if (airport) return { ok: true, source: "dataset-default", iata: airport.iata, airport };
     }
 

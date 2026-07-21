@@ -1,17 +1,5 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { getClickHouse } from "./clickhouse.js";
 import { logger } from "../lib/logger.js";
-
-// JSON imports require `with: { type: "json" }` under Node ESM and break Vercel
-// serverless because the bundler cannot satisfy the import attribute. Load via
-// readFileSync at module load time instead — works in dev, tests, and on Vercel.
-const here = dirname(fileURLToPath(import.meta.url));
-const airportsData = JSON.parse(
-  readFileSync(join(here, "../../public/data/airports.json"), "utf8"),
-) as AirportIndex;
 
 const log = logger("src/db/airports.ts");
 
@@ -26,115 +14,9 @@ export interface Airport {
   type: string;
 }
 
-interface AirportIndex {
-  generatedAt: string;
-  count: number;
-  airports: Airport[];
-}
-
-let cache: Map<string, Airport> | null = null;
-let allCache: Airport[] | null = null;
-
-const airportsIndex = airportsData;
-
-export function listAllAirports(): Airport[] {
-  if (allCache) return allCache;
-  allCache = airportsIndex.airports;
-  cache = new Map(allCache.map((a) => [a.iata, a]));
-  log.info("Loaded airports dataset", { count: allCache.length });
-  return allCache;
-}
-
-export function getAirport(iata: string): Airport | null {
-  if (!cache) listAllAirports();
-  return cache?.get(iata.toUpperCase()) ?? null;
-}
-
-export function searchAirports(query: string, limit = 25): Airport[] {
-  const q = query.trim().toLowerCase();
-  const all = listAllAirports();
-  if (!q) return all.slice(0, limit);
-  const hits: Airport[] = [];
-  for (const a of all) {
-    if (
-      a.iata.toLowerCase().includes(q) ||
-      a.city.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q) ||
-      a.country.toLowerCase() === q
-    ) {
-      hits.push(a);
-      if (hits.length >= limit) break;
-    }
-  }
-  return hits;
-}
-
-const LONDON_IATAS = ["STN", "LGW", "LTN", "LHR", "LCY", "SEN"] as const;
-
-export function londonAirports(): string[] {
-  return [...LONDON_IATAS];
-}
-
 export interface AirportWithRouteCount extends Airport {
   originCount: number;
   destinationCount: number;
-}
-
-export async function listAirportsForAirline(
-  airline: string = "Ryanair",
-): Promise<AirportWithRouteCount[]> {
-  const all = listAllAirports();
-  const ch = getClickHouse();
-  const code = airline.toUpperCase();
-
-  const r = await ch.query({
-    query: `
-      SELECT origin_iata AS iata, count() AS n
-      FROM airline_routes FINAL
-      WHERE airline_code = {code:String}
-      GROUP BY origin_iata
-    `,
-    query_params: { code },
-    format: "JSONEachRow",
-  });
-  const originRows = (await r.json()) as Array<{ iata: string; n: number }>;
-  const byIata = new Map(originRows.map((row) => [String(row.iata).toUpperCase(), Number(row.n)]));
-
-  const dr = await ch.query({
-    query: `
-      SELECT DISTINCT destination_iata AS iata
-      FROM airline_routes FINAL
-      WHERE airline_code = {code:String}
-    `,
-    query_params: { code },
-    format: "JSONEachRow",
-  });
-  const destRows = (await dr.json()) as Array<{ iata: string }>;
-  for (const row of destRows) {
-    const iata = String(row.iata).toUpperCase();
-    if (!byIata.has(iata)) byIata.set(iata, 0);
-  }
-
-  return all
-    .filter((a) => byIata.has(a.iata))
-    .map((a) => ({
-      ...a,
-      originCount: byIata.get(a.iata) ?? 0,
-      destinationCount: 0,
-    }))
-    .sort((x, y) => y.originCount - x.originCount || x.iata.localeCompare(y.iata));
-}
-
-export async function listAirportsWithRouteCounts(
-  airline?: string,
-): Promise<AirportWithRouteCount[]> {
-  return listAirportsForAirline(airline ?? "Ryanair");
-}
-
-export function filterAirportsByAirline(
-  airports: AirportWithRouteCount[],
-): AirportWithRouteCount[] {
-  return airports.filter((a) => a.originCount > 0);
 }
 
 export interface FareRow {
@@ -155,6 +37,272 @@ export interface FareRow {
   seatsLeft: number | null;
   observedAt: string;
   crawlRunId: string;
+}
+
+export interface FareQuery {
+  iata: string;
+  airline?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+}
+
+export interface CheapestRoute {
+  origin: string;
+  destination: string;
+  price: number;
+  currency: string;
+  date: string;
+  airline: string;
+  durationMinutes: number | null;
+}
+
+export interface RoundTrip {
+  origin: string;
+  destination: string;
+  outbound: CheapestRoute;
+  return: CheapestRoute;
+  tripDays: number;
+  totalPrice: number;
+  currency: string;
+}
+
+export interface RoundTripQuery {
+  origin: string;
+  destination: string;
+  dateFrom: string;
+  dateTo: string;
+  minDays?: number;
+  maxDays?: number;
+}
+
+export interface ItineraryLeg {
+  origin: string;
+  destination: string;
+  date: string;
+  price: number;
+  currency: string;
+  airline: string;
+  durationMinutes: number | null;
+}
+
+export interface Itinerary {
+  id: string;
+  title: string;
+  totalPrice: number;
+  currency: string;
+  totalDurationMinutes: number | null;
+  legs: ItineraryLeg[];
+  summary: string;
+  recommendationScore: number;
+}
+
+export interface GenerateItineraryInput {
+  prompt: string;
+  homeIata: string;
+  countries: string[];
+  daysPerCountry: number;
+  dateFrom: string;
+  dateTo: string;
+  preferredAirlines?: string[];
+}
+
+interface AirportRow {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+  region: string;
+  lat: number;
+  lon: number;
+  type: string;
+}
+
+let byIata: Map<string, Airport> | null = null;
+let allAirports: Airport[] | null = null;
+let loadPromise: Promise<void> | null = null;
+
+async function loadAllFromClickHouse(): Promise<void> {
+  const ch = getClickHouse();
+  const r = await ch.query({
+    query: `
+      SELECT iata, name, city, country, region, lat, lon, type
+      FROM airports FINAL
+      WHERE length(iata) = 3
+    `,
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as AirportRow[];
+  byIata = new Map(rows.map((row) => [row.iata.toUpperCase(), {
+    iata: row.iata.toUpperCase(),
+    name: String(row.name ?? ""),
+    city: String(row.city ?? ""),
+    country: String(row.country ?? ""),
+    region: String(row.region ?? ""),
+    lat: Number(row.lat ?? 0),
+    lon: Number(row.lon ?? 0),
+    type: String(row.type ?? ""),
+  }]));
+  allAirports = Array.from(byIata.values()).sort((a, b) => a.iata.localeCompare(b.iata));
+  log.info("Loaded airports from ClickHouse", { count: allAirports.length });
+}
+
+async function ensureLoaded(): Promise<void> {
+  if (byIata) return;
+  if (loadPromise) return loadPromise;
+  loadPromise = loadAllFromClickHouse().finally(() => { loadPromise = null; });
+  return loadPromise;
+}
+
+export async function listAllAirports(): Promise<Airport[]> {
+  await ensureLoaded();
+  return allAirports ?? [];
+}
+
+export async function getAirport(iata: string): Promise<Airport | null> {
+  await ensureLoaded();
+  return byIata?.get(iata.toUpperCase()) ?? null;
+}
+
+export async function searchAirports(query: string, limit = 25): Promise<Airport[]> {
+  await ensureLoaded();
+  const q = query.trim().toLowerCase();
+  if (!q) return (allAirports ?? []).slice(0, limit);
+  const hits: Airport[] = [];
+  for (const a of allAirports ?? []) {
+    if (
+      a.iata.toLowerCase().includes(q) ||
+      a.city.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      a.country.toLowerCase() === q
+    ) {
+      hits.push(a);
+      if (hits.length >= limit) break;
+    }
+  }
+  return hits;
+}
+
+const LONDON_IATAS = ["STN", "LGW", "LTN", "LHR", "LCY", "SEN"] as const;
+
+export function londonAirports(): string[] {
+  return [...LONDON_IATAS];
+}
+
+export async function listAirportsForAirline(
+  airline: string = "Ryanair",
+): Promise<AirportWithRouteCount[]> {
+  const ch = getClickHouse();
+  const code = airline.toUpperCase();
+  const r = await ch.query({
+    query: `
+      SELECT
+        a.iata AS iata,
+        a.name AS name,
+        a.city AS city,
+        a.country AS country,
+        a.region AS region,
+        a.lat AS lat,
+        a.lon AS lon,
+        a.type AS type,
+        countDistinct(r.destination_iata) AS origin_count
+      FROM airports a FINAL
+      LEFT JOIN airline_routes r FINAL ON r.airline_code = {code:String} AND r.origin_iata = a.iata
+      WHERE length(a.iata) = 3
+      GROUP BY a.iata, a.name, a.city, a.country, a.region, a.lat, a.lon, a.type
+      HAVING origin_count > 0
+      ORDER BY origin_count DESC, a.iata ASC
+    `,
+    query_params: { code },
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as Array<{
+    iata: string; name: string; city: string; country: string; region: string;
+    lat: number; lon: number; type: string; origin_count: string | number;
+  }>;
+  return rows.map((row) => ({
+    iata: String(row.iata).toUpperCase(),
+    name: String(row.name ?? ""),
+    city: String(row.city ?? ""),
+    country: String(row.country ?? ""),
+    region: String(row.region ?? ""),
+    lat: Number(row.lat ?? 0),
+    lon: Number(row.lon ?? 0),
+    type: String(row.type ?? ""),
+    originCount: Number(row.origin_count ?? 0),
+    destinationCount: 0,
+  }));
+}
+
+export async function listAirportsWithRouteCounts(
+  airline?: string,
+): Promise<AirportWithRouteCount[]> {
+  return listAirportsForAirline(airline ?? "Ryanair");
+}
+
+export function filterAirportsByAirline(
+  airports: AirportWithRouteCount[],
+): AirportWithRouteCount[] {
+  return airports.filter((a) => a.originCount > 0);
+}
+
+export async function findCheapestRoutesBetween(
+  pairs: Array<{ origin: string; destination: string }>,
+  dateFrom: string,
+  dateTo: string,
+  preferredAirlines: string[] = [],
+): Promise<Map<string, CheapestRoute>> {
+  const ch = getClickHouse();
+  const out = new Map<string, CheapestRoute>();
+  if (pairs.length === 0) return out;
+
+  const originCodes = Array.from(new Set(pairs.map((p) => p.origin)));
+  const destCodes = Array.from(new Set(pairs.map((p) => p.destination)));
+  const params: Record<string, unknown> = {
+    origins: originCodes,
+    dests: destCodes,
+    dateFrom,
+    dateTo,
+  };
+  const airlineFilter = preferredAirlines.length > 0 ? "AND airline_code IN {airlines:Array(String)}" : "";
+  if (preferredAirlines.length > 0) params.airlines = preferredAirlines;
+
+  const r = await ch.query({
+    query: `
+      SELECT
+        origin_iata,
+        destination_iata,
+        min(price) AS min_price,
+        any(currency) AS currency,
+        min(departure_date) AS best_date,
+        any(airline) AS airline,
+        any(duration_minutes) AS duration_minutes
+      FROM flight_listings_latest
+      WHERE origin_iata IN {origins:Array(String)}
+        AND destination_iata IN {dests:Array(String)}
+        AND departure_date >= {dateFrom:Date}
+        AND departure_date <= {dateTo:Date}
+        ${airlineFilter}
+      GROUP BY origin_iata, destination_iata
+    `,
+    query_params: params,
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as Array<Record<string, unknown>>;
+  for (const row of rows) {
+    const origin = String(row.origin_iata).toUpperCase();
+    const destination = String(row.destination_iata).toUpperCase();
+    out.set(`${origin}|${destination}`, {
+      origin,
+      destination,
+      price: Number(row.min_price ?? 0),
+      currency: String(row.currency ?? "EUR"),
+      date: String(row.best_date ?? "").slice(0, 10),
+      airline: String(row.airline ?? ""),
+      durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
+    });
+  }
+  return out;
 }
 
 const FARE_BASE_QUERY = `
@@ -178,14 +326,6 @@ const FARE_BASE_QUERY = `
     crawl_run_id
   FROM flight_listings_latest
 `;
-
-export interface FareQuery {
-  iata: string;
-  airline?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  limit?: number;
-}
 
 export async function listFaresForAirport(q: FareQuery): Promise<FareRow[]> {
   const ch = getClickHouse();
@@ -235,35 +375,84 @@ export async function listFaresForAirport(q: FareQuery): Promise<FareRow[]> {
   }));
 }
 
-export interface ItineraryLeg {
-  origin: string;
-  destination: string;
-  date: string;
-  price: number;
-  currency: string;
-  airline: string;
-  durationMinutes: number | null;
-}
+export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTrip[]> {
+  const ch = getClickHouse();
+  const origin = q.origin.toUpperCase();
+  const destination = q.destination.toUpperCase();
+  const minDays = Math.max(1, Math.min(60, q.minDays ?? 3));
+  const maxDays = Math.max(minDays, Math.min(60, q.maxDays ?? 14));
 
-export interface Itinerary {
-  id: string;
-  title: string;
-  totalPrice: number;
-  currency: string;
-  totalDurationMinutes: number | null;
-  legs: ItineraryLeg[];
-  summary: string;
-  recommendationScore: number;
-}
+  const r = await ch.query({
+    query: `
+      SELECT
+        origin_iata,
+        destination_iata,
+        departure_date,
+        min(price) AS min_price,
+        any(currency) AS currency,
+        any(airline) AS airline,
+        any(duration_minutes) AS duration_minutes
+      FROM flight_listings
+      WHERE (
+            (origin_iata = {origin:String} AND destination_iata = {destination:String})
+         OR (origin_iata = {destination:String} AND destination_iata = {origin:String})
+          )
+        AND departure_date >= {dateFrom:Date}
+        AND departure_date <= {dateTo:Date}
+      GROUP BY origin_iata, destination_iata, departure_date
+      ORDER BY departure_date ASC
+    `,
+    query_params: { origin, destination, dateFrom: q.dateFrom, dateTo: q.dateTo },
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as Array<Record<string, unknown>>;
 
-export interface GenerateItineraryInput {
-  prompt: string;
-  homeIata: string;
-  countries: string[];
-  daysPerCountry: number;
-  dateFrom: string;
-  dateTo: string;
-  preferredAirlines?: string[];
+  const outbound = rows.filter((r) => String(r.origin_iata).toUpperCase() === origin);
+  const inbound = rows.filter((r) => String(r.origin_iata).toUpperCase() === destination);
+
+  const results: RoundTrip[] = [];
+  for (const ob of outbound) {
+    const obDate = String(ob.departure_date ?? "").slice(0, 10);
+    for (const ib of inbound) {
+      const ibDate = String(ib.departure_date ?? "").slice(0, 10);
+      if (!obDate || !ibDate || ibDate <= obDate) continue;
+      const tripDays = Math.round(
+        (new Date(ibDate + "T00:00:00Z").getTime() - new Date(obDate + "T00:00:00Z").getTime()) /
+          86_400_000,
+      );
+      if (tripDays < minDays || tripDays > maxDays) continue;
+      const totalPrice = Number(ob.min_price ?? 0) + Number(ib.min_price ?? 0);
+      const currency = String(ob.currency ?? ib.currency ?? "EUR");
+      results.push({
+        origin,
+        destination,
+        outbound: {
+          origin,
+          destination,
+          price: Number(ob.min_price ?? 0),
+          currency,
+          date: obDate,
+          airline: String(ob.airline ?? ""),
+          durationMinutes: ob.duration_minutes != null ? Number(ob.duration_minutes) : null,
+        },
+        return: {
+          origin: destination,
+          destination: origin,
+          price: Number(ib.min_price ?? 0),
+          currency,
+          date: ibDate,
+          airline: String(ib.airline ?? ""),
+          durationMinutes: ib.duration_minutes != null ? Number(ib.duration_minutes) : null,
+        },
+        tripDays,
+        totalPrice,
+        currency,
+      });
+    }
+  }
+
+  results.sort((a, b) => a.totalPrice - b.totalPrice || a.tripDays - b.tripDays);
+  return results;
 }
 
 const COUNTRY_TO_IATA: Record<string, string[]> = {
@@ -363,172 +552,4 @@ export function detectCountriesFromPrompt(prompt: string): string[] {
 
 export function airportsForCountry(country: string): string[] {
   return COUNTRY_TO_IATA[country] ?? [];
-}
-
-export interface CheapestRoute {
-  origin: string;
-  destination: string;
-  price: number;
-  currency: string;
-  date: string;
-  airline: string;
-  durationMinutes: number | null;
-}
-
-export interface RoundTrip {
-  origin: string;
-  destination: string;
-  outbound: CheapestRoute;
-  return: CheapestRoute;
-  tripDays: number;
-  totalPrice: number;
-  currency: string;
-}
-
-export async function findCheapestRoutesBetween(
-  pairs: Array<{ origin: string; destination: string }>,
-  dateFrom: string,
-  dateTo: string,
-  preferredAirlines: string[] = [],
-): Promise<Map<string, CheapestRoute>> {
-  const ch = getClickHouse();
-  const out = new Map<string, CheapestRoute>();
-  if (pairs.length === 0) return out;
-
-  const originCodes = Array.from(new Set(pairs.map((p) => p.origin)));
-  const destCodes = Array.from(new Set(pairs.map((p) => p.destination)));
-  const params: Record<string, unknown> = {
-    origins: originCodes,
-    dests: destCodes,
-    dateFrom,
-    dateTo,
-  };
-  const airlineFilter = preferredAirlines.length > 0 ? "AND airline_code IN {airlines:Array(String)}" : "";
-  if (preferredAirlines.length > 0) params.airlines = preferredAirlines;
-
-  const r = await ch.query({
-    query: `
-      SELECT
-        origin_iata,
-        destination_iata,
-        min(price) AS min_price,
-        any(currency) AS currency,
-        min(departure_date) AS best_date,
-        any(airline) AS airline,
-        any(duration_minutes) AS duration_minutes
-      FROM flight_listings_latest
-      WHERE origin_iata IN {origins:Array(String)}
-        AND destination_iata IN {dests:Array(String)}
-        AND departure_date >= {dateFrom:Date}
-        AND departure_date <= {dateTo:Date}
-        ${airlineFilter}
-      GROUP BY origin_iata, destination_iata
-    `,
-    query_params: params,
-    format: "JSONEachRow",
-  });
-  const rows = (await r.json()) as Array<Record<string, unknown>>;
-  for (const row of rows) {
-    const origin = String(row.origin_iata).toUpperCase();
-    const destination = String(row.destination_iata).toUpperCase();
-    out.set(`${origin}|${destination}`, {
-      origin,
-      destination,
-      price: Number(row.min_price ?? 0),
-      currency: String(row.currency ?? "EUR"),
-      date: String(row.best_date ?? "").slice(0, 10),
-      airline: String(row.airline ?? ""),
-      durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
-    });
-  }
-  return out;
-}
-
-export interface RoundTripQuery {
-  origin: string;
-  destination: string;
-  dateFrom: string;
-  dateTo: string;
-  minDays?: number;
-  maxDays?: number;
-}
-
-export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTrip[]> {
-  const ch = getClickHouse();
-  const origin = q.origin.toUpperCase();
-  const destination = q.destination.toUpperCase();
-  const minDays = Math.max(1, Math.min(60, q.minDays ?? 3));
-  const maxDays = Math.max(minDays, Math.min(60, q.maxDays ?? 14));
-
-  const r = await ch.query({
-    query: `
-      SELECT
-        origin_iata,
-        destination_iata,
-        departure_date,
-        min(price) AS min_price,
-        any(currency) AS currency,
-        any(airline) AS airline,
-        any(duration_minutes) AS duration_minutes
-      FROM flight_listings
-      WHERE (
-            (origin_iata = {origin:String} AND destination_iata = {destination:String})
-         OR (origin_iata = {destination:String} AND destination_iata = {origin:String})
-          )
-        AND departure_date >= {dateFrom:Date}
-        AND departure_date <= {dateTo:Date}
-      GROUP BY origin_iata, destination_iata, departure_date
-      ORDER BY departure_date ASC
-    `,
-    query_params: { origin, destination, dateFrom: q.dateFrom, dateTo: q.dateTo },
-    format: "JSONEachRow",
-  });
-  const rows = (await r.json()) as Array<Record<string, unknown>>;
-
-  const outbound = rows.filter((r) => String(r.origin_iata).toUpperCase() === origin);
-  const inbound = rows.filter((r) => String(r.origin_iata).toUpperCase() === destination);
-
-  const results: RoundTrip[] = [];
-  for (const ob of outbound) {
-    const obDate = String(ob.departure_date ?? "").slice(0, 10);
-    for (const ib of inbound) {
-      const ibDate = String(ib.departure_date ?? "").slice(0, 10);
-      if (!obDate || !ibDate || ibDate <= obDate) continue;
-      const tripDays = Math.round(
-        (new Date(ibDate + "T00:00:00Z").getTime() - new Date(obDate + "T00:00:00Z").getTime()) /
-          86_400_000,
-      );
-      if (tripDays < minDays || tripDays > maxDays) continue;
-      const totalPrice = Number(ob.min_price ?? 0) + Number(ib.min_price ?? 0);
-      const currency = String(ob.currency ?? ib.currency ?? "EUR");
-      results.push({
-        origin,
-        destination,
-        outbound: {
-          origin,
-          destination,
-          price: Number(ob.min_price ?? 0),
-          currency,
-          date: obDate,
-          airline: String(ob.airline ?? ""),
-          durationMinutes: ob.duration_minutes != null ? Number(ob.duration_minutes) : null,
-        },
-        return: {
-          origin: destination,
-          destination: origin,
-          price: Number(ib.min_price ?? 0),
-          currency,
-          date: ibDate,
-          airline: String(ib.airline ?? ""),
-          durationMinutes: ib.duration_minutes != null ? Number(ib.duration_minutes) : null,
-        },
-        tripDays,
-        totalPrice,
-        currency,
-      });
-    }
-  }
-
-  results.sort((a, b) => a.totalPrice - b.totalPrice || a.tripDays - b.tripDays);
-  return results;
 }

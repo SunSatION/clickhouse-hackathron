@@ -666,7 +666,7 @@ app.get('/api/map/airports/search', async (req, res) => {
     const q = String(req.query.q ?? '');
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 25)));
     const { searchAirports } = await import('../src/db/airports.js');
-    const airports = searchAirports(q, limit);
+    const airports = await searchAirports(q, limit);
     res.json({ ok: true, query: q, count: airports.length, airports });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
@@ -682,7 +682,7 @@ app.get('/api/map/airports/:iata/fares', async (req, res) => {
     const dateTo = typeof req.query.dateTo === 'string' ? req.query.dateTo : '';
     const limit = Math.min(500, Math.max(1, Number(req.query.limit ?? 200)));
     const { getAirport, listFaresForAirport } = await import('../src/db/airports.js');
-    const airport = getAirport(iata);
+    const airport = await getAirport(iata);
     const fares = await listFaresForAirport({ iata, airline, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, limit });
     res.json({ ok: true, iata, airport, count: fares.length, fares });
   } catch (err) {
@@ -837,26 +837,26 @@ app.post('/api/map/itinerary/generate', async (req, res) => {
     if (planner === 'sql' && destinations.length >= 1) {
       const { planBestItinerary } = await import('../src/db/itinerary-planner.js');
       const sqlResults = await planBestItinerary({ home: homeIata, stops: destinations, dateFrom, dateTo, bufferDays: daysPerCountry, flexDays, preferredAirlines, topK: maxItineraries });
-      itineraries = sqlResults.map((it) => ({
+      itineraries = await Promise.all(sqlResults.map(async (it) => ({
         id: it.permutation.join('-') + '-' + it.legs[0]?.date + '-' + it.legs.at(-1)?.date,
         title: `${homeIata} → ${it.permutation.join(' → ')} → ${homeIata}`,
         totalPrice: it.totalPrice, currency: it.currency, totalDurationMinutes: it.totalDurationMinutes,
-        legs: it.legs.map((leg) => ({
+        legs: await Promise.all(it.legs.map(async (leg) => ({
           origin: leg.origin, destination: leg.destination, date: leg.date,
           departureDatetime: leg.departureDatetime, arrivalDatetime: leg.arrivalDatetime,
           price: leg.price, currency: leg.currency, airline: leg.airline, durationMinutes: leg.durationMinutes,
-          originAirport: getAirport(leg.origin), destinationAirport: getAirport(leg.destination),
-        })),
+          originAirport: await getAirport(leg.origin), destinationAirport: await getAirport(leg.destination),
+        }))),
         summary: `Cheapest valid itinerary across ${destinations.length} stops. Total flight time: ${it.totalDurationMinutes ?? '—'} min.`,
         recommendationScore: Math.max(0, Math.round(100 - it.totalPrice)),
-      }));
+      })));
     } else {
       const { generateItineraries } = await import('../src/db/itinerary.js');
       const legacy = await generateItineraries({ prompt: prompt || undefined, homeIata, dateFrom, dateTo, daysPerCountry, preferredAirlines, maxItineraries, destinations });
-      itineraries = legacy.map((it) => ({
+      itineraries = await Promise.all(legacy.map(async (it) => ({
         ...it,
-        legs: it.legs.map((leg) => ({ ...leg, originAirport: getAirport(leg.origin), destinationAirport: getAirport(leg.destination) })) as Array<Record<string, unknown>>,
-      }));
+        legs: await Promise.all(it.legs.map(async (leg) => ({ ...leg, originAirport: await getAirport(leg.origin), destinationAirport: await getAirport(leg.destination) }))) as Array<Record<string, unknown>>,
+      })));
     }
 
     res.json({

@@ -20,7 +20,7 @@ export const ToolAirportFares = defineTool({
       dateTo,
       limit: limit ?? 200,
     });
-    const airport = getAirport(iata);
+    const airport = await getAirport(iata);
     return { ok: true, iata, airport, count: fares.length, fares };
   },
 });

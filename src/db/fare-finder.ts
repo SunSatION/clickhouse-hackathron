@@ -96,9 +96,9 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => {
+  return Promise.all(rows.map(async (row) => {
     const iata = String(row.iata ?? "").toUpperCase();
-    const ap = getAirport(iata);
+    const ap = await getAirport(iata);
     return {
       iata,
       bestPrice: Number(row.best_price ?? 0),
@@ -114,7 +114,7 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
       city: ap?.city ?? null,
       country: ap?.country ?? null,
     };
-  });
+  }));
 }
 
 export interface CalendarQuery {
@@ -425,7 +425,7 @@ export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<Mu
     const d = String(row.destination_iata ?? "").toUpperCase();
     const price = Number(row.best_price ?? 0);
     if (!grouped.has(d)) {
-      const ap = getAirport(d);
+      const ap = await getAirport(d);
       grouped.set(d, {
         bestOrigin: o,
         destination: d,
