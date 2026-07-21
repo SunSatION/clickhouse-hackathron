@@ -1,6 +1,17 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { getClickHouse } from "./clickhouse.js";
 import { logger } from "../lib/logger.js";
-import airportsData from "../../public/data/airports.json";
+
+// JSON imports require `with: { type: "json" }` under Node ESM and break Vercel
+// serverless because the bundler cannot satisfy the import attribute. Load via
+// readFileSync at module load time instead — works in dev, tests, and on Vercel.
+const here = dirname(fileURLToPath(import.meta.url));
+const airportsData = JSON.parse(
+  readFileSync(join(here, "../../public/data/airports.json"), "utf8"),
+) as AirportIndex;
 
 const log = logger("src/db/airports.ts");
 
@@ -24,7 +35,7 @@ interface AirportIndex {
 let cache: Map<string, Airport> | null = null;
 let allCache: Airport[] | null = null;
 
-const airportsIndex = airportsData as AirportIndex;
+const airportsIndex = airportsData;
 
 export function listAllAirports(): Airport[] {
   if (allCache) return allCache;
