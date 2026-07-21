@@ -1,5 +1,5 @@
-import { configureOtel, emitGauge, emitHistogram, emitLog, emitSpan, emitSum, isOtelEnabled, shutdownOtel } from "./emitter";
-import { otelLogger, withSpan, type OtelLogger } from "./logger";
+import { configureOtel, emitGauge, emitHistogram, emitLog, emitSpan, emitSum, isOtelEnabled, shutdownOtel } from "./emitter.js";
+import { otelLogger, withSpan, type OtelLogger } from "./logger.js";
 import {
   childContext,
   currentContext,
@@ -8,10 +8,10 @@ import {
   runWithContext,
   setActiveTaskContext,
   type TraceContext,
-} from "./context";
-import { newSpanId, newTraceId, nowMicros, nowNs, nanoDiff } from "./ids";
-import { instrumentedFetch, installFetchInstrumentation } from "./instrumentation";
-import { traceTask, incCounter } from "./task";
+} from "./context.js";
+import { newSpanId, newTraceId, nowMicros, nowNs, nanoDiff } from "./ids.js";
+import { instrumentedFetch, installFetchInstrumentation } from "./instrumentation.js";
+import { traceTask, incCounter } from "./task.js";
 
 export {
   configureOtel,

@@ -1,1 +1,1 @@
-export { CRAWL_CONFIG, type CrawlRateConfig } from "./crawl";
+export { CRAWL_CONFIG, type CrawlRateConfig } from "./crawl.js";

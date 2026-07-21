@@ -2,9 +2,9 @@ import type {
   AirlineCrawler,
   CrawlResult,
   CrawlRunContext,
-} from "./types";
-import type { FlightListingInput } from "../lib/flight-listing";
-import { pacedFetch, Pacer } from "../lib/paced-fetch";
+} from "./types.js";
+import type { FlightListingInput } from "../lib/flight-listing.js";
+import { pacedFetch, Pacer } from "../lib/paced-fetch.js";
 import { CRAWL_CONFIG } from "../config";
 
 const EASYJET_AVAILABILITY_URL =
@@ -330,7 +330,7 @@ async function loadEasyJetSkipKeys(
   if (cooldownMs <= 0) return new Set();
   if (origins.length === 0 || destinations.length === 0) return new Set();
   try {
-    const { getRecentlySeenKeys } = await import("../db/flight-listings");
+    const { getRecentlySeenKeys } = await import("../db/flight-listings.js");
     const keys = await getRecentlySeenKeys({
       airline: "EasyJet",
       sinceMinutes: Math.ceil(cooldownMs / 60_000),

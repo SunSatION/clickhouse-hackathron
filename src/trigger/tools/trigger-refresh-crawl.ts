@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
+import { defineTool } from "./registry.js";
 import { tasks } from "@trigger.dev/sdk";
-import { enqueuePendingRoutes } from "../../db/crawl-progress";
-import { CRAWL_CONFIG } from "../../config/crawl";
+import { enqueuePendingRoutes } from "../../db/crawl-progress.js";
+import { CRAWL_CONFIG } from "../../config/crawl.js";
 
 export const ToolRefreshCrawl = defineTool({
   id: "tool-refresh-crawl",
@@ -39,7 +39,7 @@ export const ToolRefreshCrawl = defineTool({
     });
 
     const handle = await tasks.trigger<
-      typeof import("../../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline: a,
       crawlRunId,

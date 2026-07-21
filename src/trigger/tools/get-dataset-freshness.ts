@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { getDatasetFreshness, buildToolHints } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { getDatasetFreshness, buildToolHints } from '../../db/fare-finder.js';
 
 export const ToolDatasetFreshness = defineTool({
   id: "tool-dataset-freshness",

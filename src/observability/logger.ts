@@ -1,7 +1,7 @@
-import type { Severity } from "./emitter";
-import { emitLog, emitSpan, isOtelEnabled } from "./emitter";
-import { currentContext, runWithContext, type TraceContext } from "./context";
-import { newSpanId, nowNs } from "./ids";
+import type { Severity } from "./emitter.js";
+import { emitLog, emitSpan, isOtelEnabled } from "./emitter.js";
+import { currentContext, runWithContext, type TraceContext } from "./context.js";
+import { newSpanId, nowNs } from "./ids.js";
 
 export type OtelLogger = {
   trace: (msg: string, meta?: Record<string, unknown>) => void;

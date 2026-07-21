@@ -8,8 +8,8 @@ import {
   installFetchInstrumentation,
   traceTask,
 } from "../observability";
-import { enqueuePendingRoutes } from "../db/crawl-progress";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+import { enqueuePendingRoutes } from "../db/crawl-progress.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 configureOtel({
   resource: {

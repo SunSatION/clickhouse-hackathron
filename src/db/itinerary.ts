@@ -8,8 +8,8 @@ import {
   type Itinerary,
   type ItineraryLeg,
   listAllAirports,
-} from "./airports";
-import { logger } from "../lib/logger";
+} from "./airports.js";
+import { logger } from "../lib/logger.js";
 
 const log = logger("src/db/itinerary.ts");
 

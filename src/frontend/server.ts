@@ -14,11 +14,11 @@ import express from "express";
 
 import { runs, tasks } from "@trigger.dev/sdk";
 
-import { listTaskDescriptions } from "../trigger/task-descriptions";
-import { logger } from "../lib/logger";
-import { CRAWL_CONFIG } from "../config/crawl";
-import { RYANAIR_DEFAULT_BASES } from "../airlines/ryanair";
-import { newTraceId } from "../observability/ids";
+import { listTaskDescriptions } from "../trigger/task-descriptions.js";
+import { logger } from "../lib/logger.js";
+import { CRAWL_CONFIG } from "../config/crawl.js";
+import { RYANAIR_DEFAULT_BASES } from "../airlines/ryanair.js";
+import { newTraceId } from "../observability/ids.js";
 
 const PORT = Number(process.env.FRONTEND_PORT ?? 3030);
 const HYPERDX_URL = (process.env.HYPERDX_URL ?? "http://localhost:8090").replace(/\/$/, "");
@@ -113,7 +113,7 @@ async function resolveTraceId(runIdRaw: string): Promise<string> {
 
 app.get("/api/health", async (_req, res) => {
   try {
-    const { pingClickHouse, getClickHouseForOtel } = await import("../db/clickhouse");
+    const { pingClickHouse, getClickHouseForOtel } = await import("../db/clickhouse.js");
     const flights = await pingClickHouse();
     let otel = false;
     try {
@@ -174,7 +174,7 @@ app.post("/api/trigger/sync-ryanair-routes", async (req, res) => {
 
     if (source === "dynamic") {
       const handle = await tasks.trigger<
-        typeof import("../trigger/sync-ryanair-routes").syncRyanairRoutes
+        typeof import("../trigger/sync-ryanair-routes.js").syncRyanairRoutes
       >("sync-ryanair-routes", { concurrency });
       res.json({
         ok: true,
@@ -239,7 +239,7 @@ app.post("/api/trigger/full-scan", async (req, res) => {
       return;
     }
 
-    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress.js");
     const enqueueResult = await enqueuePendingRoutes({
       airline: "Ryanair",
       origins,
@@ -249,7 +249,7 @@ app.post("/api/trigger/full-scan", async (req, res) => {
     });
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline: "Ryanair",
       crawlRunId,
@@ -313,7 +313,7 @@ app.post("/api/trigger/single-origin", async (req, res) => {
       return;
     }
 
-    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress.js");
     const enqueueResult = await enqueuePendingRoutes({
       airline: "Ryanair",
       origins: [origin],
@@ -323,7 +323,7 @@ app.post("/api/trigger/single-origin", async (req, res) => {
     });
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline: "Ryanair",
       crawlRunId,
@@ -385,7 +385,7 @@ app.post("/api/trigger/seed-queue", async (req, res) => {
 
     const crawlRunId: string = req.body?.runId || crypto.randomUUID();
 
-    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress.js");
     const enqueueResult = await enqueuePendingRoutes({
       airline,
       origins,
@@ -395,7 +395,7 @@ app.post("/api/trigger/seed-queue", async (req, res) => {
     });
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline,
       crawlRunId,
@@ -456,7 +456,7 @@ app.post("/api/trigger/crawl-pending-item", async (req, res) => {
     }
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-pending-item").crawlPendingItem
+      typeof import("../trigger/crawl-pending-item.js").crawlPendingItem
     >("crawl-pending-item", {
       airline,
       crawlRunId,
@@ -508,7 +508,7 @@ app.post("/api/trigger/crawl-queue-worker", async (req, res) => {
     );
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline,
       crawlRunId,
@@ -536,7 +536,7 @@ app.post("/api/trigger/crawl-queue-worker", async (req, res) => {
 app.get("/api/origins", async (req, res) => {
   try {
     const airline = String(req.query.airline ?? "").toUpperCase() || undefined;
-    const { getClickHouse } = await import("../db/clickhouse");
+    const { getClickHouse } = await import("../db/clickhouse.js");
     const ch = getClickHouse();
     const params: Record<string, unknown> = {};
     let filter = "";
@@ -577,7 +577,7 @@ app.get("/api/destinations", async (req, res) => {
       res.status(400).json({ ok: false, error: "origin must be a 3-letter IATA code" });
       return;
     }
-    const { getClickHouse } = await import("../db/clickhouse");
+    const { getClickHouse } = await import("../db/clickhouse.js");
     const ch = getClickHouse();
     const params: Record<string, unknown> = { origin: originRaw };
     let extra = "";
@@ -615,7 +615,7 @@ app.get("/api/destinations", async (req, res) => {
 app.get("/api/iatas", async (req, res) => {
   try {
     const airline = (req.query.airline as string | undefined)?.toUpperCase();
-    const { getClickHouse } = await import("../db/clickhouse");
+    const { getClickHouse } = await import("../db/clickhouse.js");
     const ch = getClickHouse();
     const result = await ch.query({
       query: `
@@ -643,7 +643,7 @@ app.get("/api/queue/stats", async (req, res) => {
       res.status(400).json({ ok: false, error: `airline must be "Ryanair" or "EasyJet"` });
       return;
     }
-    const { getQueueStats, listProgress } = await import("../db/crawl-progress");
+    const { getQueueStats, listProgress } = await import("../db/crawl-progress.js");
     const stats = await getQueueStats({ airline: airlineRaw });
     res.json({ ok: true, airline: airlineRaw, ...stats });
   } catch (err) {
@@ -674,7 +674,7 @@ app.get("/api/queue/items", async (req, res) => {
     const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : "";
     const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : "";
 
-    const { getClickHouse } = await import("../db/clickhouse");
+    const { getClickHouse } = await import("../db/clickhouse.js");
     const ch = getClickHouse();
 
     const params: Record<string, string | number> = {
@@ -749,7 +749,7 @@ app.get("/api/queue/items-by-run", async (req, res) => {
       res.status(400).json({ ok: false, error: "runId is required" });
       return;
     }
-    const { getClickHouse } = await import("../db/clickhouse");
+    const { getClickHouse } = await import("../db/clickhouse.js");
     const ch = getClickHouse();
     const r = await ch.query({
       query: `
@@ -912,7 +912,7 @@ app.get("/api/otel/trace", async (req, res) => {
       res.status(400).json({ ok: false, error: "valid runId (UUID) or traceId is required" });
       return;
     }
-    const { getClickHouseForOtel } = await import("../db/clickhouse");
+    const { getClickHouseForOtel } = await import("../db/clickhouse.js");
     const ch = getClickHouseForOtel();
 
     const minutes = Math.min(Math.max(1, Number(req.query.windowMinutes ?? 1440)), 60 * 24 * 30);
@@ -976,7 +976,7 @@ app.get("/api/otel/trace", async (req, res) => {
 
 app.get("/api/otel/recent-traces", async (_req, res) => {
   try {
-    const { getClickHouseForOtel } = await import("../db/clickhouse");
+    const { getClickHouseForOtel } = await import("../db/clickhouse.js");
     const ch = getClickHouseForOtel();
     const r = await ch.query({
       query: `
@@ -1180,7 +1180,7 @@ app.get("/api/map/airports", async (req, res) => {
     const airline = typeof req.query.airline === "string" && req.query.airline
       ? req.query.airline
       : "Ryanair";
-    const { listAirportsForAirline } = await import("../db/airports");
+    const { listAirportsForAirline } = await import("../db/airports.js");
     const rows = await listAirportsForAirline(airline);
     res.json({
       ok: true,
@@ -1197,7 +1197,7 @@ app.get("/api/map/airports/search", async (req, res) => {
   try {
     const q = String(req.query.q ?? "");
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 25)));
-    const { searchAirports } = await import("../db/airports");
+    const { searchAirports } = await import("../db/airports.js");
     const airports = searchAirports(q, limit);
     res.json({ ok: true, query: q, count: airports.length, airports });
   } catch (err) {
@@ -1216,7 +1216,7 @@ app.get("/api/map/airports/:iata/fares", async (req, res) => {
     const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : "";
     const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : "";
     const limit = Math.min(500, Math.max(1, Number(req.query.limit ?? 200)));
-    const { getAirport, listFaresForAirport } = await import("../db/airports");
+    const { getAirport, listFaresForAirport } = await import("../db/airports.js");
     const airport = getAirport(iata);
     const fares = await listFaresForAirport({
       iata,
@@ -1248,7 +1248,7 @@ app.get("/api/map/fare-finder/cheapest-destinations", async (req, res) => {
     const airline = typeof req.query.airline === "string" ? req.query.airline : undefined;
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const maxPrice = typeof req.query.maxPrice === "string" ? Number(req.query.maxPrice) : undefined;
-    const { findCheapestDestinations } = await import("../db/fare-finder");
+    const { findCheapestDestinations } = await import("../db/fare-finder.js");
     const deals = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
     res.json({ ok: true, origin, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
   } catch (err) {
@@ -1266,7 +1266,7 @@ app.get("/api/map/fare-finder/cheapest-dates", async (req, res) => {
     if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(120, Math.max(1, Number(req.query.limit ?? 60)));
-    const { findCheapestDates } = await import("../db/fare-finder");
+    const { findCheapestDates } = await import("../db/fare-finder.js");
     const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
     res.json({ ok: true, origin, destination, window: { dateFrom, dateTo }, count: cells.length, cells });
   } catch (err) {
@@ -1286,7 +1286,7 @@ app.get("/api/map/fare-finder/best-round-trip", async (req, res) => {
     const maxDays = Math.min(60, Math.max(minDays, Number(req.query.maxDays ?? 14)));
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 5)));
-    const { findBestRoundTrip } = await import("../db/fare-finder");
+    const { findBestRoundTrip } = await import("../db/fare-finder.js");
     const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
     res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, minDays, maxDays }, count: bundles.length, options: bundles });
   } catch (err) {
@@ -1304,7 +1304,7 @@ app.get("/api/map/fare-finder/best-one-way", async (req, res) => {
     if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(60, Math.max(1, Number(req.query.limit ?? 10)));
-    const { findBestOneWay } = await import("../db/fare-finder");
+    const { findBestOneWay } = await import("../db/fare-finder.js");
     const fares = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
     res.json({ ok: true, origin, destination, count: fares.length, fares });
   } catch (err) {
@@ -1323,7 +1323,7 @@ app.post("/api/map/fare-finder/cheapest-from-any", async (req, res) => {
     if (!dateFrom || !dateTo) { res.status(400).json({ ok: false, error: "dateFrom and dateTo are required" }); return; }
     const destination = typeof req.body?.destination === "string" && req.body.destination ? String(req.body.destination).trim().toUpperCase() : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.body?.limit ?? 10)));
-    const { findCheapestFromAnyOrigin } = await import("../db/fare-finder");
+    const { findCheapestFromAnyOrigin } = await import("../db/fare-finder.js");
     const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
     res.json({ ok: true, origins, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
   } catch (err) {
@@ -1342,7 +1342,7 @@ app.get("/api/map/fare-finder/weekend-deals", async (req, res) => {
     const nights = Math.min(21, Math.max(1, Number(req.query.nights ?? 4)));
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(20, Math.max(1, Number(req.query.limit ?? 5)));
-    const { findWeekendDeals } = await import("../db/fare-finder");
+    const { findWeekendDeals } = await import("../db/fare-finder.js");
     const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
     res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, nights }, count: bundles.length, options: bundles });
   } catch (err) {
@@ -1352,7 +1352,7 @@ app.get("/api/map/fare-finder/weekend-deals", async (req, res) => {
 
 app.get("/api/map/fare-finder/freshness", async (_req, res) => {
   try {
-    const { getDatasetFreshness, buildToolHints } = await import("../db/fare-finder");
+    const { getDatasetFreshness, buildToolHints } = await import("../db/fare-finder.js");
     const f = await getDatasetFreshness();
     res.json({ ok: true, ...f, hints: buildToolHints(f) });
   } catch (err) {
@@ -1393,7 +1393,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
       return;
     }
 
-    const { getAirport } = await import("../db/airports");
+    const { getAirport } = await import("../db/airports.js");
 
     let itineraries: Array<{
       id: string;
@@ -1409,7 +1409,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
     if (planner === "sql" && destinations.length >= 1) {
       // New SQL-only planner: single ClickHouse pass over all permutations with
       // arrival+buffer date constraints. Respects actual prices + timing.
-      const { planBestItinerary } = await import("../db/itinerary-planner");
+      const { planBestItinerary } = await import("../db/itinerary-planner.js");
       const sqlResults = await planBestItinerary({
         home: homeIata,
         stops: destinations,
@@ -1445,7 +1445,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
       }));
     } else {
       // Legacy prompt-driven planner.
-      const { generateItineraries } = await import("../db/itinerary");
+      const { generateItineraries } = await import("../db/itinerary.js");
       const legacy = await generateItineraries({
         prompt: prompt || undefined,
         homeIata,
@@ -1490,7 +1490,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
 
 app.get("/api/map/itinerary/favorites", async (_req, res) => {
   try {
-    const { listFavorites } = await import("../db/itinerary");
+    const { listFavorites } = await import("../db/itinerary.js");
     res.json({ ok: true, count: listFavorites().length, favorites: listFavorites() });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
@@ -1504,7 +1504,7 @@ app.post("/api/map/itinerary/favorites", async (req, res) => {
       res.status(400).json({ ok: false, error: "itinerary { id, legs, ... } is required" });
       return;
     }
-    const { saveFavorite } = await import("../db/itinerary");
+    const { saveFavorite } = await import("../db/itinerary.js");
     const fav = saveFavorite(itinerary);
     res.json({ ok: true, favorite: fav });
   } catch (err) {
@@ -1514,7 +1514,7 @@ app.post("/api/map/itinerary/favorites", async (req, res) => {
 
 app.delete("/api/map/itinerary/favorites/:id", async (req, res) => {
   try {
-    const { removeFavorite } = await import("../db/itinerary");
+    const { removeFavorite } = await import("../db/itinerary.js");
     const ok = removeFavorite(req.params.id);
     res.json({ ok, removed: ok });
   } catch (err) {
@@ -1524,7 +1524,7 @@ app.delete("/api/map/itinerary/favorites/:id", async (req, res) => {
 
 app.get("/api/tools", async (_req, res) => {
   try {
-    const { listTools } = await import("../trigger/tools/registry");
+    const { listTools } = await import("../trigger/tools/registry.js");
     const tools = listTools().map((t) => ({
       id: t.id,
       name: t.name,
@@ -1547,7 +1547,7 @@ app.delete("/api/llm/byok", async (_req, res) => {
 
 app.get("/api/llm/status", async (_req, res) => {
   try {
-    const { resolveCredentials } = await import("../llm/key-vault");
+    const { resolveCredentials } = await import("../llm/key-vault.js");
     const creds = resolveCredentials();
     res.json({
       ok: true,
@@ -1632,8 +1632,8 @@ app.post("/api/llm/chat", async (req, res) => {
     res.on("close", () => ac.abort());
 
     const runPollers: Promise<void>[] = [];
-    const { resolveCredentials } = await import("../llm/key-vault");
-    const { runLlmAgent } = await import("../llm/client");
+    const { resolveCredentials } = await import("../llm/key-vault.js");
+    const { runLlmAgent } = await import("../llm/client.js");
     const creds = resolveCredentials();
     const result = await runLlmAgent(
       {
@@ -1694,7 +1694,7 @@ app.get("/api/runs/:runId/stream", async (req, res) => {
 
 app.post("/api/tools/:id", async (req, res) => {
   try {
-    const { getTool } = await import("../trigger/tools/registry");
+    const { getTool } = await import("../trigger/tools/registry.js");
     const tool = getTool(req.params.id);
     if (!tool) {
       res.status(404).json({ ok: false, error: `unknown tool: ${req.params.id}` });
@@ -1735,7 +1735,7 @@ app.post("/api/map/round-trip", async (req, res) => {
       return;
     }
 
-    const { findCheapestRoundTrip, getAirport } = await import("../db/airports");
+    const { findCheapestRoundTrip, getAirport } = await import("../db/airports.js");
     const trips = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
     const options = trips.slice(0, limit).map((t) => ({
       ...t,
@@ -1778,7 +1778,7 @@ app.post("/api/map/itinerary/refresh-crawl", async (req, res) => {
       return;
     }
 
-    const { enqueuePendingRoutes } = await import("../db/crawl-progress");
+    const { enqueuePendingRoutes } = await import("../db/crawl-progress.js");
     const allOrigins = Array.from(new Set(triggers.map((t) => t.origin)));
     const firstLeg = triggers[0];
     if (!firstLeg) {
@@ -1794,7 +1794,7 @@ app.post("/api/map/itinerary/refresh-crawl", async (req, res) => {
     });
 
     const handle = await tasks.trigger<
-      typeof import("../trigger/crawl-queue-worker").crawlQueueWorker
+      typeof import("../trigger/crawl-queue-worker.js").crawlQueueWorker
     >("crawl-queue-worker", {
       airline,
       crawlRunId,

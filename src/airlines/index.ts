@@ -1,5 +1,5 @@
-import type { AirlineCrawler } from "./types";
-import { ryanairCrawler } from "./ryanair";
+import type { AirlineCrawler } from "./types.js";
+import { ryanairCrawler } from "./ryanair.js";
 
 export const AIRLINE_CRAWLERS: AirlineCrawler[] = [ryanairCrawler];
 

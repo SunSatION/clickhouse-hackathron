@@ -1,13 +1,13 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 
-import { crawlEasyJetForOrigin } from "../airlines/easyjet";
+import { crawlEasyJetForOrigin } from "../airlines/easyjet.js";
 import {
   insertEasyjetListings,
   isSupportedAirline,
   stagingTableFor,
-} from "../db/flight-listings";
-import { runMigrations } from "../db/migrate";
+} from "../db/flight-listings.js";
+import { runMigrations } from "../db/migrate.js";
 import {
   configureOtel,
   incCounter,
@@ -21,8 +21,8 @@ import {
   EasyJetFanOutPayload,
   EasyJetRouteOutput,
   EasyJetRoutePayload,
-} from "./schemas";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+} from "./schemas.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 configureOtel({
   resource: { serviceName: "hackathron-crawler", attributes: { "app.component": "crawl-easyjet" } },

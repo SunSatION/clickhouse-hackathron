@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { newSpanId, newTraceId } from "./ids";
+import { newSpanId, newTraceId } from "./ids.js";
 
 export type TraceContext = {
   traceId: string;

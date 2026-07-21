@@ -1,4 +1,4 @@
-import type { CrawlConfig, CrawlSummary, FlightListingInput } from "../lib/flight-listing";
+import type { CrawlConfig, CrawlSummary, FlightListingInput } from "../lib/flight-listing.js";
 
 export type CrawlRunContext = {
   crawlRunId: string;

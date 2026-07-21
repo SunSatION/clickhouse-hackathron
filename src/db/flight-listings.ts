@@ -1,8 +1,8 @@
 import {
   FlightListingSchema,
   type FlightListingInput,
-} from "../lib/flight-listing";
-import { getClickHouse } from "./clickhouse";
+} from "../lib/flight-listing.js";
+import { getClickHouse } from "./clickhouse.js";
 
 const STAGING_TABLES: Record<string, string> = {
   Ryanair: "ryanair_listings",

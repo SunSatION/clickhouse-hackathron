@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { removeFavorite } from '../../db/itinerary';
+import { defineTool } from "./registry.js";
+import { removeFavorite } from '../../db/itinerary.js';
 
 export const ToolRemoveFavorite = defineTool({
   id: "tool-remove-favorite",

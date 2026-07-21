@@ -1,4 +1,4 @@
-import { getClickHouse } from "./clickhouse";
+import { getClickHouse } from "./clickhouse.js";
 
 export type CrawlProgressStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -49,7 +49,7 @@ export async function enqueuePendingRoutes(opts: {
 }): Promise<EnqueueResult> {
   const ch = getClickHouse();
 
-  const { getRoutesForAirlineOrigins } = await import("./airline-routes");
+  const { getRoutesForAirlineOrigins } = await import("./airline-routes.js");
   const routesMap = await getRoutesForAirlineOrigins(opts.airline, opts.origins);
 
   const now = new Date().toISOString();

@@ -3,7 +3,7 @@
  * Pacer-guarded fetch to avoid being blocked.
  */
 
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 const FILE = "src/lib/paced-fetch.ts";
 const log = logger(FILE);

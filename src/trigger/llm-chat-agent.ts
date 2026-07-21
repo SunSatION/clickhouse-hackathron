@@ -1,9 +1,9 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 
-import { runLlmAgent, type LlmStreamEvent } from "../llm/client";
-import { resolveCredentials } from "../llm/key-vault";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+import { runLlmAgent, type LlmStreamEvent } from "../llm/client.js";
+import { resolveCredentials } from "../llm/key-vault.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 export const LlmChatPayload = z.object({
   messages: z.array(z.object({

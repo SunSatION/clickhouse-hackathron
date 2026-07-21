@@ -1,4 +1,4 @@
-import { getClickHouse } from "./clickhouse";
+import { getClickHouse } from "./clickhouse.js";
 
 export interface AirlineRouteInput {
   destination_iata: string;

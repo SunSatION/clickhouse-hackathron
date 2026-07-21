@@ -7,8 +7,8 @@ import {
   installFetchInstrumentation,
   traceTask,
 } from "../observability";
-import { syncRyanairRoutesFromAirports } from "../airlines/ryanair";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+import { syncRyanairRoutesFromAirports } from "../airlines/ryanair.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 configureOtel({
   resource: {

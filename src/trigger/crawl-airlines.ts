@@ -12,14 +12,14 @@ import {
   installFetchInstrumentation,
   traceTask,
 } from "../observability";
-import { crawlRyanair } from "./crawl-ryanair";
+import { crawlRyanair } from "./crawl-ryanair.js";
 import {
   CrawlAirlinesInput,
   CrawlAirlinesOutput,
   CrawlAirlinesPayload,
   RyanairFanOutInput,
-} from "./schemas";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+} from "./schemas.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 configureOtel({
   resource: { serviceName: "hackathron-crawler", attributes: { "app.component": "crawl-airlines" } },

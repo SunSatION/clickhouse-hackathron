@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { findCheapestRoundTrip } from '../../db/airports';
+import { defineTool } from "./registry.js";
+import { findCheapestRoundTrip } from '../../db/airports.js';
 
 export const ToolRoundTrip = defineTool({
   id: "tool-round-trip",

@@ -1,5 +1,5 @@
-import { getClickHouse } from "./clickhouse";
-import { logger } from "../lib/logger";
+import { getClickHouse } from "./clickhouse.js";
+import { logger } from "../lib/logger.js";
 import airportsData from "../../public/data/airports.json";
 
 const log = logger("src/db/airports.ts");

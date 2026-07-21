@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { compareOrigins } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { compareOrigins } from '../../db/fare-finder.js';
 
 export const ToolCompareOrigins = defineTool({
   id: "tool-compare-origins",

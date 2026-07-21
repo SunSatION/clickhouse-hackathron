@@ -1,7 +1,7 @@
 import { emitGauge, emitLog, emitSpan, isOtelEnabled, nowNs, setActiveTaskContext } from ".";
-import { newSpanId } from "./ids";
-import { newTraceId } from "./ids";
-import type { TraceContext } from "./context";
+import { newSpanId } from "./ids.js";
+import { newTraceId } from "./ids.js";
+import type { TraceContext } from "./context.js";
 
 /**
  * Return an async function that records span/metrics for a trigger.dev

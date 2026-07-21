@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { saveFavorite } from '../../db/itinerary';
+import { defineTool } from "./registry.js";
+import { saveFavorite } from '../../db/itinerary.js';
 
 export const ToolSaveFavorite = defineTool({
   id: "tool-save-favorite",

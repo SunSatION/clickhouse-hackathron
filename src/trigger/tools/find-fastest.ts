@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { londonAirports } from '../../db/airports';
-import { findFastestFromAnyOrigin } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { londonAirports } from '../../db/airports.js';
+import { findFastestFromAnyOrigin } from '../../db/fare-finder.js';
 
 export const ToolFindFastest = defineTool({
   id: "tool-find-fastest",

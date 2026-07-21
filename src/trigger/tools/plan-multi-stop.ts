@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { planBestItinerary } from '../../db/itinerary-planner';
-import { getAirport } from '../../db/airports';
+import { defineTool } from "./registry.js";
+import { planBestItinerary } from '../../db/itinerary-planner.js';
+import { getAirport } from '../../db/airports.js';
 
 export const ToolMultiStop = defineTool({
   id: "tool-multi-stop",

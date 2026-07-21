@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { findWeekendDeals } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { findWeekendDeals } from '../../db/fare-finder.js';
 
 export const ToolWeekendDeals = defineTool({
   id: "tool-weekend-deals",

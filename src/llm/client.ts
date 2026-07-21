@@ -1,12 +1,12 @@
-import { logger } from "../lib/logger";
-import { listTools, getTool, type ToolDefinition } from "../trigger/tools/registry";
+import { logger } from "../lib/logger.js";
+import { listTools, getTool, type ToolDefinition } from "../trigger/tools/registry.js";
 import {
   WayfareAnswerSchema,
   WAYFARE_ANSWER_JSON_SCHEMA,
   WAYFARE_ANSWER_SYSTEM_PROMPT,
   parseWayfareAnswer,
   type WayfareAnswer,
-} from "./wayfare-answer";
+} from "./wayfare-answer.js";
 
 const log = logger("src/llm/client.ts");
 

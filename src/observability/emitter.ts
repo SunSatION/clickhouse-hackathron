@@ -1,5 +1,5 @@
-import { getClickHouseForOtel } from "../db/clickhouse";
-import { currentContext } from "./context";
+import { getClickHouseForOtel } from "../db/clickhouse.js";
+import { currentContext } from "./context.js";
 
 export type Severity = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
 

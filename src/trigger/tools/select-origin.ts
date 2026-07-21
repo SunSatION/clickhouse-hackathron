@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { getAirport, listFaresForAirport } from '../../db/airports';
+import { defineTool } from "./registry.js";
+import { getAirport, listFaresForAirport } from '../../db/airports.js';
 
 export const ToolSelectOrigin = defineTool({
   id: "tool-select-origin",

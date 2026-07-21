@@ -1,6 +1,6 @@
-import { emitHistogram, emitLog, emitSpan, isOtelEnabled } from "./emitter";
-import { nowNs } from "./ids";
-import { installGlobalPacing, globalPacedFetch } from "../lib/paced-fetch";
+import { emitHistogram, emitLog, emitSpan, isOtelEnabled } from "./emitter.js";
+import { nowNs } from "./ids.js";
+import { installGlobalPacing, globalPacedFetch } from "../lib/paced-fetch.js";
 
 type OTelPatchFlag = {
   __otelFetchInstalled?: boolean;

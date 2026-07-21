@@ -1,5 +1,5 @@
-import { getClickHouse } from "./clickhouse";
-import { getAirport } from "./airports";
+import { getClickHouse } from "./clickhouse.js";
+import { getAirport } from "./airports.js";
 
 export interface FareFinderDateRange {
   dateFrom: string;

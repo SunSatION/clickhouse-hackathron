@@ -2,7 +2,7 @@ import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 
 import { CRAWL_CONFIG } from "../config";
-import { crawlRyanairRangeForOrigin } from "../airlines/ryanair";
+import { crawlRyanairRangeForOrigin } from "../airlines/ryanair.js";
 import {
   configureOtel,
   incCounter,
@@ -11,8 +11,8 @@ import {
   traceTask,
   withSpan,
 } from "../observability";
-import { claimNextPendingItem, markProgressCompleted, markProgressFailed } from "../db/crawl-progress";
-import { TASK_DESCRIPTIONS } from "./task-descriptions";
+import { claimNextPendingItem, markProgressCompleted, markProgressFailed } from "../db/crawl-progress.js";
+import { TASK_DESCRIPTIONS } from "./task-descriptions.js";
 
 configureOtel({
   resource: {

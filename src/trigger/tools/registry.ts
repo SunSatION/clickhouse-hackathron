@@ -64,26 +64,26 @@ export function defineTool(def: {
   };
 }
 
-import { ToolSearchAirports } from "./search-airports";
-import { ToolSelectOrigin } from "./select-origin";
-import { ToolDrawDestinationArrows } from "./draw-destination-arrows";
-import { ToolFindFastest } from "./find-fastest";
-import { ToolCompareOrigins } from "./compare-origins";
-import { ToolAirportFares } from "./airport-fares";
-import { ToolRoundTrip } from "./plan-round-trip";
-import { ToolMultiStop } from "./plan-multi-stop";
-import { ToolRefreshCrawl } from "./trigger-refresh-crawl";
-import { ToolCheapestDestinations } from "./find-cheapest-destinations";
-import { ToolCheapestDates } from "./find-cheapest-dates";
-import { ToolBestRoundTrip } from "./find-best-round-trip";
-import { ToolBestOneWay } from "./find-best-one-way";
-import { ToolCheapestFromAny } from "./find-cheapest-from-any-origin";
-import { ToolWeekendDeals } from "./find-weekend-deals";
+import { ToolSearchAirports } from "./search-airports.js";
+import { ToolSelectOrigin } from "./select-origin.js";
+import { ToolDrawDestinationArrows } from "./draw-destination-arrows.js";
+import { ToolFindFastest } from "./find-fastest.js";
+import { ToolCompareOrigins } from "./compare-origins.js";
+import { ToolAirportFares } from "./airport-fares.js";
+import { ToolRoundTrip } from "./plan-round-trip.js";
+import { ToolMultiStop } from "./plan-multi-stop.js";
+import { ToolRefreshCrawl } from "./trigger-refresh-crawl.js";
+import { ToolCheapestDestinations } from "./find-cheapest-destinations.js";
+import { ToolCheapestDates } from "./find-cheapest-dates.js";
+import { ToolBestRoundTrip } from "./find-best-round-trip.js";
+import { ToolBestOneWay } from "./find-best-one-way.js";
+import { ToolCheapestFromAny } from "./find-cheapest-from-any-origin.js";
+import { ToolWeekendDeals } from "./find-weekend-deals.js";
 
-import { ToolListFavorites } from "./list-favorites";
-import { ToolSaveFavorite } from "./save-favorite";
-import { ToolRemoveFavorite } from "./remove-favorite";
-import { ToolGetHomeAirport } from "./get-home-airport";
+import { ToolListFavorites } from "./list-favorites.js";
+import { ToolSaveFavorite } from "./save-favorite.js";
+import { ToolRemoveFavorite } from "./remove-favorite.js";
+import { ToolGetHomeAirport } from "./get-home-airport.js";
 
 export {
   ToolSearchAirports,
@@ -141,4 +141,4 @@ export function getToolByName(name: string): ToolDefinition | null {
   return ALL_TOOLS.find((t) => t.name === name) ?? null;
 }
 
-export type { CheapestRoute, RoundTrip } from "../../db/airports";
+export type { CheapestRoute, RoundTrip } from "../../db/airports.js";

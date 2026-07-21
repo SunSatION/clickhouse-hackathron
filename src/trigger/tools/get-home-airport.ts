@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { getAirport } from '../../db/airports';
-import { getClickHouse } from '../../db/clickhouse';
-import { findCheapestDestinations } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { getAirport } from '../../db/airports.js';
+import { getClickHouse } from '../../db/clickhouse.js';
+import { findCheapestDestinations } from '../../db/fare-finder.js';
 
 const DEFAULT_DESTINATION_LIMIT = 12;
 

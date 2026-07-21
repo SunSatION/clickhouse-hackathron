@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineTool } from "./registry";
-import { findCheapestDestinations } from '../../db/fare-finder';
+import { defineTool } from "./registry.js";
+import { findCheapestDestinations } from '../../db/fare-finder.js';
 
 export const ToolDrawDestinationArrows = defineTool({
   id: "tool-draw-destination-arrows",

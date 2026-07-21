@@ -1,4 +1,4 @@
-import { getClickHouse } from "./clickhouse";
+import { getClickHouse } from "./clickhouse.js";
 import { migrations, type Migration } from "../../db/migrations";
 
 export async function ensureMigrationsTable(): Promise<void> {

@@ -2,11 +2,11 @@ import type {
   AirlineCrawler,
   CrawlResult,
   CrawlRunContext,
-} from "./types";
-import type { FlightListingInput } from "../lib/flight-listing";
-import { pacedFetch, Pacer } from "../lib/paced-fetch";
+} from "./types.js";
+import type { FlightListingInput } from "../lib/flight-listing.js";
+import { pacedFetch, Pacer } from "../lib/paced-fetch.js";
 import { CRAWL_CONFIG } from "../config";
-import { logger } from "../lib/logger";
+import { logger } from "../lib/logger.js";
 
 const FILE = "src/airlines/ryanair.ts";
 const log = logger(FILE);
@@ -604,7 +604,7 @@ export async function syncRyanairRoutes(
 ): Promise<Map<string, number>> {
   log.trace(">>> syncRyanairRoutes enter", { cls: "Ryanair", fn: "syncRyanairRoutes" });
   const start = Date.now();
-  const { upsertAirlineRoutes } = await import("../db/airline-routes");
+  const { upsertAirlineRoutes } = await import("../db/airline-routes.js");
   const list = (origins && origins.length > 0
     ? origins
     : Array.from(RYANAIR_DEFAULT_BASES)
@@ -643,7 +643,7 @@ export async function syncRyanairRoutesFromAirports(opts?: {
 }): Promise<SyncRyanairRoutesSummary> {
   log.trace(">>> syncRyanairRoutesFromAirports enter", { cls: "Ryanair", fn: "syncRyanairRoutesFromAirports" });
   const start = Date.now();
-  const { upsertAirlineRoutes } = await import("../db/airline-routes");
+  const { upsertAirlineRoutes } = await import("../db/airline-routes.js");
   const concurrency = Math.max(1, opts?.concurrency ?? 1);
   const startedAt = Date.now();
 
@@ -983,7 +983,7 @@ export async function crawlRyanair(ctx: CrawlRunContext): Promise<CrawlResult> {
   const cooldownMs = config.cooldownMs ?? CRAWL_CONFIG.ryanair.cooldownMs;
   const skipKeys = await loadRyanairSkipKeys(config.origins, cooldownMs);
 
-  const { getRoutesForAirlineOrigins } = await import("../db/airline-routes");
+  const { getRoutesForAirlineOrigins } = await import("../db/airline-routes.js");
   const routesByOrigin = await getRoutesForAirlineOrigins("Ryanair", config.origins);
   const allowedDestinationsByOrigin = new Map<string, Set<string> | null>();
   for (const origin of config.origins) {
@@ -1170,11 +1170,11 @@ export async function crawlRyanairForOrigin(
   const resume = ctx.resumeFromProgress ?? persist;
 
   const { insertStagingListings } = persist
-    ? await import("../db/flight-listings")
+    ? await import("../db/flight-listings.js")
     : { insertStagingListings: null as null };
   const { getClaimedDestinations, markDestinationCompleted, markDestinationFailed } =
     persist
-      ? await import("../db/crawl-progress")
+      ? await import("../db/crawl-progress.js")
       : {
           getClaimedDestinations: null as null,
           markDestinationCompleted: null as null,
@@ -1187,7 +1187,7 @@ export async function crawlRyanairForOrigin(
     ? new Set(ctx.destinationFilter.map((c) => c.toUpperCase()))
     : null;
 
-  const { getDestinationsForAirlineOrigin } = await import("../db/airline-routes");
+  const { getDestinationsForAirlineOrigin } = await import("../db/airline-routes.js");
   const routeDests = await getDestinationsForAirlineOrigin("Ryanair", originIata);
   const allowedDests = routeDests.size > 0 ? routeDests : null;
 
@@ -1476,7 +1476,7 @@ async function loadRyanairSkipKeys(
   if (cooldownMs <= 0) return new Set();
   if (origins.length === 0) return new Set();
   try {
-    const { getRecentlySeenKeys } = await import("../db/flight-listings");
+    const { getRecentlySeenKeys } = await import("../db/flight-listings.js");
     log.trace("<<< loadRyanairSkipKeys exit", { cls: "Ryanair", fn: "loadRyanairSkipKeys", waitMs: Date.now() - start });
     return await getRecentlySeenKeys({
       airline: "Ryanair",
@@ -1556,11 +1556,11 @@ export async function crawlRyanairRangeForOrigin(
   const resume = options.resumeFromProgress ?? persist;
 
   const { insertStagingListings } = persist
-    ? await import("../db/flight-listings")
+    ? await import("../db/flight-listings.js")
     : { insertStagingListings: null as null };
   const { getClaimedDestinations, markDestinationCompleted, markDestinationFailed } =
     persist
-      ? await import("../db/crawl-progress")
+      ? await import("../db/crawl-progress.js")
       : {
           getClaimedDestinations: null as null,
           markDestinationCompleted: null as null,
@@ -1585,7 +1585,7 @@ export async function crawlRyanairRangeForOrigin(
   });
 
   const { getDestinationsWithNamesForAirlineOrigin } = await import(
-    "../db/airline-routes"
+    "../db/airline-routes.js"
   );
   const routeDestNames = await getDestinationsWithNamesForAirlineOrigin(
     "Ryanair",

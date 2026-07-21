@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID, createCipheriv, createDecipheriv, scryptSync } from "node:crypto";
 
-import { logger } from "../lib/logger";
+import { logger } from "../lib/logger.js";
 
 const log = logger("src/llm/key-vault.ts");
 
