@@ -88,7 +88,7 @@ export async function runLlmAgent(
 ): Promise<LlmChatResponse> {
   const provider = creds.provider || "openai";
   const model = req.model || creds.model || defaultModel(provider);
-  const maxIterations = Math.max(1, Math.min(10, req.maxIterations ?? 6));
+  const maxIterations = Math.max(1, Math.min(20, req.maxIterations ?? 12));
   const toolCalls: LlmChatResponse["toolCalls"] = [];
   const messages: ChatMessage[] = [
     { role: "system", content: WAYFARE_ANSWER_SYSTEM_PROMPT },

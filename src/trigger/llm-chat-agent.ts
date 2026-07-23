@@ -18,7 +18,7 @@ export const LlmChatPayload = z.object({
     name: z.string().optional(),
   })),
   model: z.string().optional(),
-  maxIterations: z.number().int().min(1).max(10).default(6),
+  maxIterations: z.number().int().min(1).max(20).default(12),
 });
 
 export type LlmChatPayloadT = z.infer<typeof LlmChatPayload>;
@@ -42,8 +42,8 @@ export const llmChatAgent = schemaTask({
   id: "llm-chat-agent",
   description: TASK_DESCRIPTIONS["llm-chat-agent"]?.summary ?? "Chat with Wayfare AI assistant",
   schema: LlmChatPayload,
-  maxDuration: 600,
-  ttl: "10m",
+  maxDuration: 900,
+  ttl: "15m",
   queue: { concurrencyLimit: 1 },
   retry: { maxAttempts: 2 },
   run: async (payload) => {

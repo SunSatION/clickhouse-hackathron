@@ -1178,7 +1178,7 @@
         headers: { "content-type": "application/json", accept: "text/event-stream" },
         body: JSON.stringify({
           messages,
-          maxIterations: 6,
+          maxIterations: 12,
           homeIata: home.homeIata || undefined,
           homeLocation: {
             lat: home.lat ?? undefined,

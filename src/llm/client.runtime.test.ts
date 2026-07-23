@@ -87,7 +87,7 @@ describe("runLlmAgent: credentials", () => {
 });
 
 describe("runLlmAgent: maxIterations clamp", () => {
-  it("clamps maxIterations to [1,10]", async () => {
+  it("clamps maxIterations to [1,20]", async () => {
     const fetchMock = vi.fn(async () => okResponse(JSON.stringify(VALID_SUMMARY_ANSWER)));
     vi.stubGlobal("fetch", fetchMock);
     for (const v of [0, -5, 100, 999]) {
@@ -95,7 +95,7 @@ describe("runLlmAgent: maxIterations clamp", () => {
         { messages: [{ role: "user", content: "x" }], maxIterations: v },
         { provider: "openai", apiKey: "sk-test" },
       );
-      expect(res.iterations).toBeLessThanOrEqual(10);
+      expect(res.iterations).toBeLessThanOrEqual(20);
       expect(res.iterations).toBeGreaterThanOrEqual(1);
     }
     vi.unstubAllGlobals();
