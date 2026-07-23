@@ -779,6 +779,18 @@ app.get('/api/map/airports/:iata/routes', async (req, res) => {
   }
 });
 
+app.get('/api/map/airports/:iata/inbound', async (req, res) => {
+  try {
+    const iata = String(req.params.iata ?? '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(iata)) { res.status(400).json({ ok: false, error: 'iata must be a 3-letter code' }); return; }
+    const { getInboundOriginsForAirport } = await import('../src/db/airports.js');
+    const origins = await getInboundOriginsForAirport(iata);
+    res.json({ ok: true, iata, count: origins.length, origins });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
 app.get('/api/map/fare-finder/cheapest-destinations', async (req, res) => {
   try {
     const origin = String(req.query.origin ?? '').trim().toUpperCase();
