@@ -457,6 +457,21 @@
       }
       .fare-stops { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+      .stop-row {
+        display: flex; flex-direction: column;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .stop-row-head { display: flex; align-items: center; gap: 6px; }
+      .stop-row-body { margin-top: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .stop-stay-pair { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+      .stop-stay-pair input { width: 56px; }
+      .stop-stay-pair label { font-weight: 600; color: var(--muted); margin-right: 2px; }
+      .stop-stay-sep { color: var(--muted); font-weight: 700; }
+      .stop-stay-unit { color: var(--muted); }
       .itinerary-card {
         margin: 12px;
         padding: 14px;
@@ -855,6 +870,8 @@
         <button class="chat-chip" data-action="clear">Clear</button>
         <button class="chat-chip" data-iata="MLA,STN,DUB,FCO,BCN,MAD">Sample: capitals</button>
         <button class="chat-chip" data-iata="MLA,FCO,CDG,MAD,ATH">Sample: 5 cities</button>
+        <button class="chat-chip" data-mode="multicity" data-iata="BCN,FCO">Sample: MLA → BCN → FCO → MLA</button>
+        <button class="chat-chip" data-action="round-trip">Round trip</button>
       </div>
     </div>
 

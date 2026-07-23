@@ -73,6 +73,7 @@
     faresFilters: { ryanair: true, easyjet: false, origin: "", dest: "", date: "" },
     mapFilterOrigin: null,
     mapFilterDestinations: new Set(),
+    reachableToHome: new Set(),
     destinationArrowsLayer: null,
     builder: {
       mode: localStorage.getItem("wayfarer.builder.mode") || "multi",
@@ -84,6 +85,16 @@
       flexDays: Number(localStorage.getItem("wayfarer.builder.flexDays")) || 1,
       minDays: Number(localStorage.getItem("wayfarer.builder.minDays")) || 3,
       maxDays: Number(localStorage.getItem("wayfarer.builder.maxDays")) || 14,
+      multiCity: {
+        stops: JSON.parse(localStorage.getItem("wayfarer.builder.multiCity.stops") || "[]"),
+        defaultStayDays: Number(localStorage.getItem("wayfarer.builder.multiCity.defaultStayDays")) || 3,
+        defaultFlexDays: Number(localStorage.getItem("wayfarer.builder.multiCity.defaultFlexDays")) || 1,
+        legFlexDays: Number(localStorage.getItem("wayfarer.builder.multiCity.legFlexDays")) || 2,
+        maxTotalPrice: Number(localStorage.getItem("wayfarer.builder.multiCity.maxTotalPrice")) || 350,
+        maxLegPrice: Number(localStorage.getItem("wayfarer.builder.multiCity.maxLegPrice")) || 150,
+        anchor: JSON.parse(localStorage.getItem("wayfarer.builder.multiCity.anchor") || "null"),
+        limit: Number(localStorage.getItem("wayfarer.builder.multiCity.limit")) || 20,
+      },
     },
   };
 
@@ -154,12 +165,26 @@
       const r = await getJson(`/api/map/airports`);
       state.airports = r.airports || [];
       state.airportsByIata = new Map(state.airports.map((a) => [a.iata, a]));
+      await refreshReachableToHome();
       drawPins();
       flyToHome();
       syncAirlineToggle();
     } catch (e) {
       console.error("loadAirports:", e);
       toast.error("Could not load airports", String(e));
+    }
+  }
+
+  async function refreshReachableToHome() {
+    state.reachableToHome = new Set();
+    const home = state.airportsByIata.get(state.homeIata);
+    if (!home) return;
+    try {
+      const r = await getJson(`/api/map/airports/${encodeURIComponent(state.homeIata)}/inbound`);
+      const origins = (r.origins || []).filter((s) => /^[A-Z]{3}$/.test(String(s).toUpperCase()));
+      for (const o of origins) state.reachableToHome.add(o);
+    } catch (e) {
+      console.warn("refreshReachableToHome: failed:", e);
     }
   }
 
@@ -170,6 +195,7 @@
     if (opts.faresView) klass.push("fares-view");
     if (opts.filterOrigin) klass.push("filter-origin");
     if (opts.dimmed) klass.push("dimmed");
+    if (opts.disabled) klass.push("disabled");
     return `<div class="${klass.join(" ")}" data-iata="${airport.iata}">${airport.iata}</div>`;
   }
 
@@ -187,12 +213,15 @@
     const isInDest = state.destinations.includes(iata);
     const isFilterOrigin = iata === state.mapFilterOrigin;
     const isConnected = state.mapFilterDestinations.has(iata);
+    const canReturnHome = isHome || state.reachableToHome.has(iata);
+    const isDisabled = !canReturnHome && !isInDest;
     return {
       home: isHome,
       inTrip: isInDest,
       faresView: state.faresAirport === iata,
       filterOrigin: isFilterOrigin,
       dimmed: state.mapFilterOrigin != null && !isHome && !isInDest && !isFilterOrigin && !isConnected,
+      disabled: isDisabled,
     };
   }
 
@@ -217,10 +246,8 @@
         L.DomEvent.preventDefault(ev);
         viewFaresForAirport(a.iata);
       });
-      m.bindTooltip(
-        `${a.iata} · ${a.city || a.name || ""}${a.country ? " (" + a.country + ")" : ""}<br/><span style="font-size:11px;opacity:.75">Click to add · Right-click for fares</span>`,
-        { direction: "top", offset: [0, -8] },
-      );
+      const tip = `${a.iata} · ${a.city || a.name || ""}${a.country ? " (" + a.country + ")" : ""}<br/><span style="font-size:11px;opacity:.75">${opts.disabled ? `No return flight to ${state.homeIata} · can only be an intermediate stop` : "Click to add · Right-click for fares"}</span>`;
+      m.bindTooltip(tip, { direction: "top", offset: [0, -8], opacity: 0.95 });
       m.addTo(map);
       state.markers.set(a.iata, m);
     }
@@ -293,14 +320,17 @@
     }
     const idx = state.destinations.indexOf(iata);
     if (idx === -1) {
-      if (state.builder.mode === "round") {
-        state.destinations = [iata];
-      } else {
-        state.destinations.push(iata);
-      }
-      toast.info(state.builder.mode === "round" ? `Round-trip target: ${iata}` : "Added to trip", iata);
+      if (state.destinations.length === 0) state.builder.multiCity.stops = [];
+      state.destinations.push(iata);
+      state.builder.multiCity.stops.push({
+        iata,
+        minStayDays: state.builder.multiCity.defaultStayDays - state.builder.multiCity.defaultFlexDays,
+        maxStayDays: state.builder.multiCity.defaultStayDays + state.builder.multiCity.defaultFlexDays,
+      });
+      toast.info("Added to trip", iata);
     } else {
       state.destinations.splice(idx, 1);
+      state.builder.multiCity.stops = state.builder.multiCity.stops.filter((s) => s.iata !== iata);
       toast.info("Removed from trip", iata);
     }
     saveDestinations();
@@ -458,37 +488,81 @@
     $("itineraries-header")?.remove();
     $("fares-back")?.remove();
     setSidebarMode("builder");
-    const isRound = state.builder.mode === "round";
+    // Always the multi-city best fare planner now. Keep `state.builder.mode` for
+    // back-compat with persisted localStorage but treat anything other than
+    // 'multicity' as 'multicity'.
+    if (state.builder.mode !== "multicity") {
+      state.builder.mode = "multicity";
+      localStorage.setItem("wayfarer.builder.mode", "multicity");
+    }
     const n = state.destinations.length;
-    const subTitle = isRound
-      ? (n === 0 ? "Round trip — pick one destination on the map" : n === 1 ? `Round trip to ${state.destinations[0]}` : "Round trip — keep one destination only")
-      : `From ${state.homeIata} · ${n} destination${n === 1 ? "" : "s"} selected`;
-    $("sidebar-title").textContent = isRound ? "Plan a round trip" : "Plan a multi-stop trip";
+    const subTitle = n === 0
+      ? "Click pins on the map to add stops between home and back."
+      : `From ${state.homeIata} · ${n} stop${n === 1 ? "" : "s"} (anchor + best fare)`;
+    $("sidebar-title").textContent = "Plan a trip";
     $("sidebar-subtitle").textContent = subTitle;
     const body = $("sidebar-body");
     const home = state.airportsByIata.get(state.homeIata);
     const homeLabel = home ? `${state.homeIata} · ${home.city || home.name || ""}` : state.homeIata;
 
-    const destChips = state.destinations.map((iata) => {
-      const a = state.airportsByIata.get(iata);
-      const label = a ? `${iata} · ${a.city || a.country || ""}` : iata;
-      return `<span class="dest-chip">${escapeHtml(label)}<button class="dest-chip-remove" data-remove="${iata}" title="Remove">×</button></span>`;
+    // Reconcile persisted stays with current destination order. Stops without
+    // a saved entry fall back to the global default; existing entries keep
+    // their values if the iata still matches.
+    const savedStops = state.builder.multiCity.stops ?? [];
+    const reconciledStops = state.destinations.map((iata, idx) => {
+      const existing = savedStops.find((s) => s.iata === iata);
+      return {
+        iata,
+        minStayDays: existing?.minStayDays ?? state.builder.multiCity.defaultStayDays - state.builder.multiCity.defaultFlexDays,
+        maxStayDays: existing?.maxStayDays ?? state.builder.multiCity.defaultStayDays + state.builder.multiCity.defaultFlexDays,
+      };
+    });
+    state.builder.multiCity.stops = reconciledStops;
+    saveDestinations();
+
+    const destRows = reconciledStops.map((s, idx) => {
+      const a = state.airportsByIata.get(s.iata);
+      const label = a ? `${s.iata} · ${a.city || a.country || ""}` : s.iata;
+      const minStay = Math.max(1, s.minStayDays);
+      const maxStay = Math.max(minStay, s.maxStayDays);
+      return `<div class="stop-row" data-idx="${idx}">
+        <div class="stop-row-head">
+          <span class="dest-chip"><strong>${idx + 1}.</strong> ${escapeHtml(label)}<button class="dest-chip-remove" data-remove="${s.iata}" title="Remove">×</button></span>
+        </div>
+        <div class="stop-row-body">
+          <div class="stop-stay-pair">
+            <label>Stay</label>
+            <input type="number" min="1" max="30" data-stop-min="${s.iata}" value="${minStay}" />
+            <span class="stop-stay-sep">–</span>
+            <input type="number" min="1" max="30" data-stop-max="${s.iata}" value="${maxStay}" />
+            <span class="stop-stay-unit">days</span>
+          </div>
+        </div>
+      </div>`;
     }).join("");
 
-    const planDisabled = isRound ? n !== 1 : n === 0;
+    const lastStop = state.destinations[state.destinations.length - 1] ?? null;
+    const lastStopBlocked = lastStop != null && !state.reachableToHome.has(lastStop);
+    const planDisabled = n === 0 || lastStopBlocked;
     const dateInputs = `
       <div class="builder-row">
         <div><label>Depart from</label><input type="date" id="b-from" value="${state.builder.dateFrom}" /></div>
         <div><label>Return by</label><input type="date" id="b-to" value="${state.builder.dateTo}" /></div>
       </div>
       <div class="builder-row" style="margin-top:8px">
-        ${isRound
-          ? `<div><label>Min trip days</label><input type="number" id="b-min-days" min="1" max="60" value="${state.builder.minDays}" /></div>
-             <div><label>Max trip days</label><input type="number" id="b-max-days" min="1" max="60" value="${state.builder.maxDays}" /></div>
-             <div><label>Max itineraries</label><input type="number" id="b-max" min="1" max="8" value="${state.builder.maxItineraries}" /></div></div>`
-            : `<div><label>Days per stop</label><input type="number" id="b-days" min="1" max="30" value="${state.builder.daysPerStop}" /></div>
-               <div><label>± flex days</label><input type="number" id="b-flex" min="0" max="10" value="${state.builder.flexDays}" /></div>
-               <div><label>Max itineraries</label><input type="number" id="b-max" min="1" max="8" value="${state.builder.maxItineraries}" /></div></div>`}
+        <div><label>Default stay</label><input type="number" id="b-mc-stay" min="1" max="30" value="${state.builder.multiCity.defaultStayDays}" /></div>
+        <div><label>± flex</label><input type="number" id="b-mc-flex" min="0" max="7" value="${state.builder.multiCity.defaultFlexDays}" /></div>
+        <div><label>± leg flex</label><input type="number" id="b-mc-legflex" min="0" max="7" value="${state.builder.multiCity.legFlexDays}" /></div>
+      </div>
+      <div class="builder-row" style="margin-top:8px">
+        <div><label>Max / leg</label><input type="number" id="b-mc-maxleg" min="0" max="2000" value="${state.builder.multiCity.maxLegPrice}" /></div>
+        <div><label>Max total</label><input type="number" id="b-mc-maxtotal" min="0" max="10000" value="${state.builder.multiCity.maxTotalPrice}" /></div>
+        <div><label>Top-K</label><input type="number" id="b-mc-limit" min="1" max="50" value="${state.builder.multiCity.limit}" /></div>
+      </div>
+      <div class="builder-row" style="margin-top:8px">
+        <div><label>Anchor city</label><input id="b-mc-anchor-city" placeholder="(optional)" maxlength="3" style="text-transform:uppercase" value="${escapeHtml(state.builder.multiCity.anchor?.city ?? "")}" /></div>
+        <div><label>Anchor day</label><input type="date" id="b-mc-anchor-day" value="${escapeHtml(state.builder.multiCity.anchor?.day ?? "")}" /></div>
+      </div>
     `;
 
     body.innerHTML = `
@@ -498,24 +572,16 @@
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Change in settings (top-right).</div>
       </div>
       <div class="builder-section">
-        <h4>Trip type</h4>
-        <div style="display:flex;gap:6px">
-          <button class="secondary" id="b-mode-multi" style="flex:1;${!isRound ? "background:var(--accent-soft);color:var(--accent);border-color:var(--accent)" : ""}">Multi-stop</button>
-          <button class="secondary" id="b-mode-round" style="flex:1;${isRound ? "background:var(--accent-soft);color:var(--accent);border-color:var(--accent)" : ""}">Round trip</button>
-        </div>
-      </div>
-      <div class="builder-section">
-        <h4>${isRound ? "Destination (click one pin)" : "Destinations (click pins to add)"}</h4>
-        <div class="builder-destinations">${destChips}</div>
-        ${isRound && n > 1 ? `<div style="font-size:11px;color:var(--warn);margin-top:6px">Round trip keeps only one destination. Remove extras or switch to Multi-stop.</div>` : ""}
+        <h4>Stops (click pins to add in order)</h4>
+        <div class="builder-destinations">${destRows || '<div style="font-size:11px;color:var(--muted)">No stops yet.</div>'}</div>
+        ${n > 0 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">Route: <strong>${escapeHtml(state.homeIata)} → ${escapeHtml(state.destinations.join(" → "))} → ${escapeHtml(state.homeIata)}</strong> (${n + 1} legs, return home implicit). Set per-stop stay with the line item under each chip.</div>` : ""}
+        ${lastStopBlocked ? `<div style="font-size:11px;color:#b91c1c;margin-top:6px">⚠ <strong>${escapeHtml(lastStop)}</strong> doesn't fly back to <strong>${escapeHtml(state.homeIata)}</strong> — it can stay as an intermediate stop, but the search needs a final stop with a return flight.</div>` : ""}
       </div>
       <div class="builder-section">${dateInputs}</div>
       <div class="builder-summary">${summaryLine()}</div>
       <div class="builder-actions">
         <button class="secondary" id="b-clear" ${n === 0 ? "disabled" : ""}>Clear</button>
-        <button class="primary" id="b-plan" ${planDisabled ? "disabled" : ""}>
-          ${isRound ? "Find round trip →" : "Plan trip →"}
-        </button>
+        <button class="primary" id="b-plan" ${planDisabled ? "disabled" : ""}>Find best fare →</button>
       </div>
       <div class="builder-section">
         <h4>Or ask the assistant</h4>
@@ -526,37 +592,85 @@
     body.querySelectorAll("[data-remove]").forEach((b) =>
       b.addEventListener("click", () => toggleDestination(b.dataset.remove)),
     );
-    $("b-mode-multi")?.addEventListener("click", () => { state.builder.mode = "multi"; renderBuilder(); });
-    $("b-mode-round")?.addEventListener("click", () => { state.builder.mode = "round"; if (state.destinations.length > 1) { state.destinations = state.destinations.slice(0, 1); saveDestinations(); } renderBuilder(); });
+
     $("b-from").addEventListener("change", (e) => { state.builder.dateFrom = e.target.value; renderBuilder(); });
     $("b-to").addEventListener("change", (e) => { state.builder.dateTo = e.target.value; renderBuilder(); });
-    $("b-days")?.addEventListener("change", (e) => {
+
+    const persistStops = () => {
+      localStorage.setItem("wayfarer.builder.multiCity.stops", JSON.stringify(state.builder.multiCity.stops));
+    };
+    body.querySelectorAll("[data-stop-min]").forEach((inp) => {
+      inp.addEventListener("change", (e) => {
+        const iata = e.target.dataset.stopMin;
+        const stop = state.builder.multiCity.stops.find((s) => s.iata === iata);
+        if (!stop) return;
+        const v = Math.max(1, Math.min(30, Number(e.target.value) || 1));
+        stop.minStayDays = v;
+        if (stop.maxStayDays < v) stop.maxStayDays = v;
+        persistStops();
+        e.target.value = String(v);
+      });
+    });
+    body.querySelectorAll("[data-stop-max]").forEach((inp) => {
+      inp.addEventListener("change", (e) => {
+        const iata = e.target.dataset.stopMax;
+        const stop = state.builder.multiCity.stops.find((s) => s.iata === iata);
+        if (!stop) return;
+        const v = Math.max(stop.minStayDays ?? 1, Math.min(30, Number(e.target.value) || (stop.minStayDays ?? 1)));
+        stop.maxStayDays = v;
+        persistStops();
+        e.target.value = String(v);
+      });
+    });
+
+    const persistMc = () => {
+      localStorage.setItem("wayfarer.builder.multiCity.stops", JSON.stringify(state.builder.multiCity.stops));
+      localStorage.setItem("wayfarer.builder.multiCity.defaultStayDays", String(state.builder.multiCity.defaultStayDays));
+      localStorage.setItem("wayfarer.builder.multiCity.defaultFlexDays", String(state.builder.multiCity.defaultFlexDays));
+      localStorage.setItem("wayfarer.builder.multiCity.legFlexDays", String(state.builder.multiCity.legFlexDays));
+      localStorage.setItem("wayfarer.builder.multiCity.maxLegPrice", String(state.builder.multiCity.maxLegPrice));
+      localStorage.setItem("wayfarer.builder.multiCity.maxTotalPrice", String(state.builder.multiCity.maxTotalPrice));
+      localStorage.setItem("wayfarer.builder.multiCity.anchor", JSON.stringify(state.builder.multiCity.anchor));
+      localStorage.setItem("wayfarer.builder.multiCity.limit", String(state.builder.multiCity.limit));
+    };
+    $("b-mc-stay")?.addEventListener("change", (e) => {
       const v = Math.max(1, Math.min(30, Number(e.target.value) || 3));
-      state.builder.daysPerStop = v;
-      localStorage.setItem("wayfarer.builder.daysPerStop", String(v));
-      e.target.value = String(v);
+      state.builder.multiCity.defaultStayDays = v; e.target.value = String(v); persistMc();
     });
-    $("b-flex")?.addEventListener("change", (e) => {
-      const v = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-      state.builder.flexDays = v;
-      localStorage.setItem("wayfarer.builder.flexDays", String(v));
-      e.target.value = String(v);
+    $("b-mc-flex")?.addEventListener("change", (e) => {
+      const v = Math.max(0, Math.min(7, Number(e.target.value) || 0));
+      state.builder.multiCity.defaultFlexDays = v; e.target.value = String(v); persistMc();
     });
-    $("b-min-days")?.addEventListener("change", (e) => {
-      const v = Math.max(1, Math.min(60, Number(e.target.value) || 1));
-      state.builder.minDays = v;
-      e.target.value = String(v);
+    $("b-mc-legflex")?.addEventListener("change", (e) => {
+      const v = Math.max(0, Math.min(7, Number(e.target.value) || 2));
+      state.builder.multiCity.legFlexDays = v; e.target.value = String(v); persistMc();
     });
-    $("b-max-days")?.addEventListener("change", (e) => {
-      const v = Math.max(state.builder.minDays, Math.min(60, Number(e.target.value) || 14));
-      state.builder.maxDays = v;
-      e.target.value = String(v);
+    $("b-mc-maxleg")?.addEventListener("change", (e) => {
+      const v = Math.max(0, Math.min(2000, Number(e.target.value) || 0));
+      state.builder.multiCity.maxLegPrice = v; e.target.value = String(v); persistMc();
     });
-    $("b-max")?.addEventListener("change", (e) => {
-      const v = Math.max(1, Math.min(8, Number(e.target.value) || 4));
-      state.builder.maxItineraries = v;
-      localStorage.setItem("wayfarer.builder.maxItineraries", String(v));
-      e.target.value = String(v);
+    $("b-mc-maxtotal")?.addEventListener("change", (e) => {
+      const v = Math.max(0, Math.min(10000, Number(e.target.value) || 0));
+      state.builder.multiCity.maxTotalPrice = v; e.target.value = String(v); persistMc();
+    });
+    $("b-mc-limit")?.addEventListener("change", (e) => {
+      const v = Math.max(1, Math.min(50, Number(e.target.value) || 20));
+      state.builder.multiCity.limit = v; e.target.value = String(v); persistMc();
+    });
+    $("b-mc-anchor-city")?.addEventListener("change", (e) => {
+      const v = e.target.value.trim().toUpperCase();
+      state.builder.multiCity.anchor = state.builder.multiCity.anchor ? { ...state.builder.multiCity.anchor, city: v } : null;
+      if (!/^[A-Z]{3}$/.test(v)) state.builder.multiCity.anchor = null;
+      e.target.value = state.builder.multiCity.anchor?.city ?? "";
+      persistMc();
+    });
+    $("b-mc-anchor-day")?.addEventListener("change", (e) => {
+      const v = e.target.value.trim();
+      state.builder.multiCity.anchor = state.builder.multiCity.anchor && /^\d{4}-\d{2}-\d{2}$/.test(v)
+        ? { ...state.builder.multiCity.anchor, day: v }
+        : null;
+      e.target.value = state.builder.multiCity.anchor?.day ?? "";
+      persistMc();
     });
     $("b-clear")?.addEventListener("click", () => {
       state.destinations = [];
@@ -570,23 +684,22 @@
       toast.info("Trip cleared");
     });
     $("b-plan")?.addEventListener("click", () => {
-      if (state.builder.mode === "round") findRoundTrip();
-      else planTrip();
+      findMultiCityBestFare();
     });
   }
 
   function summaryLine() {
     if (state.destinations.length === 0) return "";
     const home = state.homeIata;
-    if (state.builder.mode === "round") {
-      const dest = state.destinations[0];
-      return `Route: <strong>${escapeHtml(home)} ⇄ ${escapeHtml(dest)}</strong><br/>${state.builder.minDays}–${state.builder.maxDays} day trips.`;
-    }
     const stops = state.destinations.join(" → ");
-    const totalDays = Math.max(1, daysBetween(state.builder.dateFrom, state.builder.dateTo));
-    const flex = state.builder.flexDays;
-    const stayRange = flex > 0 ? `${state.builder.daysPerStop - flex}–${state.builder.daysPerStop + flex}` : `${state.builder.daysPerStop}`;
-    return `Route: <strong>${escapeHtml(home)} → ${escapeHtml(stops)} → ${escapeHtml(home)}</strong><br/>${totalDays} days, ${stayRange} days per stop${flex > 0 ? ` (±${flex})` : ""}.`;
+    const mc = state.builder.multiCity;
+    const legCount = state.destinations.length + 1;
+    const stayBits = state.builder.multiCity.stops
+      .map((s, idx) => `${escapeHtml(s.iata)} ${s.minStayDays}–${s.maxStayDays}d`)
+      .join(", ");
+    const anchor = mc.anchor;
+    const anchorBit = anchor ? `, anchor ${anchor.city} on ${anchor.day}` : "";
+    return `Route: <strong>${escapeHtml(home)} → ${escapeHtml(stops)} → ${escapeHtml(home)}</strong><br/>${legCount} legs · stays: ${stayBits} · cap ${mc.maxTotalPrice || "∞"}${anchorBit}.`;
   }
 
   function daysBetween(a, b) {
@@ -713,6 +826,7 @@
     chip.addEventListener("click", () => {
       if (chip.dataset.action === "clear") {
         state.destinations = [];
+        state.builder.multiCity.stops = [];
         state.mapFilterOrigin = null;
         state.mapFilterDestinations.clear();
         clearItineraryLayer();
@@ -723,14 +837,33 @@
         toast.info("Trip cleared");
         return;
       }
+      if (chip.dataset.action === "round-trip") {
+        // Trim to a single destination and run the round-trip finder.
+        if (state.destinations.length > 1) {
+          state.destinations = state.destinations.slice(0, 1);
+          state.builder.multiCity.stops = state.builder.multiCity.stops.slice(0, 1);
+          saveDestinations();
+          for (const iata of state.airportsByIata.keys()) refreshPin(iata);
+        }
+        if (state.sidebarMode !== "builder") exitFaresToBuilder();
+        findRoundTrip();
+        return;
+      }
       if (chip.dataset.iata) {
         const iatas = chip.dataset.iata.split(",").map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z]{3}$/.test(s));
         state.destinations = iatas.filter((i) => i !== state.homeIata);
+        // Reset per-stop stays to the current defaults; the builder will
+        // reconcile them on render.
+        state.builder.multiCity.stops = state.destinations.map((iata) => ({
+          iata,
+          minStayDays: state.builder.multiCity.defaultStayDays - state.builder.multiCity.defaultFlexDays,
+          maxStayDays: state.builder.multiCity.defaultStayDays + state.builder.multiCity.defaultFlexDays,
+        }));
         saveDestinations();
         for (const iata of state.airportsByIata.keys()) refreshPin(iata);
         if (state.sidebarMode !== "builder") exitFaresToBuilder();
         else renderBuilder();
-        toast.success("Sample loaded", state.destinations.join(" → "));
+        toast.success("Stops loaded", state.destinations.join(" → "));
         return;
       }
       chatInput.value = chip.dataset.prompt || chip.textContent.trim();
@@ -743,6 +876,14 @@
   async function planTrip() {
     if (state.destinations.length === 0) {
       toast.warn("Pick destinations first", "Click pins to add airports to your trip.");
+      return;
+    }
+    const lastStop = state.destinations[state.destinations.length - 1];
+    if (lastStop && !state.reachableToHome.has(lastStop)) {
+      toast.warn(
+        `Last stop has no return flight to ${state.homeIata}`,
+        `${lastStop} doesn't fly back home. Add a stop after it, or remove it.`,
+      );
       return;
     }
     chatSend.disabled = true;
@@ -834,6 +975,91 @@
       console.error("findRoundTrip:", e);
       body.innerHTML = `<div class="empty"><h4>Round-trip search failed</h4><p>${escapeHtml(String(e))}</p></div>`;
       toast.error("Round-trip failed", String(e));
+    } finally {
+      chatSend.disabled = false;
+    }
+  }
+
+  async function findMultiCityBestFare() {
+    if (state.destinations.length < 1) {
+      toast.warn("Pick at least one stop", "Multi-city needs at least one city between home and back.");
+      return;
+    }
+    const home = state.homeIata;
+    const stops = state.builder.multiCity.stops.map((s) => ({
+      iata: s.iata,
+      minStayDays: s.minStayDays,
+      maxStayDays: s.maxStayDays,
+    }));
+    const anchorCity = String($("b-mc-anchor-city")?.value ?? "").trim().toUpperCase();
+    const anchorDay = String($("b-mc-anchor-day")?.value ?? "").trim();
+    const anchor = /^[A-Z]{3}$/.test(anchorCity) && /^\d{4}-\d{2}-\d{2}$/.test(anchorDay) ? { city: anchorCity, day: anchorDay } : null;
+
+    const payload = {
+      homeIata: home,
+      stops,
+      dateFrom: state.builder.dateFrom,
+      dateTo: state.builder.dateTo,
+      defaultStayDays: state.builder.multiCity.defaultStayDays,
+      defaultFlexDays: state.builder.multiCity.defaultFlexDays,
+      legFlexDays: state.builder.multiCity.legFlexDays,
+      maxTotalPrice: state.builder.multiCity.maxTotalPrice,
+      maxLegPrice: state.builder.multiCity.maxLegPrice,
+      anchor,
+      limit: state.builder.multiCity.limit,
+    };
+
+    chatSend.disabled = true;
+    setSidebarMode("itineraries");
+    $("sidebar-title").textContent = "Finding best fare…";
+    $("sidebar-subtitle").textContent = `${home} → ${state.destinations.join(" → ")} → ${home}`;
+    $("sidebar-toolbar").hidden = true;
+    const body = $("sidebar-body");
+    const legCount = state.destinations.length + 1;
+    body.innerHTML = `<div class="empty"><h4>Searching best-fare chains…</h4><p>${legCount} legs · ${stops.length} stop${stops.length === 1 ? "" : "s"} · ≤${payload.maxTotalPrice || "∞"} total${anchor ? ` · be in ${anchor.city} on ${anchor.day}` : ""}.</p></div>`;
+    try {
+      const r = await postJson("/api/map/multi-city/generate", payload);
+      const bundles = r.bundles || [];
+      if (bundles.length === 0) {
+        body.innerHTML = `<div class="empty"><h4>No bundles</h4><p>No priced chains satisfied all constraints. Loosen the price caps, widen the stays, or pick earlier dates.</p></div>
+          <div style="padding:0 20px 20px"><button class="secondary" id="b-back-from-empty">← edit stops</button></div>`;
+        $("b-back-from-empty")?.addEventListener("click", () => { clearItineraryLayer(); renderBuilder(); });
+        return;
+      }
+      state.itineraries = bundles.map((b, idx) => {
+        const id = `mcbf-${idx}-${b.legs.map((l) => l.departureDate).join("-")}`;
+        const stopsLabel = b.legs.map((l) => `${l.from}→${l.to}`).join(" · ");
+        const datesLabel = `${b.legs[0]?.departureDate ?? ""} → ${b.legs.at(-1)?.departureDate ?? ""}`;
+        return {
+          id,
+          title: `${state.destinations[0]} circuit · ${b.tripDays} day${b.tripDays === 1 ? "" : "s"}`,
+          totalPrice: b.totalPrice,
+          currency: b.currency,
+          totalDurationMinutes: null,
+          legs: b.legs.map((l) => ({
+            origin: l.from,
+            destination: l.to,
+            date: l.departureDate,
+            departureDatetime: l.arrivalDatetime,
+            arrivalDatetime: l.arrivalDatetime,
+            price: l.price,
+            currency: l.currency,
+            airline: "",
+            durationMinutes: null,
+            originAirport: l.originAirport,
+            destinationAirport: l.destinationAirport,
+          })),
+          summary: `${stopsLabel} · ${datesLabel}`,
+          recommendationScore: Math.max(0, Math.round(100 - b.totalPrice)),
+        };
+      });
+      state.activeItineraryId = state.itineraries[0].id;
+      renderItineraries();
+      renderItineraryOnMap(state.activeItineraryId);
+    } catch (e) {
+      console.error("findMultiCityBestFare:", e);
+      body.innerHTML = `<div class="empty"><h4>Multi-city search failed</h4><p>${escapeHtml(String(e))}</p></div>`;
+      toast.error("Multi-city failed", String(e));
     } finally {
       chatSend.disabled = false;
     }
@@ -1751,6 +1977,7 @@
 
     state.destinations = state.destinations.filter((d) => d !== state.homeIata);
     saveDestinations();
+    await refreshReachableToHome();
     drawPins();
     flyToHome();
     if (state.sidebarMode === "builder") renderBuilder();

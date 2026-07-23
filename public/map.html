@@ -749,6 +749,15 @@
         opacity: 0.25;
         pointer-events: none;
       }
+      .airport-pin.disabled {
+        opacity: 0.4;
+        filter: grayscale(0.85);
+        cursor: not-allowed;
+        border-style: dashed;
+      }
+      .airport-pin.disabled::after {
+        border-top-style: dashed;
+      }
 
       /* === Legend === */
       .map-controls {

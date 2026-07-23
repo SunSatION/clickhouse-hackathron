@@ -720,8 +720,8 @@ app.get('/api/map/fare-finder/cheapest-destinations', async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === 'string' ? req.query.airlineCode : undefined;
     const maxPrice = typeof req.query.maxPrice === 'string' ? Number(req.query.maxPrice) : undefined;
     const { findCheapestDestinations } = await import('../src/db/fare-finder.js');
-    const deals = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
-    res.json({ ok: true, origin, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+    const { results: deals, window } = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
+    res.json({ ok: true, origin, window, count: deals.length, destinations: deals });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -738,8 +738,8 @@ app.get('/api/map/fare-finder/cheapest-dates', async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === 'string' ? req.query.airlineCode : undefined;
     const limit = Math.min(120, Math.max(1, Number(req.query.limit ?? 60)));
     const { findCheapestDates } = await import('../src/db/fare-finder.js');
-    const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo }, count: cells.length, cells });
+    const { results: cells, window } = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window, count: cells.length, cells });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -758,8 +758,8 @@ app.get('/api/map/fare-finder/best-round-trip', async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === 'string' ? req.query.airlineCode : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 5)));
     const { findBestRoundTrip } = await import('../src/db/fare-finder.js');
-    const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, minDays, maxDays }, count: bundles.length, options: bundles });
+    const { results: bundles, window } = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { ...window, minDays, maxDays }, count: bundles.length, options: bundles });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -776,8 +776,8 @@ app.get('/api/map/fare-finder/best-one-way', async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === 'string' ? req.query.airlineCode : undefined;
     const limit = Math.min(60, Math.max(1, Number(req.query.limit ?? 10)));
     const { findBestOneWay } = await import('../src/db/fare-finder.js');
-    const fares = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
-    res.json({ ok: true, origin, destination, count: fares.length, fares });
+    const { results: fares, window } = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window, count: fares.length, fares });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -795,8 +795,8 @@ app.post('/api/map/fare-finder/cheapest-from-any', async (req, res) => {
     const destination = typeof req.body?.destination === 'string' && req.body.destination ? String(req.body.destination).trim().toUpperCase() : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.body?.limit ?? 10)));
     const { findCheapestFromAnyOrigin } = await import('../src/db/fare-finder.js');
-    const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
-    res.json({ ok: true, origins, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+    const { results: deals, window } = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
+    res.json({ ok: true, origins, window, count: deals.length, destinations: deals });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -814,8 +814,8 @@ app.get('/api/map/fare-finder/weekend-deals', async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === 'string' ? req.query.airlineCode : undefined;
     const limit = Math.min(20, Math.max(1, Number(req.query.limit ?? 5)));
     const { findWeekendDeals } = await import('../src/db/fare-finder.js');
-    const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, nights }, count: bundles.length, options: bundles });
+    const { results: bundles, window } = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { ...window, nights }, count: bundles.length, options: bundles });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -852,9 +852,12 @@ app.post('/api/map/itinerary/generate', async (req, res) => {
     const { getAirport } = await import('../src/db/airports.js');
     let itineraries: Array<{ id: string; title: string; totalPrice: number; currency: string; totalDurationMinutes: number | null; legs: Array<Record<string, unknown>>; summary: string; recommendationScore: number; }>;
 
+    let sqlPlannerWindow: { dateFrom: string; dateTo: string; requestedFrom: string; requestedTo: string; truncated: boolean; maxDate: string } | undefined;
     if (planner === 'sql' && destinations.length >= 1) {
       const { planBestItinerary } = await import('../src/db/itinerary-planner.js');
-      const sqlResults = await planBestItinerary({ home: homeIata, stops: destinations, dateFrom, dateTo, bufferDays: daysPerCountry, flexDays, preferredAirlines, topK: maxItineraries });
+      const sqlResult = await planBestItinerary({ home: homeIata, stops: destinations, dateFrom, dateTo, bufferDays: daysPerCountry, flexDays, preferredAirlines, topK: maxItineraries });
+      sqlPlannerWindow = sqlResult.window;
+      const sqlResults = sqlResult.itineraries;
       itineraries = await Promise.all(sqlResults.map(async (it) => ({
         id: it.permutation.join('-') + '-' + it.legs[0]?.date + '-' + it.legs.at(-1)?.date,
         title: `${homeIata} → ${it.permutation.join(' → ')} → ${homeIata}`,
@@ -879,6 +882,7 @@ app.post('/api/map/itinerary/generate', async (req, res) => {
 
     res.json({
       ok: true, planner, request: { prompt, homeIata, dateFrom, dateTo, daysPerCountry, flexDays, preferredAirlines, destinations, maxItineraries },
+      window: sqlPlannerWindow,
       count: itineraries.length, itineraries,
     });
   } catch (err) {
@@ -1059,9 +1063,9 @@ app.post('/api/map/round-trip', async (req, res) => {
     if (origin === destination) { res.status(400).json({ ok: false, error: 'origin and destination must differ' }); return; }
 
     const { findCheapestRoundTrip, getAirport } = await import('../src/db/airports.js');
-    const trips = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
+    const { trips, window } = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
     const options = trips.slice(0, limit).map((t) => ({ ...t, originAirport: getAirport(t.origin), destinationAirport: getAirport(t.destination) }));
-    res.json({ ok: true, origin, destination, count: options.length, options });
+    res.json({ ok: true, origin, destination, count: options.length, options, window });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }

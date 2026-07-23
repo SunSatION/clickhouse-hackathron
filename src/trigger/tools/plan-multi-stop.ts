@@ -19,20 +19,20 @@ export const ToolMultiStop = defineTool({
     preferredAirlines: z.array(z.string()).max(6).optional().describe("Restrict to airline codes (e.g. ['FR','EZY'])."),
   }),
   handler: async ({ homeIata, destinations, dateFrom, dateTo, daysPerCountry, maxItineraries, bufferDays, preferredAirlines }) => {
-    const result = await planBestItinerary({
+    const { itineraries, window } = await planBestItinerary({
       home: homeIata.toUpperCase(),
       stops: destinations.map((d: string) => d.toUpperCase()),
       dateFrom,
       dateTo,
-      bufferDays: bufferDays ?? 1,
+      bufferDays: bufferDays ?? 3,
       topK: maxItineraries ?? 4,
       preferredAirlines,
     });
-    const legsFlat = result.flatMap((itin) => itin.legs);
+    const legsFlat = itineraries.flatMap((itin) => itin.legs);
     return {
       ok: true,
-      count: result.length,
-      itineraries: await Promise.all(result.map(async (it) => ({
+      count: itineraries.length,
+      itineraries: await Promise.all(itineraries.map(async (it) => ({
         ...it,
         legs: await Promise.all(it.legs.map(async (leg) => ({
           ...leg,
@@ -43,6 +43,7 @@ export const ToolMultiStop = defineTool({
       coverage: {
         legs: legsFlat.length,
       },
+      window,
     };
   },
 });

@@ -1,9 +1,31 @@
 import { getClickHouse } from "./clickhouse.js";
+import { clampToDataWindow } from "./data-window.js";
 import { getAirport } from "./airports.js";
 
 export interface FareFinderDateRange {
   dateFrom: string;
   dateTo: string;
+}
+
+export interface ClampedDateRange extends FareFinderDateRange {
+  truncated: boolean;
+  maxDate: string;
+  requestedFrom: string;
+  requestedTo: string;
+}
+
+export type QueryResult<T> = { results: T[]; window: ClampedDateRange };
+
+async function clampRange(dateFrom: string, dateTo: string): Promise<ClampedDateRange> {
+  const c = await clampToDataWindow(dateFrom, dateTo);
+  return {
+    dateFrom: c.dateFrom,
+    dateTo: c.dateTo,
+    requestedFrom: dateFrom,
+    requestedTo: dateTo,
+    truncated: c.truncated,
+    maxDate: c.maxDate,
+  };
 }
 
 export interface InspirationQuery {
@@ -50,7 +72,7 @@ export interface OriginCompareRow {
   durationMinutes: number | null;
 }
 
-export async function findCheapestDestinations(q: InspirationQuery): Promise<DestinationDeal[]> {
+export async function findCheapestDestinations(q: InspirationQuery): Promise<QueryResult<DestinationDeal>> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const limit = Math.max(1, Math.min(50, q.limit ?? 12));
@@ -58,10 +80,11 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
   const airlineName = q.airline ?? "";
   const maxPrice = typeof q.maxPrice === "number" && q.maxPrice > 0 ? q.maxPrice : 0;
   const useMaxPrice = maxPrice > 0;
+  const window = await clampRange(q.dateFrom, q.dateTo);
   const queryParams: Record<string, unknown> = {
     origin,
-    dateFrom: q.dateFrom,
-    dateTo: q.dateTo,
+    dateFrom: window.dateFrom,
+    dateTo: window.dateTo,
     airlineCode,
     airlineName,
     maxPrice,
@@ -96,7 +119,7 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return Promise.all(rows.map(async (row) => {
+  const results = await Promise.all(rows.map(async (row) => {
     const iata = String(row.iata ?? "").toUpperCase();
     const ap = await getAirport(iata);
     return {
@@ -115,6 +138,7 @@ export async function findCheapestDestinations(q: InspirationQuery): Promise<Des
       country: ap?.country ?? null,
     };
   }));
+  return { results, window };
 }
 
 export interface CalendarQuery {
@@ -138,7 +162,7 @@ export interface CalendarCell {
   durationMinutes: number | null;
 }
 
-export async function findCheapestDates(q: CalendarQuery): Promise<CalendarCell[]> {
+export async function findCheapestDates(q: CalendarQuery): Promise<QueryResult<CalendarCell>> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const destination = q.destination.toUpperCase();
@@ -147,6 +171,7 @@ export async function findCheapestDates(q: CalendarQuery): Promise<CalendarCell[
   const airlineName = q.airline ?? "";
   const maxPrice = typeof q.maxPrice === "number" && q.maxPrice > 0 ? q.maxPrice : 0;
   const useMaxPrice = maxPrice > 0;
+  const window = await clampRange(q.dateFrom, q.dateTo);
 
   const r = await ch.query({
     query: `
@@ -173,8 +198,8 @@ export async function findCheapestDates(q: CalendarQuery): Promise<CalendarCell[
     query_params: {
       origin,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       airlineCode,
       airlineName,
       maxPrice,
@@ -185,7 +210,7 @@ export async function findCheapestDates(q: CalendarQuery): Promise<CalendarCell[
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
+  const results = rows.map((row) => ({
     date: String(row.d ?? "").slice(0, 10),
     bestPrice: Number(row.best_price ?? 0),
     currency: String(row.currency ?? "EUR"),
@@ -194,6 +219,7 @@ export async function findCheapestDates(q: CalendarQuery): Promise<CalendarCell[
     cheapestDepartureDatetime: row.best_dt ? String(row.best_dt).slice(0, 19) : null,
     durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
   }));
+  return { results, window };
 }
 
 export interface RoundTripQuery {
@@ -223,7 +249,7 @@ export interface RoundTripBundle {
   tripDays: number;
 }
 
-export async function findBestRoundTrip(q: RoundTripQuery): Promise<RoundTripBundle[]> {
+export async function findBestRoundTrip(q: RoundTripQuery): Promise<QueryResult<RoundTripBundle>> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const destination = q.destination.toUpperCase();
@@ -232,6 +258,7 @@ export async function findBestRoundTrip(q: RoundTripQuery): Promise<RoundTripBun
   const limit = Math.max(1, Math.min(50, q.limit ?? 5));
   const airlineCode = (q.airlineCode ?? "").toUpperCase();
   const useAirline = airlineCode.length > 0 ? 1 : 0;
+  const window = await clampRange(q.dateFrom, q.dateTo);
 
   const r = await ch.query({
     query: `
@@ -273,8 +300,8 @@ export async function findBestRoundTrip(q: RoundTripQuery): Promise<RoundTripBun
     query_params: {
       origin,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       minDays,
       maxDays,
       limit,
@@ -285,7 +312,7 @@ export async function findBestRoundTrip(q: RoundTripQuery): Promise<RoundTripBun
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
+  const results = rows.map((row) => ({
     origin,
     destination,
     outboundDate: String(row.outbound_date ?? "").slice(0, 10),
@@ -300,6 +327,7 @@ export async function findBestRoundTrip(q: RoundTripQuery): Promise<RoundTripBun
     currency: String(row.currency ?? "EUR"),
     tripDays: Number(row.trip_days ?? 0),
   }));
+  return { results, window };
 }
 
 export interface OneWayCheapest {
@@ -313,13 +341,14 @@ export interface OneWayCheapest {
   durationMinutes: number | null;
 }
 
-export async function findBestOneWay(q: CalendarQuery): Promise<OneWayCheapest[]> {
+export async function findBestOneWay(q: CalendarQuery): Promise<QueryResult<OneWayCheapest>> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const destination = q.destination.toUpperCase();
   const limit = Math.max(1, Math.min(60, q.limit ?? 10));
   const airlineCode = (q.airlineCode ?? "").toUpperCase();
   const useAirline = airlineCode.length > 0 ? 1 : 0;
+  const window = await clampRange(q.dateFrom, q.dateTo);
 
   const r = await ch.query({
     query: `
@@ -343,8 +372,8 @@ export async function findBestOneWay(q: CalendarQuery): Promise<OneWayCheapest[]
     query_params: {
       origin,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       airlineCode,
       useAirline,
       limit,
@@ -353,7 +382,7 @@ export async function findBestOneWay(q: CalendarQuery): Promise<OneWayCheapest[]
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
+  const results = rows.map((row) => ({
     origin,
     destination,
     date: String(row.d ?? "").slice(0, 10),
@@ -363,6 +392,7 @@ export async function findBestOneWay(q: CalendarQuery): Promise<OneWayCheapest[]
     departureDatetime: row.best_dt ? String(row.best_dt).slice(0, 19) : null,
     durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
   }));
+  return { results, window };
 }
 
 export interface MultiOriginQuery {
@@ -386,12 +416,13 @@ export interface MultiOriginDeal {
   country: string | null;
 }
 
-export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<MultiOriginDeal[]> {
+export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<QueryResult<MultiOriginDeal>> {
   const ch = getClickHouse();
   const origins = Array.from(new Set(q.origins.map((o) => o.toUpperCase())));
-  if (origins.length === 0) return [];
+  if (origins.length === 0) return { results: [], window: await clampRange(q.dateFrom, q.dateTo) };
   const limit = Math.max(1, Math.min(50, q.limit ?? 10));
   const dest = (q.destination ?? "").toUpperCase();
+  const window = await clampRange(q.dateFrom, q.dateTo);
 
   const r = await ch.query({
     query: `
@@ -412,8 +443,8 @@ export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<Mu
     query_params: {
       origins,
       destination: dest,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
     },
     format: "JSONEachRow",
   });
@@ -454,9 +485,10 @@ export async function findCheapestFromAnyOrigin(q: MultiOriginQuery): Promise<Mu
   for (const deal of grouped.values()) {
     deal.alternativeOrigins.sort((a, b) => a.price - b.price);
   }
-  return Array.from(grouped.values())
+  const results = Array.from(grouped.values())
     .sort((a, b) => a.bestPrice - b.bestPrice)
     .slice(0, limit);
+  return { results, window };
 }
 
 export interface FastestQuery {
@@ -468,10 +500,11 @@ export interface FastestQuery {
   limit?: number;
 }
 
-export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<FastestRoute[]> {
+export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<QueryResult<FastestRoute>> {
   const ch = getClickHouse();
   const origins = Array.from(new Set(q.origins.map((o) => o.toUpperCase())));
-  if (origins.length === 0) return [];
+  const window = await clampRange(q.dateFrom, q.dateTo);
+  if (origins.length === 0) return { results: [], window };
   const destination = q.destination.toUpperCase();
   const limit = Math.max(1, Math.min(20, q.limit ?? 5));
   const airlineCode = (q.airlineCode ?? "").toUpperCase();
@@ -500,8 +533,8 @@ export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<Fastest
     query_params: {
       origins,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       airlineCode,
       useAirline,
     },
@@ -509,7 +542,7 @@ export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<Fastest
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
+  const results = rows.map((row) => ({
     origin: String(row.origin_iata ?? "").toUpperCase(),
     destination,
     bestDate: String(row.best_date ?? "").slice(0, 10),
@@ -518,6 +551,7 @@ export async function findFastestFromAnyOrigin(q: FastestQuery): Promise<Fastest
     currency: String(row.currency ?? "EUR"),
     airline: String(row.airline ?? ""),
   }));
+  return { results, window };
 }
 
 export interface CompareOriginsQuery {
@@ -528,10 +562,11 @@ export interface CompareOriginsQuery {
   airlineCode?: string;
 }
 
-export async function compareOrigins(q: CompareOriginsQuery): Promise<OriginCompareRow[]> {
+export async function compareOrigins(q: CompareOriginsQuery): Promise<QueryResult<OriginCompareRow>> {
   const ch = getClickHouse();
   const origins = Array.from(new Set(q.origins.map((o) => o.toUpperCase())));
-  if (origins.length === 0) return [];
+  const window = await clampRange(q.dateFrom, q.dateTo);
+  if (origins.length === 0) return { results: [], window };
   const destination = q.destination.toUpperCase();
   const airlineCode = (q.airlineCode ?? "").toUpperCase();
   const useAirline = airlineCode.length > 0 ? 1 : 0;
@@ -557,8 +592,8 @@ export async function compareOrigins(q: CompareOriginsQuery): Promise<OriginComp
     query_params: {
       origins,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       airlineCode,
       useAirline,
     },
@@ -566,7 +601,7 @@ export async function compareOrigins(q: CompareOriginsQuery): Promise<OriginComp
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
+  const results = rows.map((row) => ({
     origin: String(row.origin_iata ?? "").toUpperCase(),
     destination,
     bestPrice: Number(row.best_price ?? 0),
@@ -576,6 +611,7 @@ export async function compareOrigins(q: CompareOriginsQuery): Promise<OriginComp
     durationMinutes:
       row.duration_minutes != null && row.duration_minutes !== 0 ? Number(row.duration_minutes) : null,
   }));
+  return { results, window };
 }
 
 export interface WeekendQuery {
@@ -602,7 +638,7 @@ export interface WeekendDeal {
   nights: number;
 }
 
-export async function findWeekendDeals(q: WeekendQuery): Promise<WeekendDeal[]> {
+export async function findWeekendDeals(q: WeekendQuery): Promise<QueryResult<WeekendDeal>> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const destination = q.destination.toUpperCase();
@@ -610,6 +646,7 @@ export async function findWeekendDeals(q: WeekendQuery): Promise<WeekendDeal[]> 
   const limit = Math.max(1, Math.min(20, q.limit ?? 5));
   const airlineCode = (q.airlineCode ?? "").toUpperCase();
   const useAirline = airlineCode.length > 0 ? 1 : 0;
+  const window = await clampRange(q.dateFrom, q.dateTo);
 
   const r = await ch.query({
     query: `
@@ -651,8 +688,8 @@ export async function findWeekendDeals(q: WeekendQuery): Promise<WeekendDeal[]> 
     query_params: {
       origin,
       destination,
-      dateFrom: q.dateFrom,
-      dateTo: q.dateTo,
+      dateFrom: window.dateFrom,
+      dateTo: window.dateTo,
       nights,
       limit,
       airlineCode,
@@ -662,7 +699,7 @@ export async function findWeekendDeals(q: WeekendQuery): Promise<WeekendDeal[]> 
   });
 
   const rows = (await r.json()) as Array<Record<string, unknown>>;
-  return rows.map((row) => {
+  const results = rows.map((row) => {
     const outboundDate = String(row.outbound_date ?? "").slice(0, 10);
     const returnDate = String(row.return_date ?? "").slice(0, 10);
     const tripDays = Math.round(
@@ -683,6 +720,7 @@ export async function findWeekendDeals(q: WeekendQuery): Promise<WeekendDeal[]> 
       nights: Math.max(0, tripDays - 1),
     };
   });
+  return { results, window };
 }
 
 export interface FreshnessRow {

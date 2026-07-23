@@ -1258,6 +1258,21 @@ app.get("/api/map/airports/:iata/routes", async (req, res) => {
   }
 });
 
+app.get("/api/map/airports/:iata/inbound", async (req, res) => {
+  try {
+    const iata = String(req.params.iata ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(iata)) {
+      res.status(400).json({ ok: false, error: "iata must be a 3-letter code" });
+      return;
+    }
+    const { getInboundOriginsForAirport } = await import("../db/airports.js");
+    const origins = await getInboundOriginsForAirport(iata);
+    res.json({ ok: true, iata, count: origins.length, origins });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
 app.get("/api/map/fare-finder/cheapest-destinations", async (req, res) => {
   try {
     const origin = String(req.query.origin ?? "").trim().toUpperCase();
@@ -1270,8 +1285,8 @@ app.get("/api/map/fare-finder/cheapest-destinations", async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const maxPrice = typeof req.query.maxPrice === "string" ? Number(req.query.maxPrice) : undefined;
     const { findCheapestDestinations } = await import("../db/fare-finder.js");
-    const deals = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
-    res.json({ ok: true, origin, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+    const { results: deals, window } = await findCheapestDestinations({ origin, dateFrom, dateTo, airline, airlineCode, maxPrice, limit });
+    res.json({ ok: true, origin, window, count: deals.length, destinations: deals });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1288,8 +1303,8 @@ app.get("/api/map/fare-finder/cheapest-dates", async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(120, Math.max(1, Number(req.query.limit ?? 60)));
     const { findCheapestDates } = await import("../db/fare-finder.js");
-    const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo }, count: cells.length, cells });
+    const { results: cells, window } = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window, count: cells.length, cells });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1308,8 +1323,8 @@ app.get("/api/map/fare-finder/best-round-trip", async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 5)));
     const { findBestRoundTrip } = await import("../db/fare-finder.js");
-    const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, minDays, maxDays }, count: bundles.length, options: bundles });
+    const { results: bundles, window } = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { ...window, minDays, maxDays }, count: bundles.length, options: bundles });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1326,8 +1341,8 @@ app.get("/api/map/fare-finder/best-one-way", async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(60, Math.max(1, Number(req.query.limit ?? 10)));
     const { findBestOneWay } = await import("../db/fare-finder.js");
-    const fares = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
-    res.json({ ok: true, origin, destination, count: fares.length, fares });
+    const { results: fares, window } = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window, count: fares.length, fares });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1345,8 +1360,8 @@ app.post("/api/map/fare-finder/cheapest-from-any", async (req, res) => {
     const destination = typeof req.body?.destination === "string" && req.body.destination ? String(req.body.destination).trim().toUpperCase() : undefined;
     const limit = Math.min(50, Math.max(1, Number(req.body?.limit ?? 10)));
     const { findCheapestFromAnyOrigin } = await import("../db/fare-finder.js");
-    const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
-    res.json({ ok: true, origins, window: { dateFrom, dateTo }, count: deals.length, destinations: deals });
+    const { results: deals, window } = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
+    res.json({ ok: true, origins, window, count: deals.length, destinations: deals });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1364,8 +1379,8 @@ app.get("/api/map/fare-finder/weekend-deals", async (req, res) => {
     const airlineCode = typeof req.query.airlineCode === "string" ? req.query.airlineCode : undefined;
     const limit = Math.min(20, Math.max(1, Number(req.query.limit ?? 5)));
     const { findWeekendDeals } = await import("../db/fare-finder.js");
-    const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
-    res.json({ ok: true, origin, destination, window: { dateFrom, dateTo, nights }, count: bundles.length, options: bundles });
+    const { results: bundles, window } = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount: nights, airlineCode, limit });
+    res.json({ ok: true, origin, destination, window: { ...window, nights }, count: bundles.length, options: bundles });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
@@ -1427,11 +1442,12 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
       recommendationScore: number;
     }>;
 
+    let sqlPlannerWindow: { dateFrom: string; dateTo: string; requestedFrom: string; requestedTo: string; truncated: boolean; maxDate: string } | undefined;
     if (planner === "sql" && destinations.length >= 1) {
       // New SQL-only planner: single ClickHouse pass over all permutations with
       // arrival+buffer date constraints. Respects actual prices + timing.
       const { planBestItinerary } = await import("../db/itinerary-planner.js");
-      const sqlResults = await planBestItinerary({
+      const sqlResult = await planBestItinerary({
         home: homeIata,
         stops: destinations,
         dateFrom,
@@ -1441,6 +1457,8 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
         preferredAirlines,
         topK: maxItineraries,
       });
+      sqlPlannerWindow = sqlResult.window;
+      const sqlResults = sqlResult.itineraries;
       itineraries = await Promise.all(sqlResults.map(async (it) => ({
         id: it.permutation.join("-") + "-" + it.legs[0]?.date + "-" + it.legs.at(-1)?.date,
         title: `${homeIata} → ${it.permutation.join(" → ")} → ${homeIata}`,
@@ -1501,6 +1519,7 @@ app.post("/api/map/itinerary/generate", async (req, res) => {
         destinations,
         maxItineraries,
       },
+      window: sqlPlannerWindow,
       count: itineraries.length,
       itineraries,
     });
@@ -1757,7 +1776,7 @@ app.post("/api/map/round-trip", async (req, res) => {
     }
 
     const { findCheapestRoundTrip, getAirport } = await import("../db/airports.js");
-    const trips = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
+    const { trips, window } = await findCheapestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays });
     const options = await Promise.all(trips.slice(0, limit).map(async (t) => ({
       ...t,
       originAirport: await getAirport(t.origin),
@@ -1769,6 +1788,101 @@ app.post("/api/map/round-trip", async (req, res) => {
       destination,
       count: options.length,
       options,
+      window,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+app.post("/api/map/multi-city/generate", async (req, res) => {
+  try {
+    const stopsRaw = Array.isArray(req.body?.stops) ? req.body.stops : null;
+    const homeIata = String(req.body?.homeIata ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(homeIata)) {
+      res.status(400).json({ ok: false, error: "homeIata is required (3-letter IATA)" });
+      return;
+    }
+    if (!stopsRaw || stopsRaw.length < 1) {
+      res.status(400).json({ ok: false, error: "stops[] with at least 1 entry is required" });
+      return;
+    }
+    const dateFrom = String(req.body?.dateFrom ?? "");
+    const dateTo = String(req.body?.dateTo ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) {
+      res.status(400).json({ ok: false, error: "dateFrom and dateTo must be YYYY-MM-DD" });
+      return;
+    }
+    const stops = stopsRaw.map((s: Record<string, unknown>, idx: number) => {
+      const iata = String(s.iata ?? "").trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(iata)) throw new Error(`stop #${idx + 1}: iata must be a 3-letter code`);
+      if (iata === homeIata) throw new Error(`stop #${idx + 1}: cannot equal home airport ${homeIata}`);
+      const minStayDays = s.minStayDays != null ? Math.max(1, Math.floor(Number(s.minStayDays))) : undefined;
+      const maxStayDays = s.maxStayDays != null ? Math.max(1, Math.floor(Number(s.maxStayDays))) : undefined;
+      return { iata, minStayDays, maxStayDays };
+    });
+    for (let i = 1; i < stops.length; i++) {
+      const prev = stops[i - 1] as { iata: string };
+      const cur = stops[i] as { iata: string };
+      if (cur.iata === prev.iata) {
+        res.status(400).json({ ok: false, error: `stop #${i + 1} (${cur.iata}) is a duplicate of the previous stop` });
+        return;
+      }
+    }
+    const defaultStayDays = Math.max(1, Math.min(30, Math.floor(Number(req.body?.defaultStayDays ?? 3))));
+    const defaultFlexDays = Math.max(0, Math.min(7, Math.floor(Number(req.body?.defaultFlexDays ?? 1))));
+    const legFlexDays = Math.max(0, Math.min(7, Math.floor(Number(req.body?.legFlexDays ?? 2))));
+    const maxTotalPrice = Math.max(0, Math.floor(Number(req.body?.maxTotalPrice ?? 0)));
+    const maxLegPrice = Math.max(0, Math.floor(Number(req.body?.maxLegPrice ?? 0)));
+    const limit = Math.max(1, Math.min(100, Math.floor(Number(req.body?.limit ?? 20))));
+
+    const anchorRaw = req.body?.anchor;
+    let anchor: { city: string; day: string } | null = null;
+    if (anchorRaw && typeof anchorRaw === "object") {
+      const city = String(anchorRaw.city ?? "").trim().toUpperCase();
+      const day = String(anchorRaw.day ?? "").trim();
+      if (!/^[A-Z]{3}$/.test(city) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+        res.status(400).json({ ok: false, error: "anchor.city and anchor.day must be valid IATA + YYYY-MM-DD" });
+        return;
+      }
+      anchor = { city, day };
+    }
+
+    const { findMultiCityBestFare } = await import("../db/multi-city-best-fare.js");
+    const result = await findMultiCityBestFare({
+      homeIata,
+      stops,
+      dateFrom,
+      dateTo,
+      defaultStayDays,
+      defaultFlexDays,
+      legFlexDays,
+      maxTotalPrice,
+      maxLegPrice,
+      anchor,
+      limit,
+    });
+
+    const { getAirport } = await import("../db/airports.js");
+    const enriched = await Promise.all(
+      result.bundles.map(async (b) => ({
+        ...b,
+        legs: await Promise.all(
+          b.legs.map(async (l) => ({
+            ...l,
+            originAirport: await getAirport(l.from),
+            destinationAirport: await getAirport(l.to),
+          })),
+        ),
+      })),
+    );
+
+    res.json({
+      ok: true,
+      bundles: enriched,
+      query: result.query,
+      window: result.window,
+      generatedSql: result.generatedSql,
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });

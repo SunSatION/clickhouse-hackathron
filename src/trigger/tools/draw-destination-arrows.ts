@@ -15,7 +15,7 @@ export const ToolDrawDestinationArrows = defineTool({
     limit: z.number().int().min(1).max(80).optional().describe("Max destinations to draw (default 30)."),
   }),
   handler: async ({ origin, dateFrom, dateTo, maxPrice, limit }) => {
-    const deals = await findCheapestDestinations({
+    const { results: deals, window } = await findCheapestDestinations({
       origin,
       dateFrom,
       dateTo,
@@ -26,7 +26,7 @@ export const ToolDrawDestinationArrows = defineTool({
       ok: true,
       action: "draw_destination_arrows",
       origin: origin.toUpperCase(),
-      window: { dateFrom, dateTo },
+      window,
       count: deals.length,
       destinations: deals,
     };

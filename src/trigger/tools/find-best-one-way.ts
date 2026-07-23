@@ -16,11 +16,12 @@ export const ToolBestOneWay = defineTool({
     limit: z.number().int().min(1).max(60).optional().describe("Default 10."),
   }),
   handler: async ({ origin, destination, dateFrom, dateTo, airlineCode, limit }) => {
-    const rows = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    const { results: rows, window } = await findBestOneWay({ origin, destination, dateFrom, dateTo, airlineCode, limit });
     return {
       ok: true,
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
+      window,
       count: rows.length,
       fares: rows,
     };

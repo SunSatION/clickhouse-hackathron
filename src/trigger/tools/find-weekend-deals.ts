@@ -17,12 +17,12 @@ export const ToolWeekendDeals = defineTool({
     limit: z.number().int().min(1).max(20).optional().describe("Top-K bundles (default 5)."),
   }),
   handler: async ({ origin, destination, dateFrom, dateTo, nightCount, airlineCode, limit }) => {
-    const bundles = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount, airlineCode, limit });
+    const { results: bundles, window } = await findWeekendDeals({ origin, destination, dateFrom, dateTo, nightCount, airlineCode, limit });
     return {
       ok: true,
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
-      window: { dateFrom, dateTo, nights: nightCount ?? 4 },
+      window: { ...window, nights: nightCount ?? 4 },
       count: bundles.length,
       options: bundles,
     };

@@ -17,7 +17,7 @@ export const ToolFindFastest = defineTool({
   }),
   handler: async ({ destination, dateFrom, dateTo, origins, limit }) => {
     const effectiveOrigins = origins && origins.length > 0 ? origins.map((o: string) => o.toUpperCase()) : londonAirports();
-    const routes = await findFastestFromAnyOrigin({
+    const { results: routes, window } = await findFastestFromAnyOrigin({
       origins: effectiveOrigins,
       destination,
       dateFrom,
@@ -29,7 +29,7 @@ export const ToolFindFastest = defineTool({
       action: "fastest_routes",
       origins: effectiveOrigins,
       destination: destination.toUpperCase(),
-      window: { dateFrom, dateTo },
+      window,
       count: routes.length,
       routes,
     };

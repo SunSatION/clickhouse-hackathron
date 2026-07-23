@@ -1,4 +1,5 @@
 import { getClickHouse } from "./clickhouse.js";
+import { clampToDataWindow } from "./data-window.js";
 import { logger } from "../lib/logger.js";
 
 const log = logger("src/db/airports.ts");
@@ -74,6 +75,11 @@ export interface RoundTripQuery {
   dateTo: string;
   minDays?: number;
   maxDays?: number;
+}
+
+export interface RoundTripQueryResult {
+  trips: RoundTrip[];
+  window: { dateFrom: string; dateTo: string; requestedFrom: string; requestedTo: string; truncated: boolean; maxDate: string };
 }
 
 export interface ItineraryLeg {
@@ -419,12 +425,34 @@ export async function getRoutesForAirport(iata: string): Promise<AirportRoute[]>
   }));
 }
 
-export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTrip[]> {
+export async function getInboundOriginsForAirport(iata: string): Promise<string[]> {
+  const ch = getClickHouse();
+  const upperIata = iata.toUpperCase();
+  const r = await ch.query({
+    query: `
+      SELECT DISTINCT origin_iata
+      FROM flights.flight_listings_latest
+      WHERE destination_iata = {iata:String}
+    `,
+    query_params: { iata: upperIata },
+    format: "JSONEachRow",
+  });
+  const rows = (await r.json()) as Array<{ origin_iata: string }>;
+  return rows
+    .map((r) => String(r.origin_iata ?? "").toUpperCase())
+    .filter((s) => /^[A-Z]{3}$/.test(s));
+}
+
+export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTripQueryResult> {
   const ch = getClickHouse();
   const origin = q.origin.toUpperCase();
   const destination = q.destination.toUpperCase();
   const minDays = Math.max(1, Math.min(60, q.minDays ?? 3));
   const maxDays = Math.max(minDays, Math.min(60, q.maxDays ?? 14));
+
+  const requestedFrom = q.dateFrom;
+  const requestedTo = q.dateTo;
+  const clamped = await clampToDataWindow(requestedFrom, requestedTo, { minDays });
 
   const r = await ch.query({
     query: `
@@ -446,7 +474,7 @@ export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTri
       GROUP BY origin_iata, destination_iata, departure_date
       ORDER BY departure_date ASC
     `,
-    query_params: { origin, destination, dateFrom: q.dateFrom, dateTo: q.dateTo },
+    query_params: { origin, destination, dateFrom: clamped.dateFrom, dateTo: clamped.dateTo },
     format: "JSONEachRow",
   });
   const rows = (await r.json()) as Array<Record<string, unknown>>;
@@ -496,7 +524,17 @@ export async function findCheapestRoundTrip(q: RoundTripQuery): Promise<RoundTri
   }
 
   results.sort((a, b) => a.totalPrice - b.totalPrice || a.tripDays - b.tripDays);
-  return results;
+  return {
+    trips: results,
+    window: {
+      dateFrom: clamped.dateFrom,
+      dateTo: clamped.dateTo,
+      requestedFrom,
+      requestedTo,
+      truncated: clamped.truncated,
+      maxDate: clamped.maxDate,
+    },
+  };
 }
 
 const COUNTRY_TO_IATA: Record<string, string[]> = {

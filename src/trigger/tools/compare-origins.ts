@@ -14,7 +14,7 @@ export const ToolCompareOrigins = defineTool({
     dateTo: z.string().describe("Latest departure date YYYY-MM-DD."),
   }),
   handler: async ({ origins, destination, dateFrom, dateTo }) => {
-    const rows = await compareOrigins({
+    const { results: rows, window } = await compareOrigins({
       origins: origins.map((o: string) => o.toUpperCase()),
       destination,
       dateFrom,
@@ -25,7 +25,7 @@ export const ToolCompareOrigins = defineTool({
       action: "compare_origins",
       origins: origins.map((o: string) => o.toUpperCase()),
       destination: destination.toUpperCase(),
-      window: { dateFrom, dateTo },
+      window,
       count: rows.length,
       rows,
     };

@@ -18,12 +18,12 @@ export const ToolBestRoundTrip = defineTool({
     limit: z.number().int().min(1).max(50).optional().describe("Top-K bundles (default 5)."),
   }),
   handler: async ({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit }) => {
-    const bundles = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
+    const { results: bundles, window } = await findBestRoundTrip({ origin, destination, dateFrom, dateTo, minDays, maxDays, airlineCode, limit });
     return {
       ok: true,
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
-      window: { dateFrom, dateTo, minDays: minDays ?? 3, maxDays: maxDays ?? 14 },
+      window: { ...window, minDays: minDays ?? 3, maxDays: maxDays ?? 14 },
       count: bundles.length,
       options: bundles,
     };

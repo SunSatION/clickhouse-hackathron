@@ -16,12 +16,12 @@ export const ToolCheapestDates = defineTool({
     limit: z.number().int().min(1).max(120).optional().describe("Cap rows (default 60)."),
   }),
   handler: async ({ origin, destination, dateFrom, dateTo, airlineCode, limit }) => {
-    const cells = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
+    const { results: cells, window } = await findCheapestDates({ origin, destination, dateFrom, dateTo, airlineCode, limit });
     return {
       ok: true,
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
-      window: { dateFrom, dateTo },
+      window,
       count: cells.length,
       cells,
     };

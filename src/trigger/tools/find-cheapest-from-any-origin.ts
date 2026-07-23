@@ -15,11 +15,11 @@ export const ToolCheapestFromAny = defineTool({
     limit: z.number().int().min(1).max(50).optional().describe("Default 10 destinations."),
   }),
   handler: async ({ origins, destination, dateFrom, dateTo, limit }) => {
-    const deals = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
+    const { results: deals, window } = await findCheapestFromAnyOrigin({ origins, destination, dateFrom, dateTo, limit });
     return {
       ok: true,
       origins: origins.map((o: string) => o.toUpperCase()),
-      window: { dateFrom, dateTo },
+      window,
       count: deals.length,
       destinations: deals,
     };

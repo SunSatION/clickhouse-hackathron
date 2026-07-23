@@ -1,4 +1,5 @@
 import { getClickHouse } from "./clickhouse.js";
+import { clampToDataWindow } from "./data-window.js";
 import { logger } from "../lib/logger.js";
 
 const log = logger("src/db/itinerary-planner.ts");
@@ -21,6 +22,11 @@ export interface MultiStopItinerary {
   currency: string;
   permutation: string[];
   totalDurationMinutes: number | null;
+}
+
+export interface PlanBestItineraryResult {
+  itineraries: MultiStopItinerary[];
+  window: { dateFrom: string; dateTo: string; requestedFrom: string; requestedTo: string; truncated: boolean; maxDate: string };
 }
 
 export interface PlanBestItineraryInput {
@@ -343,8 +349,17 @@ function rowToItinerary(row: Record<string, unknown>, legCount: number): MultiSt
  */
 export async function planBestItinerary(
   input: PlanBestItineraryInput,
-): Promise<MultiStopItinerary[]> {
-  const { query, params } = buildItineraryQuery(input);
+): Promise<PlanBestItineraryResult> {
+  const requestedFrom = input.dateFrom;
+  const requestedTo = input.dateTo;
+  const clamped = await clampToDataWindow(requestedFrom, requestedTo, { minDays: 1 });
+  const adjusted: PlanBestItineraryInput = {
+    ...input,
+    dateFrom: clamped.dateFrom,
+    dateTo: clamped.dateTo,
+  };
+
+  const { query, params } = buildItineraryQuery(adjusted);
   if (process.env.DEBUG_ITINERARY_SQL) {
     console.log("\n--- SQL ---\n" + query + "\n--- /SQL ---");
     console.log("params:", JSON.stringify(params));
@@ -371,11 +386,23 @@ export async function planBestItinerary(
     stops: input.stops,
     bufferDays: input.bufferDays,
     flexDays: input.flexDays,
+    window: { requested: { from: requestedFrom, to: requestedTo }, used: { from: clamped.dateFrom, to: clamped.dateTo }, truncated: clamped.truncated },
     rows: rows.length,
     ms: Date.now() - startedAt,
   });
 
   const legCount = Array.from(new Set(input.stops.map((s) => s.toUpperCase())))
     .filter((s) => /^[A-Z]{3}$/.test(s) && s !== input.home.toUpperCase()).length + 1;
-  return rows.map((row) => rowToItinerary(row, legCount));
+  const itineraries = rows.map((row) => rowToItinerary(row, legCount));
+  return {
+    itineraries,
+    window: {
+      dateFrom: clamped.dateFrom,
+      dateTo: clamped.dateTo,
+      requestedFrom,
+      requestedTo,
+      truncated: clamped.truncated,
+      maxDate: clamped.maxDate,
+    },
+  };
 }

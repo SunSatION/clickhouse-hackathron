@@ -6,9 +6,8 @@
 --     STN  ->  BCN  ->  LIS  ->  STN        (3 legs, 4 cities)
 --
 --  Knobs (change these values; nothing else):
---     TRIP_START      = '2026-08-01'   earliest day you can start
---     TRIP_END        = '2026-08-15'   latest day you must be back
---     FLEX_DAYS       = 2              +/- days each leg may shift
+--     TRIP_START      = '2026-08-01'   first day to search for departures
+--     TRIP_END        = '2026-08-15'   last departure day and latest return
 --     MAX_TOTAL_PRICE = 350            cap on sum of all legs
 --     MAX_LEG_PRICE   = 120            cap on a single leg
 --     ANCHOR_CITY     = 'BCN'          city you must be in on...
@@ -43,8 +42,7 @@ SELECT
 FROM
     -- ──────────────────────────────────────────────────────────
     --  Leg 1 candidates:  STN -> BCN
-    --    target depart day = TRIP_START + 1
-    --    allowed window    = +/- FLEX_DAYS around target
+    --    search the complete requested departure range
     --    must fit per-leg budget
     -- ──────────────────────────────────────────────────────────
     (SELECT *
@@ -52,23 +50,23 @@ FROM
       WHERE origin_iata      = 'STN'
         AND destination_iata = 'BCN'
         AND departure_date BETWEEN
-                toDate('2026-08-01') - INTERVAL 2 DAY
-            AND toDate('2026-08-01') + INTERVAL 2 DAY
+                toDate('2026-08-01')
+            AND toDate('2026-08-15')
         AND price <= 120
     ) AS l1
 
     INNER JOIN
     -- ──────────────────────────────────────────────────────────
     --  Leg 2 candidates:  BCN -> LIS
-    --    target depart day = TRIP_START + 5
+    --    search the complete requested departure range
     -- ──────────────────────────────────────────────────────────
     (SELECT *
        FROM flights.flight_listings_latest
       WHERE origin_iata      = 'BCN'
         AND destination_iata = 'LIS'
         AND departure_date BETWEEN
-                toDate('2026-08-06') - INTERVAL 2 DAY
-            AND toDate('2026-08-06') + INTERVAL 2 DAY
+                toDate('2026-08-01')
+            AND toDate('2026-08-15')
         AND price <= 120
     ) AS l2
         ON  l2.origin_iata    = l1.destination_iata            -- chains the trip
@@ -77,7 +75,7 @@ FROM
     INNER JOIN
     -- ──────────────────────────────────────────────────────────
     --  Leg 3 candidates:  LIS -> STN
-    --    target depart day = TRIP_START + 9
+    --    search the complete requested departure range
     --    must land by TRIP_END
     -- ──────────────────────────────────────────────────────────
     (SELECT *
@@ -85,8 +83,8 @@ FROM
       WHERE origin_iata      = 'LIS'
         AND destination_iata = 'STN'
         AND departure_date BETWEEN
-                toDate('2026-08-10') - INTERVAL 2 DAY
-            AND toDate('2026-08-10') + INTERVAL 2 DAY
+                toDate('2026-08-01')
+            AND toDate('2026-08-15')
         AND price <= 120
         AND arrival_datetime IS NOT NULL
         AND toDate(arrival_datetime) <= toDate('2026-08-15')
