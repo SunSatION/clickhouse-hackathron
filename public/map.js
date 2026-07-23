@@ -98,6 +98,208 @@
     },
   };
 
+  let chatSessionId = null;
+  let chatSessionParameters = {};
+  let sessionChannel = null;
+
+  function initSessionChannel() {
+    try {
+      sessionChannel = new BroadcastChannel("wayfarer-sessions");
+      sessionChannel.addEventListener("message", (e) => {
+        const { type, sessionId, parameters, sessionData } = e.data;
+        if (type === "session_switch") {
+          chatSessionId = sessionId;
+          chatSessionParameters = parameters || {};
+          if (sessionData) {
+            const sessions = getStoredSessions();
+            const idx = sessions.findIndex((s) => s.id === sessionId);
+            if (idx !== -1) {
+              sessions[idx] = { ...sessions[idx], ...sessionData };
+            } else {
+              sessions.push(sessionData);
+            }
+            saveStoredSessions(sessions);
+          }
+          const sessions2 = getStoredSessions();
+          const session = sessions2.find((s) => s.id === sessionId);
+          const label = session?.name || "New chat";
+          const currentLabel = $("session-current")?.querySelector(".session-label");
+          if (currentLabel) currentLabel.textContent = label;
+          renderSessionList();
+        } else if (type === "sessions_updated") {
+          renderSessionList();
+        }
+      });
+    } catch { /* BroadcastChannel not supported */ }
+  }
+  function broadcastSessionSwitch(sessionId, parameters) {
+    try {
+      const sessions = getStoredSessions();
+      const sessionData = sessionId ? sessions.find((s) => s.id === sessionId) : null;
+      sessionChannel?.postMessage({ type: "session_switch", sessionId, parameters, sessionData });
+    } catch { /* ignore */ }
+  }
+  function broadcastSessionsUpdate() {
+    try {
+      sessionChannel?.postMessage({ type: "sessions_updated" });
+    } catch { /* ignore */ }
+  }
+
+  function getChatSessionParams() {
+    return {
+      origin: state.mapFilterOrigin || state.homeIata || undefined,
+      destination: Array.from(state.mapFilterDestinations)[0] || undefined,
+      dateFrom: state.builder.dateFrom || undefined,
+      dateTo: state.builder.dateTo || undefined,
+      mode: state.builder.mode || "multi",
+      planner: state.builder.planner || "sql",
+      maxItineraries: state.builder.maxItineraries || 4,
+      daysPerStop: state.builder.daysPerStop || 3,
+      flexDays: state.builder.flexDays || 1,
+      minDays: state.builder.minDays || 3,
+      maxDays: state.builder.maxDays || 14,
+      ...chatSessionParameters,
+    };
+  }
+
+  function getStoredSessions() {
+    try {
+      return JSON.parse(localStorage.getItem("wayfarer.sessions") || "[]");
+    } catch { return []; }
+  }
+  function saveStoredSessions(sessions) {
+    localStorage.setItem("wayfarer.sessions", JSON.stringify(sessions));
+    broadcastSessionsUpdate();
+  }
+  function updateStoredSession(id, updates) {
+    const sessions = getStoredSessions();
+    const idx = sessions.findIndex((s) => s.id === id);
+    if (idx !== -1) {
+      sessions[idx] = { ...sessions[idx], ...updates };
+      saveStoredSessions(sessions);
+    }
+  }
+  function removeStoredSession(id) {
+    const sessions = getStoredSessions().filter((s) => s.id !== id);
+    saveStoredSessions(sessions);
+  }
+
+  function formatSessionTime(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return d.toLocaleDateString();
+  }
+
+  function renderSessionList() {
+    const list = $("session-list");
+    if (!list) return;
+    const sessions = getStoredSessions();
+    if (sessions.length === 0) {
+      list.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:12px">No sessions yet</div>';
+      return;
+    }
+    list.innerHTML = sessions
+      .slice()
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map((s) => {
+        const isActive = s.id === chatSessionId;
+        const label = s.name || "New chat";
+        return `<div class="session-item${isActive ? " active" : ""}" data-id="${s.id}">
+          <div class="session-item-info">
+            <div class="session-item-name">${label}</div>
+            <div class="session-item-meta">${formatSessionTime(s.updatedAt)}</div>
+          </div>
+          <button class="session-item-delete" data-delete="${s.id}" title="Delete">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      })
+      .join("");
+    list.querySelectorAll(".session-item").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        if (e.target.closest(".session-item-delete")) return;
+        switchToSession(el.dataset.id);
+      });
+    });
+    list.querySelectorAll(".session-item-delete").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteSession(el.dataset.delete);
+      });
+    });
+  }
+
+  function switchToSession(id) {
+    const sessions = getStoredSessions();
+    const session = sessions.find((s) => s.id === id);
+    if (!session) return;
+    chatSessionId = session.id;
+    chatSessionParameters = session.parameters || {};
+    updateStoredSession(id, { updatedAt: Date.now() });
+    broadcastSessionSwitch(session.id, chatSessionParameters);
+    const label = session.name || "New chat";
+    const currentLabel = $("session-current")?.querySelector(".session-label");
+    if (currentLabel) currentLabel.textContent = label;
+    closeSessionDropdown();
+    renderSessionList();
+  }
+
+  function createNewSession() {
+    chatSessionId = null;
+    chatSessionParameters = {};
+    broadcastSessionSwitch(null, {});
+    const currentLabel = $("session-current")?.querySelector(".session-label");
+    if (currentLabel) currentLabel.textContent = "New chat";
+    closeSessionDropdown();
+    renderSessionList();
+  }
+
+  function deleteSession(id) {
+    removeStoredSession(id);
+    const sessions = getStoredSessions();
+    if (id === chatSessionId) {
+      if (sessions.length > 0) {
+        const latest = sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        switchToSession(latest.id);
+      } else {
+        createNewSession();
+      }
+    } else {
+      renderSessionList();
+    }
+  }
+
+  function openSessionDropdown() {
+    renderSessionList();
+    $("session-dropdown")?.classList.remove("hidden");
+  }
+  function closeSessionDropdown() {
+    $("session-dropdown")?.classList.add("hidden");
+  }
+
+  function registerSession(id, name, parameters) {
+    const sessions = getStoredSessions();
+    const existing = sessions.find((s) => s.id === id);
+    if (existing) {
+      updateStoredSession(id, { name, parameters, updatedAt: Date.now() });
+    } else {
+      sessions.push({ id, name, parameters, createdAt: Date.now(), updatedAt: Date.now() });
+      saveStoredSessions(sessions);
+    }
+    chatSessionId = id;
+    chatSessionParameters = parameters || {};
+    broadcastSessionSwitch(id, chatSessionParameters);
+    const label = name || "New chat";
+    const currentLabel = $("session-current")?.querySelector(".session-label");
+    if (currentLabel) currentLabel.textContent = label;
+    renderSessionList();
+  }
+
   function ensureUserId() {
     let id = localStorage.getItem("wayfarer.userId");
     if (!id) {
@@ -244,9 +446,9 @@
       m.on("contextmenu", (ev) => {
         L.DomEvent.stop(ev);
         L.DomEvent.preventDefault(ev);
-        viewFaresForAirport(a.iata);
+        setHomeAirportFromMap(a.iata);
       });
-      const tip = `${a.iata} · ${a.city || a.name || ""}${a.country ? " (" + a.country + ")" : ""}<br/><span style="font-size:11px;opacity:.75">${opts.disabled ? `No return flight to ${state.homeIata} · can only be an intermediate stop` : "Click to add · Right-click for fares"}</span>`;
+      const tip = `${a.iata} · ${a.city || a.name || ""}${a.country ? " (" + a.country + ")" : ""}<br/><span style="font-size:11px;opacity:.75">${opts.disabled ? `No return flight to ${state.homeIata} · Right-click to set as home` : "Click to add · Right-click to set as home"}</span>`;
       m.bindTooltip(tip, { direction: "top", offset: [0, -8], opacity: 0.95 });
       m.addTo(map);
       state.markers.set(a.iata, m);
@@ -262,6 +464,18 @@
   function flyToHome() {
     const home = state.airportsByIata.get(state.homeIata);
     if (home) map.flyTo([home.lat, home.lon], 5, { duration: 1 });
+  }
+
+  async function setHomeAirportFromMap(iata) {
+    state.homeIata = iata;
+    localStorage.setItem("wayfarer.home", state.homeIata);
+    state.destinations = state.destinations.filter((destination) => destination !== state.homeIata);
+    saveDestinations();
+    await refreshReachableToHome();
+    drawPins();
+    flyToHome();
+    if (state.sidebarMode === "builder") renderBuilder();
+    toast.success(`Home airport set to ${state.homeIata}`);
   }
 
   function flyToAllAirports() {
@@ -894,6 +1108,21 @@
   });
   chatSend.addEventListener("click", submitChat);
 
+  $("session-current")?.addEventListener("click", () => {
+    const dropdown = $("session-dropdown");
+    if (dropdown?.classList.contains("hidden")) {
+      openSessionDropdown();
+    } else {
+      closeSessionDropdown();
+    }
+  });
+  $("session-new")?.addEventListener("click", createNewSession);
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".session-selector")) {
+      closeSessionDropdown();
+    }
+  });
+
   document.querySelectorAll(".chat-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       if (chip.dataset.action === "clear") {
@@ -1178,6 +1407,8 @@
         headers: { "content-type": "application/json", accept: "text/event-stream" },
         body: JSON.stringify({
           messages,
+          sessionId: chatSessionId,
+          parameters: getChatSessionParams(),
           maxIterations: 12,
           homeIata: home.homeIata || undefined,
           homeLocation: {
@@ -1188,7 +1419,11 @@
         }),
       });
     } catch (e) {
-      handlers.onError?.(new Error(String(e)));
+      const msg = String(e?.message || e || "");
+      if (msg.includes("AbortError") || msg.includes("ERR_NETWORK_IO_SUSPENDED") || msg.includes("NetworkError") || msg.includes("aborted")) {
+        return;
+      }
+      handlers.onError?.(new Error(msg || "chat_error"));
       return;
     }
     if (!resp.ok || !resp.body) {
@@ -1222,6 +1457,10 @@
         }
       }
     } catch (e) {
+      const msg = String(e?.message || e || "");
+      if (msg.includes("AbortError") || msg.includes("ERR_NETWORK_IO_SUSPENDED") || msg.includes("NetworkError") || msg.includes("aborted")) {
+        return;
+      }
       handlers.onError?.(e);
     }
   }
@@ -1288,6 +1527,15 @@
           }
           return;
         }
+        if (evtName === "final") {
+          if (data && data.sessionId) {
+            const firstMsg = data.sessionMessages?.find((m) => m.role === "user");
+            const msgContent = typeof firstMsg?.content === "string" ? firstMsg.content : "";
+            const name = msgContent.slice(0, 40) + (msgContent.length > 40 ? "…" : "");
+            registerSession(data.sessionId, name, data.sessionParameters || {});
+          }
+          return;
+        }
         if (evtName === "error") {
           hadError = true;
           aiProgressDone(`Error: ${data?.error || "assistant error"}`);
@@ -1305,7 +1553,7 @@
       aiProgressDone("I need a bit more info");
       const q = pendingClarification;
       const nextMessages = [...messages, { role: "user", content: prompt }, { role: "assistant", content: JSON.stringify(q) }];
-      showClarification(q.text || "", async (reply) => {
+       showClarification(q.text || "", Array.isArray(q.suggestions) ? q.suggestions : [], async (reply) => {
         nextMessages.push({ role: "user", content: reply });
         await runChat(nextMessages, reply);
       });
@@ -1717,13 +1965,29 @@
   }
 
 
-  function showClarification(question, onSubmit) {
+  function showClarification(question, suggestions, onSubmit) {
     const modal = $("ai-clarification");
     const q = $("ai-clarification-question");
+    const suggestionBox = $("ai-clarification-suggestions");
     const reply = $("ai-clarification-reply");
     if (!modal || !q || !reply) return;
     q.textContent = question;
     reply.value = "";
+    if (suggestionBox) {
+      suggestionBox.replaceChildren();
+      const uniqueSuggestions = [...new Set((suggestions || []).map((suggestion) => String(suggestion).trim()).filter(Boolean))].slice(0, 3);
+      for (const suggestion of uniqueSuggestions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chat-chip";
+        button.textContent = suggestion;
+        button.addEventListener("click", () => {
+          reply.value = suggestion;
+          submit();
+        });
+        suggestionBox.appendChild(button);
+      }
+    }
     modal.classList.add("open");
     setTimeout(() => reply.focus(), 50);
     const close = () => {
@@ -2105,6 +2369,15 @@
   async function boot() {
     autoResize();
     syncOperatorLink();
+    initSessionChannel();
+    const sessions = getStoredSessions();
+    if (sessions.length > 0) {
+      const latest = sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      chatSessionId = latest.id;
+      chatSessionParameters = latest.parameters || {};
+      const currentLabel = $("session-current")?.querySelector(".session-label");
+      if (currentLabel) currentLabel.textContent = latest.name || "New chat";
+    }
     await Promise.all([loadAirports(), refreshFavorites(), refreshLlmStatus()]);
     renderBuilder();
   }

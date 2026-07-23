@@ -57,6 +57,7 @@ export interface LlmChatResponse {
   toolCalls: Array<{ tool: string; arguments: unknown; result: unknown }>;
   iterations: number;
   source: "byok" | "env" | "none";
+  messages: ChatMessage[];
   error?: string;
 }
 
@@ -109,6 +110,7 @@ export async function runLlmAgent(
       toolCalls,
       iterations: 0,
       source: creds.apiKey ? "env" : "none",
+      messages,
       error: `unsupported LLM provider: ${provider}. Only OpenAI-compatible APIs are supported (openai, openrouter, minimax).`,
     };
   }
@@ -123,6 +125,7 @@ export async function runLlmAgent(
       toolCalls,
       iterations: 0,
       source: "none",
+      messages,
       error:
         "No LLM credentials configured. Set OPENAI_API_KEY (or OPENROUTER_API_KEY / MINIMAX_API_KEY) on the server.",
     };
@@ -148,6 +151,7 @@ export async function runLlmAgent(
         toolCalls,
         iterations,
         source: "env",
+        messages,
         error: (err as Error).message,
       };
     }
@@ -268,6 +272,7 @@ export async function runLlmAgent(
     toolCalls,
     iterations,
     source: "env",
+    messages,
   };
 }
 

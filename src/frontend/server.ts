@@ -25,6 +25,51 @@ const HYPERDX_URL = (process.env.HYPERDX_URL ?? "http://localhost:8090").replace
 
 const log = logger("src/frontend/server.ts");
 
+interface ChatMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type?: string;
+    name?: string;
+    arguments?: string;
+    function?: { name?: string; arguments?: string };
+  }>;
+  tool_call_id?: string;
+  name?: string;
+}
+
+interface SessionParameters {
+  origin?: string;
+  destination?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  passengers?: number;
+  maxPrice?: number;
+  [key: string]: unknown;
+}
+
+interface ChatSession {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
+  parameters: SessionParameters;
+}
+
+const chatSessions = new Map<string, ChatSession>();
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+
+function cleanupExpiredSessions() {
+  const now = Date.now();
+  for (const [id, session] of chatSessions) {
+    if (now - session.updatedAt > SESSION_TTL_MS) {
+      chatSessions.delete(id);
+    }
+  }
+}
+setInterval(cleanupExpiredSessions, 60 * 60 * 1000);
+
 const app = express();
 app.use(express.json());
 app.use((req, res, next) => {
@@ -68,11 +113,37 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (_req, res) => {
-  res.sendFile(join(import.meta.dirname, "map.html"));
+  res.sendFile(join(import.meta.dirname, "..", "..", "public", "map.html"));
 });
 
 app.get("/admin", (_req, res) => {
   res.sendFile(join(import.meta.dirname, "index.html"));
+});
+
+app.post("/api/sessions", (req, res) => {
+  const id = crypto.randomUUID();
+  const session: ChatSession = {
+    id,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: [],
+    parameters: (req.body?.parameters as SessionParameters) || {},
+  };
+  chatSessions.set(id, session);
+  res.json({ ok: true, session: { id, createdAt: session.createdAt, parameters: session.parameters } });
+});
+
+app.get("/api/sessions/:id", (req, res) => {
+  const session = chatSessions.get(String(req.params.id));
+  if (!session) { res.status(404).json({ ok: false, error: "session not found" }); return; }
+  res.json({ ok: true, session: { id: session.id, createdAt: session.createdAt, updatedAt: session.updatedAt, messages: session.messages, parameters: session.parameters } });
+});
+
+app.delete("/api/sessions/:id", (req, res) => {
+  const id = String(req.params.id);
+  if (!chatSessions.has(id)) { res.status(404).json({ ok: false, error: "session not found" }); return; }
+  chatSessions.delete(id);
+  res.json({ ok: true });
 });
 
 function parseIataList(input: unknown): string[] {
@@ -1661,6 +1732,8 @@ async function pollRunUntilTerminal(runId: string, res: express.Response, abort:
 
 app.post("/api/llm/chat", async (req, res) => {
   try {
+    const sessionId = req.body?.sessionId ? String(req.body.sessionId) : null;
+    const incomingParams = req.body?.parameters as SessionParameters | null;
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : null;
     if (!messages || messages.length === 0) {
       res.status(400).json({ ok: false, error: "messages[] is required" });
@@ -1669,7 +1742,31 @@ app.post("/api/llm/chat", async (req, res) => {
     sseHeaders(res);
     const ac = new AbortController();
     req.on("close", () => ac.abort());
-    res.on("close", () => ac.abort());
+
+    let session: ChatSession | null = null;
+    if (sessionId) {
+      session = chatSessions.get(sessionId) ?? null;
+    }
+    if (!session) {
+      const newId = sessionId || crypto.randomUUID();
+      session = {
+        id: newId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [],
+        parameters: {},
+      };
+      chatSessions.set(newId, session);
+    }
+    if (incomingParams) {
+      session.parameters = { ...session.parameters, ...incomingParams };
+    }
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        session!.messages.push(msg as ChatMessage);
+      }
+    }
+    session.updatedAt = Date.now();
 
     const runPollers: Promise<void>[] = [];
     const { resolveCredentials } = await import("../llm/key-vault.js");
@@ -1677,7 +1774,7 @@ app.post("/api/llm/chat", async (req, res) => {
     const creds = resolveCredentials();
     const result = await runLlmAgent(
       {
-        messages,
+        messages: session?.messages ?? messages,
         model: req.body?.model,
         maxIterations: req.body?.maxIterations,
         homeIata: typeof req.body?.homeIata === "string" ? req.body.homeIata.toUpperCase() : undefined,
@@ -1703,6 +1800,13 @@ app.post("/api/llm/chat", async (req, res) => {
     );
 
     await Promise.allSettled(runPollers);
+
+    if (session && result.messages) {
+      const nonSystemMessages = result.messages.filter((m: ChatMessage) => m.role !== "system");
+      session.messages = nonSystemMessages;
+      session.updatedAt = Date.now();
+    }
+
     sseSend(res, "final", {
       ok: result.ok,
       answer: result.answer,
@@ -1710,6 +1814,9 @@ app.post("/api/llm/chat", async (req, res) => {
       error: result.error ?? null,
       provider: result.provider,
       model: result.model,
+      sessionId: session?.id ?? null,
+      sessionMessages: session?.messages ?? null,
+      sessionParameters: session?.parameters ?? null,
     });
     res.end();
   } catch (err) {
