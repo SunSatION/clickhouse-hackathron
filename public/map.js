@@ -59,6 +59,7 @@
     faresAirport: null,
     itineraries: [],
     activeItineraryId: null,
+    selectedTripItineraryId: null,
     itineraryLayer: null,
     favorites: [],
     sidebarMode: "builder",
@@ -200,7 +201,7 @@
     if (!list) return;
     const sessions = getStoredSessions();
     if (sessions.length === 0) {
-      list.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:12px">No sessions yet</div>';
+      list.innerHTML = '<div class="session-empty">No recent sessions</div>';
       return;
     }
     list.innerHTML = sessions
@@ -277,9 +278,11 @@
   function openSessionDropdown() {
     renderSessionList();
     $("session-dropdown")?.classList.remove("hidden");
+    $("session-current")?.setAttribute("aria-expanded", "true");
   }
   function closeSessionDropdown() {
     $("session-dropdown")?.classList.add("hidden");
+    $("session-current")?.setAttribute("aria-expanded", "false");
   }
 
   function registerSession(id, name, parameters) {
@@ -417,12 +420,25 @@
     const isConnected = state.mapFilterDestinations.has(iata);
     const canReturnHome = isHome || state.reachableToHome.has(iata);
     const isDisabled = !canReturnHome && !isInDest;
+
+    let dimmed = false;
+    if (state.mapFilterOrigin != null && !isHome && !isInDest && !isFilterOrigin && !isConnected) {
+      dimmed = true;
+    }
+    if (state.selectedTripItineraryId != null) {
+      const it = state.itineraries.find((x) => x.id === state.selectedTripItineraryId);
+      if (it) {
+        const tripIatas = new Set([state.homeIata, ...it.legs.map((l) => l.origin), ...it.legs.map((l) => l.destination)]);
+        if (!tripIatas.has(iata)) dimmed = true;
+      }
+    }
+
     return {
       home: isHome,
       inTrip: isInDest,
       faresView: state.faresAirport === iata,
       filterOrigin: isFilterOrigin,
-      dimmed: state.mapFilterOrigin != null && !isHome && !isInDest && !isFilterOrigin && !isConnected,
+      dimmed,
       disabled: isDisabled,
     };
   }
@@ -471,6 +487,9 @@
     localStorage.setItem("wayfarer.home", state.homeIata);
     state.destinations = state.destinations.filter((destination) => destination !== state.homeIata);
     saveDestinations();
+    clearDestinationArrows();
+    clearItineraryLayer();
+    state.selectedTripItineraryId = null;
     await refreshReachableToHome();
     drawPins();
     flyToHome();
@@ -756,6 +775,9 @@
     }
 
     if (homeChanged) {
+      clearDestinationArrows();
+      clearItineraryLayer();
+      state.selectedTripItineraryId = null;
       refreshReachableToHome().finally(() => {
         drawPins();
         renderBuilder();
@@ -2087,8 +2109,10 @@
           return;
         }
         state.activeItineraryId = id;
+        state.selectedTripItineraryId = id;
         body.querySelectorAll(".itinerary-card").forEach((c) => c.classList.remove("active"));
         card.classList.add("active");
+        drawPins();
         renderItineraryOnMap(id);
       });
     });
@@ -2099,6 +2123,7 @@
       map.removeLayer(state.itineraryLayer);
       state.itineraryLayer = null;
     }
+    state.selectedTripItineraryId = null;
   }
 
   function renderItineraryOnMap(id) {
@@ -2319,6 +2344,9 @@
 
     state.destinations = state.destinations.filter((d) => d !== state.homeIata);
     saveDestinations();
+    clearDestinationArrows();
+    clearItineraryLayer();
+    state.selectedTripItineraryId = null;
     await refreshReachableToHome();
     drawPins();
     flyToHome();

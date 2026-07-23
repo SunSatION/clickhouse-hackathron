@@ -339,52 +339,93 @@
       @media (max-width: 760px) {
         .chat-wrap { left: 12px; right: 12px; }
         .sidebar { width: 100%; }
-      }
-      .session-bar {
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        .session-label { max-width: 90px; }
+        .session-dropdown { min-width: 200px; max-width: 260px; }
       }
       .session-selector {
         position: relative;
+        flex-shrink: 0;
+        margin: 0 -2px 0 0;
       }
       .session-current {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        background: var(--surface-2);
-        border: 1px solid var(--border);
+        gap: 4px;
+        padding: 4px 8px;
+        background: transparent;
+        border: 1px solid transparent;
         border-radius: 8px;
-        font-size: 12px;
-        color: var(--fg);
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--muted);
         cursor: pointer;
-        transition: background 150ms;
+        transition: color 150ms, background 150ms, border-color 150ms;
+        white-space: nowrap;
       }
-      .session-current:hover { background: var(--surface-3); }
-      .session-label { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .session-current:hover { color: var(--fg); background: var(--surface-2); border-color: var(--border); }
+      .session-current[aria-expanded="true"] {
+        color: var(--fg);
+        background: var(--surface-2);
+        border-color: var(--border);
+      }
+      .session-current svg { opacity: 0.6; transition: transform 200ms; flex-shrink: 0; }
+      .session-current[aria-expanded="true"] svg { transform: rotate(180deg); opacity: 0.9; }
+      .session-label { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .session-dropdown {
         position: absolute;
-        bottom: 100%;
+        bottom: calc(100% + 10px);
         left: 0;
-        margin-bottom: 6px;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        box-shadow: var(--shadow-lg);
-        min-width: 220px;
-        max-width: 300px;
-        max-height: 320px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+        min-width: 240px;
+        max-width: 320px;
+        max-height: 360px;
         overflow: hidden;
-        display: flex;
+        display: none;
         flex-direction: column;
+        z-index: 1200;
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+        transform-origin: bottom left;
+        transition: opacity 140ms ease, transform 140ms ease;
       }
-      .session-dropdown:not(.hidden) { display: flex; }
+      .session-dropdown:not(.hidden) {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .session-dropdown::after {
+        content: "";
+        position: absolute;
+        left: 18px;
+        bottom: -6px;
+        width: 12px;
+        height: 12px;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        transform: rotate(45deg);
+      }
+      .session-head {
+        padding: 10px 14px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
       .session-list {
         overflow-y: auto;
-        padding: 6px;
+        padding: 0 6px;
         flex: 1;
+      }
+      .session-empty {
+        padding: 14px;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
       }
       .session-item {
         display: flex;
@@ -436,6 +477,7 @@
         cursor: pointer;
         text-align: left;
         transition: background 120ms;
+        border-top: 1px solid var(--border);
       }
       .session-new:hover { background: var(--accent-soft); }
       .chat-bar textarea {
@@ -651,6 +693,19 @@
         padding: 0;
       }
       .dest-chip-remove:hover { background: #fff; color: var(--accent-hover); }
+      .stop-row {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .stop-row:last-child { border-bottom: none; }
+      .stop-row-head { display: flex; align-items: center; gap: 6px; }
+      .stop-row-body { display: flex; align-items: center; gap: 8px; padding-left: 2px; }
+      .stop-stay-pair { display: flex; align-items: center; gap: 4px; }
+      .stop-stay-pair label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+      .stop-stay-pair input { width: 44px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+      .stop-stay-sep { font-size: 11px; color: var(--muted); }
+      .stop-stay-unit { font-size: 11px; color: var(--muted); white-space: nowrap; }
       .builder-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
       .builder-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
       .builder-row label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
@@ -919,7 +974,7 @@
       <button id="btn-fit-itinerary" title="Fit itinerary on map" hidden>Fit</button>
     </div>
 
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar collapsed" id="sidebar">
       <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -951,20 +1006,18 @@
     </aside>
 
     <div class="chat-wrap">
-      <div class="session-bar">
+      <div class="chat-bar">
         <div class="session-selector" id="session-selector">
           <button class="session-current" id="session-current" title="Switch session">
             <span class="session-label">New chat</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="session-dropdown hidden" id="session-dropdown">
+            <div class="session-head">Recent</div>
             <div class="session-list" id="session-list"></div>
-            <div class="session-divider"></div>
             <button class="session-new" id="session-new">+ New session</button>
           </div>
         </div>
-      </div>
-      <div class="chat-bar">
         <textarea
           id="chat-input"
           rows="1"
