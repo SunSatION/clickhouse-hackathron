@@ -17,7 +17,7 @@ export const ToolRoundTrip = defineTool({
     limit: z.number().int().min(1).max(20).optional().describe("Max round-trip options to return (default 5)."),
   }),
   handler: async ({ origin, destination, dateFrom, dateTo, minDays, maxDays, limit }) => {
-    const trips = await findCheapestRoundTrip({
+    const { trips, window } = await findCheapestRoundTrip({
       origin,
       destination,
       dateFrom,
@@ -31,6 +31,7 @@ export const ToolRoundTrip = defineTool({
       destination: destination.toUpperCase(),
       count: trips.length,
       options: trips.slice(0, limit ?? 5),
+      window,
     };
   },
 });
