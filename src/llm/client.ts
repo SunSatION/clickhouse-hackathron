@@ -41,6 +41,7 @@ export interface LlmChatRequest {
 export type LlmStreamEvent =
   | { type: "status"; status: "thinking" | "answering"; provider: string; model: string }
   | { type: "tool_progress"; label: string; tool: string }
+  | { type: "tool_params"; tool: string; args: Record<string, unknown> }
   | { type: "answer"; answer: WayfareAnswer }
   | { type: "run_triggered"; toolName: string; runId: string; task: string | null; crawlRunId: string | null; publicAccessToken: string | null }
   | { type: "error"; error: string }
@@ -212,6 +213,9 @@ export async function runLlmAgent(
           toolError = `invalid arguments: ${JSON.stringify(parsed.error.issues)}`;
           result = { ok: false, error: toolError };
         } else {
+          if (parsed.data && typeof parsed.data === "object") {
+            emit({ type: "tool_params", tool: callName, args: parsed.data as Record<string, unknown> });
+          }
           try {
             result = await tool.handler(parsed.data);
           } catch (err) {
@@ -294,6 +298,8 @@ export function describeToolCall(name: string, args: unknown): { label: string; 
       return { label: `Planning round trip ${String(a.origin || "")} ⇄ ${String(a.destination || "")}…`, tool: name };
     case "plan_multi_stop":
       return { label: `Planning multi-stop trip from ${String(a.homeIata || "")}…`, tool: name };
+    case "multi_city_best_fare":
+      return { label: `Searching multi-city fare ${String(a.homeIata || "")} → ${Array.isArray(a.stops) ? a.stops.map((s) => s && s.iata).filter(Boolean).join(" → ") : "…"} → ${String(a.homeIata || "")}…`, tool: name };
     case "trigger_refresh_crawl": {
       const legs = Array.isArray(a.legs) ? a.legs.length : 0;
       return { label: `Crawling prices for ${legs} route${legs === 1 ? "" : "s"}…`, tool: name };

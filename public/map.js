@@ -484,6 +484,78 @@
   /* ====================================================== */
   /* Trip Builder sidebar                                  */
   /* ====================================================== */
+  function applyMultiCityParamsToBuilder(args) {
+    const get = (k) => (Object.prototype.hasOwnProperty.call(args, k) ? args[k] : undefined);
+    const homeRaw = String(get("homeIata") || "").trim().toUpperCase();
+    const dateFrom = String(get("dateFrom") || "").trim();
+    const dateTo = String(get("dateTo") || "").trim();
+    const stopsRaw = Array.isArray(get("stops")) ? get("stops") : [];
+    const defaultStayDays = Number(get("defaultStayDays"));
+    const defaultFlexDays = Number(get("defaultFlexDays"));
+    const maxTotalPrice = Number(get("maxTotalPrice"));
+    const maxLegPrice = Number(get("maxLegPrice"));
+    const limit = Number(get("limit"));
+
+    const newHome = /^[A-Z]{3}$/.test(homeRaw) ? homeRaw : state.homeIata;
+    const homeChanged = newHome !== state.homeIata;
+
+    if (homeChanged) {
+      state.homeIata = newHome;
+      localStorage.setItem("wayfarer.home", state.homeIata);
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) state.builder.dateFrom = dateFrom;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) state.builder.dateTo = dateTo;
+    localStorage.setItem("wayfarer.builder.dateFrom", state.builder.dateFrom);
+    localStorage.setItem("wayfarer.builder.dateTo", state.builder.dateTo);
+
+    if (Number.isFinite(defaultStayDays) && defaultStayDays > 0) state.builder.multiCity.defaultStayDays = Math.max(1, Math.min(30, Math.floor(defaultStayDays)));
+    if (Number.isFinite(defaultFlexDays) && defaultFlexDays >= 0) state.builder.multiCity.defaultFlexDays = Math.max(0, Math.min(7, Math.floor(defaultFlexDays)));
+    if (Number.isFinite(maxTotalPrice) && maxTotalPrice >= 0) state.builder.multiCity.maxTotalPrice = Math.max(0, Math.floor(maxTotalPrice));
+    if (Number.isFinite(maxLegPrice) && maxLegPrice >= 0) state.builder.multiCity.maxLegPrice = Math.max(0, Math.floor(maxLegPrice));
+    if (Number.isFinite(limit) && limit > 0) state.builder.multiCity.limit = Math.max(1, Math.min(100, Math.floor(limit)));
+    localStorage.setItem("wayfarer.builder.multiCity.defaultStayDays", String(state.builder.multiCity.defaultStayDays));
+    localStorage.setItem("wayfarer.builder.multiCity.defaultFlexDays", String(state.builder.multiCity.defaultFlexDays));
+    localStorage.setItem("wayfarer.builder.multiCity.maxTotalPrice", String(state.builder.multiCity.maxTotalPrice));
+    localStorage.setItem("wayfarer.builder.multiCity.maxLegPrice", String(state.builder.multiCity.maxLegPrice));
+    localStorage.setItem("wayfarer.builder.multiCity.limit", String(state.builder.multiCity.limit));
+
+    const newDests = stopsRaw
+      .map((s) => String((s && s.iata) || "").trim().toUpperCase())
+      .filter((s) => /^[A-Z]{3}$/.test(s) && s !== newHome);
+    const newStops = stopsRaw
+      .filter((s) => s && typeof s === "object" && /^[A-Z]{3}$/.test(String(s.iata || "").trim().toUpperCase()))
+      .map((s) => ({
+        iata: String(s.iata).trim().toUpperCase(),
+        minStayDays: Math.max(1, Math.floor(Number(s.minStayDays) || state.builder.multiCity.defaultStayDays - state.builder.multiCity.defaultFlexDays)),
+        maxStayDays: Math.max(1, Math.floor(Number(s.maxStayDays) || state.builder.multiCity.defaultStayDays + state.builder.multiCity.defaultFlexDays)),
+      }));
+
+    state.destinations = newDests;
+    state.builder.multiCity.stops = newStops;
+    saveDestinations();
+    localStorage.setItem("wayfarer.builder.multiCity.stops", JSON.stringify(state.builder.multiCity.stops));
+
+    if (state.builder.mode !== "multicity") {
+      state.builder.mode = "multicity";
+      localStorage.setItem("wayfarer.builder.mode", "multicity");
+    }
+
+    if (homeChanged) {
+      refreshReachableToHome().finally(() => {
+        drawPins();
+        renderBuilder();
+      });
+    } else {
+      drawPins();
+      renderBuilder();
+    }
+    toast.info(
+      "Trip updated",
+      `${state.homeIata} → ${state.destinations.join(" → ") || "(no stops)"} → ${state.homeIata}`,
+    );
+  }
+
   function renderBuilder() {
     $("itineraries-header")?.remove();
     $("fares-back")?.remove();
@@ -1189,6 +1261,12 @@
             aiProgressMarkCurrentDone();
             aiProgressAppendStep(data.label, data.tool || "");
             aiProgressUpdate(data.label, data.tool || "");
+          }
+          return;
+        }
+        if (evtName === "tool_params") {
+          if (data && typeof data.tool === "string" && data.tool === "multi_city_best_fare") {
+            applyMultiCityParamsToBuilder(data.args || {});
           }
           return;
         }
