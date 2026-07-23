@@ -436,7 +436,7 @@ export async function getInboundOriginsForAirport(iata: string): Promise<string[
     `,
     query_params: { iata: upperIata },
     format: "JSONEachRow",
-    query_timeout_ms: 10_000,
+    abort_signal: AbortSignal.timeout(10_000),
   });
   const rows = (await r.json()) as Array<{ origin_iata: string }>;
   return rows
