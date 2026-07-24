@@ -154,7 +154,7 @@ export function buildMultiCityBestFareQuery(
   if (stops.length > 6) throw new Error("multi-city trip supports up to 6 stops");
 
   const maxTotalPrice = Math.max(0, Math.floor(q.maxTotalPrice ?? 0));
-  const maxLegPrice = Math.max(0, Math.floor(q.maxLegPrice ?? 0));
+  const maxLegPrice = Math.max(1, Math.floor(q.maxLegPrice ?? 200));
   const limit = Math.max(1, Math.min(100, Math.floor(q.limit ?? 20)));
 
   type Leg = { from: string; to: string; stayMin?: number; stayMax?: number };
@@ -203,14 +203,12 @@ export function buildMultiCityBestFareQuery(
       (SELECT flight_number, origin_iata, destination_iata, departure_date,
               arrival_datetime, price, currency
          FROM flight_listings_latest
-        WHERE origin_iata      = {${fromKey}:String}
-          AND destination_iata = {${toKey}:String}
-          AND departure_date BETWEEN toDate({dateFrom:Date}) AND toDate({dateTo:Date})
-          AND price > 0
-          AND ({useMaxLeg:UInt8} = 0 OR price <= {maxLegPrice:UInt32})
-        ORDER BY price ASC
-        LIMIT 10
-      ) AS l${i + 1}
+         WHERE origin_iata      = {${fromKey}:String}
+           AND destination_iata = {${toKey}:String}
+           AND departure_date BETWEEN toDate({dateFrom:Date}) AND toDate({dateTo:Date})
+           AND price > 0
+           AND ({useMaxLeg:UInt8} = 0 OR price <= {maxLegPrice:UInt32})
+       ) AS l${i + 1}
     `);
   }
 
