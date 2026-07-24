@@ -7,7 +7,6 @@ import {
   runLlmAgent,
   describeToolCall,
   type ChatMessage,
-  type LlmChatParameters,
 } from "../llm/client.js";
 import { resolveCredentials } from "../llm/key-vault.js";
 import type { WayfareAnswer } from "../llm/wayfare-answer.js";
@@ -96,9 +95,34 @@ function readStringContent(content: ModelMessage["content"]): string {
   if (!Array.isArray(content)) return "";
   return content
     .filter(isTextPart)
-    .map((p) => p.text)
+    .map((p: { type: "text"; text: string }) => p.text)
     .join("\n")
     .trim();
+}
+
+function buildSessionConfigMessage(params: Record<string, unknown> | undefined): ChatMessage | null {
+  if (!params) return null;
+  const lines: string[] = [];
+  if (typeof params.origin === "string") lines.push(`Origin airport: ${params.origin.toUpperCase()}`);
+  if (typeof params.homeIata === "string") lines.push(`Home airport (user setting): ${params.homeIata.toUpperCase()}`);
+  if (typeof params.destination === "string") lines.push(`Destination airport: ${params.destination.toUpperCase()}`);
+  if (params.dateFrom || params.dateTo) {
+    lines.push(`Date range: ${String(params.dateFrom ?? "open")} to ${String(params.dateTo ?? "open")}`);
+  }
+  if (typeof params.mode === "string") lines.push(`Trip mode: ${params.mode}`);
+  if (typeof params.planner === "string") lines.push(`Planner engine: ${params.planner}`);
+  if (typeof params.maxItineraries === "number") lines.push(`Max itineraries to return: ${params.maxItineraries}`);
+  if (typeof params.daysPerStop === "number") lines.push(`Default stay per stop: ${params.daysPerStop} days`);
+  if (typeof params.flexDays === "number") lines.push(`Stay flex (±days): ${params.flexDays}`);
+  if (typeof params.minDays === "number") lines.push(`Min trip length: ${params.minDays} days`);
+  if (typeof params.maxDays === "number") lines.push(`Max trip length: ${params.maxDays} days`);
+  if (typeof params.passengers === "number") lines.push(`Passengers: ${params.passengers}`);
+  if (typeof params.maxPrice === "number") lines.push(`Max total price: ${params.maxPrice} EUR`);
+  if (lines.length === 0) return null;
+  return {
+    role: "system",
+    content: `[CURRENT SESSION CONFIG] These are the user's saved sidebar settings for this chat session. Use them as defaults; only override when the user explicitly states different values in their message.\n${lines.join("\n")}`,
+  };
 }
 
 function modelMessagesToChat(messages: ModelMessage[]): ChatMessage[] {
@@ -209,6 +233,8 @@ export const wayfareChat = chat.agent({
     }
 
     const chatMessages = modelMessagesToChat(messages);
+    const sessionConfigMsg = buildSessionConfigMessage(data.parameters);
+    if (sessionConfigMsg) chatMessages.unshift(sessionConfigMsg);
     logger.info("wayfare-chat: proxy turn start", {
       provider: creds.provider,
       model: data.model ?? creds.model ?? "default",
@@ -225,7 +251,6 @@ export const wayfareChat = chat.agent({
         model: data.model,
         maxIterations: data.maxIterations,
         homeIata: data.homeIata,
-        parameters: data.parameters as LlmChatParameters | undefined,
         homeLocation: data.homeLocation,
       },
       { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },

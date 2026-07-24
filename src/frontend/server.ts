@@ -1773,9 +1773,31 @@ app.post("/api/llm/chat", async (req, res) => {
     const { resolveCredentials } = await import("../llm/key-vault.js");
     const { runLlmAgent } = await import("../llm/client.js");
     const creds = resolveCredentials();
+    const sessionConfigParams = (session?.parameters ?? incomingParams ?? undefined) as
+      | SessionParameters
+      | undefined;
+    const sessionMessages: ChatMessage[] = session?.messages
+      ? [...(session.messages as ChatMessage[])]
+      : (messages as ChatMessage[]);
+    if (sessionConfigParams) {
+      const lines: string[] = [];
+      if (sessionConfigParams.origin) lines.push(`Origin airport: ${String(sessionConfigParams.origin).toUpperCase()}`);
+      if (sessionConfigParams.destination) lines.push(`Destination airport: ${String(sessionConfigParams.destination).toUpperCase()}`);
+      if (sessionConfigParams.dateFrom || sessionConfigParams.dateTo) {
+        lines.push(`Date range: ${String(sessionConfigParams.dateFrom ?? "open")} to ${String(sessionConfigParams.dateTo ?? "open")}`);
+      }
+      if (typeof sessionConfigParams.passengers === "number") lines.push(`Passengers: ${sessionConfigParams.passengers}`);
+      if (typeof sessionConfigParams.maxPrice === "number") lines.push(`Max total price: ${sessionConfigParams.maxPrice} EUR`);
+      if (lines.length > 0) {
+        sessionMessages.unshift({
+          role: "system",
+          content: `[CURRENT SESSION CONFIG] These are the user's saved sidebar settings for this chat session. Use them as defaults; only override when the user explicitly states different values in their message.\n${lines.join("\n")}`,
+        });
+      }
+    }
     const result = await runLlmAgent(
       {
-        messages: session?.messages ?? messages,
+        messages: sessionMessages,
         model: req.body?.model,
         maxIterations: req.body?.maxIterations,
         homeIata: typeof req.body?.homeIata === "string" ? req.body.homeIata.toUpperCase() : undefined,
@@ -1785,7 +1807,6 @@ app.post("/api/llm/chat", async (req, res) => {
           lat: req.body?.homeLocation?.lat,
           lon: req.body?.homeLocation?.lon,
         },
-        parameters: session?.parameters ?? (incomingParams as SessionParameters | undefined) ?? undefined,
       },
       { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },
       (event) => {
