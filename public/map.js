@@ -1465,22 +1465,20 @@
     const home = await requestHomeLocation();
     let resp;
     try {
-      resp = await fetch("/api/llm/chat-agent", {
+      resp = await fetch("/api/llm/chat", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "text/event-stream" },
         body: JSON.stringify({
-          text,
-          chatId: chatSessionId,
-          clientData: {
-            model: undefined,
-            maxIterations: 12,
-            homeIata: home.homeIata || undefined,
-            parameters: getChatSessionParams(),
-            homeLocation: {
-              lat: home.lat ?? undefined,
-              lon: home.lon ?? undefined,
-              country: home.country ?? undefined,
-            },
+          sessionId: chatSessionId,
+          parameters: getChatSessionParams(),
+          messages: [{ role: "user", content: text }],
+          model: undefined,
+          maxIterations: 12,
+          homeIata: home.homeIata || undefined,
+          homeLocation: {
+            lat: home.lat ?? undefined,
+            lon: home.lon ?? undefined,
+            country: home.country ?? undefined,
           },
         }),
       });
@@ -1593,10 +1591,10 @@
           return;
         }
         if (evtName === "final") {
-          if (data && data.chatId) {
+          if (data && data.sessionId) {
             const preview = String(text || "").slice(0, 40) + ((text || "").length > 40 ? "…" : "");
-            registerSession(data.chatId, preview, getChatSessionParams());
-            chatSessionId = data.chatId;
+            registerSession(data.sessionId, preview, getChatSessionParams());
+            chatSessionId = data.sessionId;
           }
           return;
         }
