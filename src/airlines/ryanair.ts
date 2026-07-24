@@ -136,11 +136,8 @@ const RYANAIR_CORRELATION_ID = process.env.RYANAIR_CORRELATION_ID ?? "00000000-0
 const RYANAIR_XID_COOKIE = process.env.RYANAIR_XID_COOKIE ?? "";
 
 function buildRyanairCookieHeader(): string {
-  log.trace(">>> buildRyanairCookieHeader enter", { cls: "Ryanair", fn: "buildRyanairCookieHeader" });
-  const start = Date.now();
   const parts = [`fr-correlation-id=${RYANAIR_CORRELATION_ID}`];
   if (RYANAIR_XID_COOKIE) parts.push(RYANAIR_XID_COOKIE);
-  log.trace("<<< buildRyanairCookieHeader exit", { cls: "Ryanair", fn: "buildRyanairCookieHeader", waitMs: Date.now() - start });
   return parts.join("; ");
 }
 
@@ -1489,15 +1486,11 @@ async function loadRyanairSkipKeys(
 }
 
 function daysBetween(fromIso: string, toIso: string): number {
-  log.trace(">>> daysBetween enter", { cls: "Ryanair", fn: "daysBetween" });
-  const start = Date.now();
   const from = new Date(`${fromIso}T00:00:00Z`).getTime();
   const to = new Date(`${toIso}T00:00:00Z`).getTime();
   if (!Number.isFinite(from) || !Number.isFinite(to)) return -1;
   if (from > to) return -1;
-  const result = Math.round((to - from) / (24 * 60 * 60 * 1000));
-  log.trace("<<< daysBetween exit", { cls: "Ryanair", fn: "daysBetween", waitMs: Date.now() - start });
-  return result;
+  return Math.round((to - from) / (24 * 60 * 60 * 1000));
 }
 
 export interface RyanairCrawlLogger {
