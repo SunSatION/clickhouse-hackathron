@@ -1204,6 +1204,55 @@ app.post('/api/map/round-trip', async (req, res) => {
   }
 });
 
+app.post('/api/map/multi-city/generate', async (req, res) => {
+  try {
+    const stopsRaw = Array.isArray(req.body?.stops) ? req.body.stops : null;
+    const homeIata = String(req.body?.homeIata ?? '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(homeIata)) { res.status(400).json({ ok: false, error: 'homeIata is required (3-letter IATA)' }); return; }
+    if (!stopsRaw || stopsRaw.length < 1) { res.status(400).json({ ok: false, error: 'stops[] with at least 1 entry is required' }); return; }
+    const dateFrom = String(req.body?.dateFrom ?? '');
+    const dateTo = String(req.body?.dateTo ?? '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) { res.status(400).json({ ok: false, error: 'dateFrom and dateTo must be YYYY-MM-DD' }); return; }
+    const stops = stopsRaw.map((s: Record<string, unknown>, idx: number) => {
+      const iata = String(s.iata ?? '').trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(iata)) throw new Error(`stop #${idx + 1}: iata must be a 3-letter code`);
+      if (iata === homeIata) throw new Error(`stop #${idx + 1}: cannot equal home airport ${homeIata}`);
+      const minStayDays = s.minStayDays != null ? Math.max(1, Math.floor(Number(s.minStayDays))) : undefined;
+      const maxStayDays = s.maxStayDays != null ? Math.max(1, Math.floor(Number(s.maxStayDays))) : undefined;
+      return { iata, minStayDays, maxStayDays };
+    });
+    for (let i = 1; i < stops.length; i++) {
+      const prev = stops[i - 1] as { iata: string };
+      const cur = stops[i] as { iata: string };
+      if (cur.iata === prev.iata) { res.status(400).json({ ok: false, error: `stop #${i + 1} (${cur.iata}) is a duplicate of the previous stop` }); return; }
+    }
+    const defaultStayDays = Math.max(1, Math.min(30, Math.floor(Number(req.body?.defaultStayDays ?? 3))));
+    const defaultFlexDays = Math.max(0, Math.min(7, Math.floor(Number(req.body?.defaultFlexDays ?? 1))));
+    const legFlexDays = Math.max(0, Math.min(7, Math.floor(Number(req.body?.legFlexDays ?? 2))));
+    const maxTotalPrice = Math.max(0, Math.floor(Number(req.body?.maxTotalPrice ?? 0)));
+    const maxLegPrice = Math.max(0, Math.floor(Number(req.body?.maxLegPrice ?? 0)));
+    const limit = Math.max(1, Math.min(100, Math.floor(Number(req.body?.limit ?? 20))));
+    const anchorRaw = req.body?.anchor;
+    let anchor: { city: string; day: string } | null = null;
+    if (anchorRaw && typeof anchorRaw === 'object') {
+      const city = String(anchorRaw.city ?? '').trim().toUpperCase();
+      const day = String(anchorRaw.day ?? '').trim();
+      if (!/^[A-Z]{3}$/.test(city) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) { res.status(400).json({ ok: false, error: 'anchor.city and anchor.day must be valid IATA + YYYY-MM-DD' }); return; }
+      anchor = { city, day };
+    }
+    const { findMultiCityBestFare } = await import('../src/db/multi-city-best-fare.js');
+    const result = await findMultiCityBestFare({ homeIata, stops, dateFrom, dateTo, defaultStayDays, defaultFlexDays, legFlexDays, maxTotalPrice, maxLegPrice, anchor, limit });
+    const { getAirport } = await import('../src/db/airports.js');
+    const enriched = await Promise.all(result.bundles.map(async (b) => ({
+      ...b,
+      legs: await Promise.all(b.legs.map(async (l) => ({ ...l, originAirport: await getAirport(l.from), destinationAirport: await getAirport(l.to) }))),
+    })));
+    res.json({ ok: true, bundles: enriched, query: result.query, window: result.window, generatedSql: result.generatedSql });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
 app.post('/api/map/itinerary/refresh-crawl', async (req, res) => {
   try {
     const legs = Array.isArray(req.body?.legs) ? (req.body.legs as Array<Record<string, unknown>>) : [];
