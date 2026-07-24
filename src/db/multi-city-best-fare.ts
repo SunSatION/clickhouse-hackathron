@@ -209,7 +209,7 @@ export function buildMultiCityBestFareQuery(
           AND price > 0
           AND ({useMaxLeg:UInt8} = 0 OR price <= {maxLegPrice:UInt32})
         ORDER BY price ASC
-        LIMIT 50
+        LIMIT 10
       ) AS l${i + 1}
     `);
   }
