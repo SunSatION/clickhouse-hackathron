@@ -49,6 +49,11 @@ export async function pacedFetch(
   const reqMs = Date.now() - reqStart;
   log.trace(`>>> HTTP ${(init?.method ?? "GET").padEnd(10)} ${url}`, { cls: "Pacer", fn: "pacedFetch", reqMs, url });
   log.trace(`<<< HTTP ${res.status} ${res.statusText} (${reqMs}ms) ${url}`, { cls: "Pacer", fn: "pacedFetch", reqMs, status: res.status, url });
+  if (!res.ok) {
+    const clone = res.clone();
+    const body = await clone.text().catch(() => "(unreadable)");
+    log.trace(`    body: ${body.slice(0, 500)}`, { cls: "Pacer", fn: "pacedFetch", status: res.status, url });
+  }
   await pacer.wait();
   return res;
 }
@@ -78,6 +83,11 @@ export async function globalPacedFetch(
   const reqMs = Date.now() - reqStart;
   log.trace(`>>> HTTP ${(init?.method ?? "GET").padEnd(10)} ${url}`, { cls: "GlobalPacer", fn: "globalPacedFetch", reqMs, url });
   log.trace(`<<< HTTP ${res.status} ${res.statusText} (${reqMs}ms) ${url}`, { cls: "GlobalPacer", fn: "globalPacedFetch", reqMs, status: res.status, url });
+  if (!res.ok) {
+    const clone = res.clone();
+    const body = await clone.text().catch(() => "(unreadable)");
+    log.trace(`    body: ${body.slice(0, 500)}`, { cls: "GlobalPacer", fn: "globalPacedFetch", status: res.status, url });
+  }
   await globalPacer.wait();
   return res;
 }
