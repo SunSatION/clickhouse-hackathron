@@ -74,6 +74,7 @@ import { ToolRoundTrip } from "./plan-round-trip.js";
 import { ToolMultiStop } from "./plan-multi-stop.js";
 import { ToolMultiCityBestFare } from "./multi-city-best-fare.js";
 import { ToolRefreshCrawl } from "./trigger-refresh-crawl.js";
+import { ToolTriggerCrawlFromOrigin } from "./trigger-crawl-from-origin.js";
 import { ToolCheapestDestinations } from "./find-cheapest-destinations.js";
 import { ToolCheapestDates } from "./find-cheapest-dates.js";
 import { ToolBestRoundTrip } from "./find-best-round-trip.js";
@@ -96,6 +97,7 @@ export {
   ToolRoundTrip,
   ToolMultiStop,
   ToolRefreshCrawl,
+  ToolTriggerCrawlFromOrigin,
   ToolCheapestDestinations,
   ToolCheapestDates,
   ToolBestRoundTrip,
@@ -125,6 +127,7 @@ const ALL_TOOLS = [
   ToolMultiStop,
   ToolMultiCityBestFare,
   ToolRefreshCrawl,
+  ToolTriggerCrawlFromOrigin,
   ToolListFavorites,
   ToolSaveFavorite,
   ToolRemoveFavorite,
