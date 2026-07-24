@@ -208,6 +208,8 @@ export function buildMultiCityBestFareQuery(
           AND departure_date BETWEEN toDate({dateFrom:Date}) AND toDate({dateTo:Date})
           AND price > 0
           AND ({useMaxLeg:UInt8} = 0 OR price <= {maxLegPrice:UInt32})
+        ORDER BY price ASC
+        LIMIT 50
       ) AS l${i + 1}
     `);
   }
