@@ -24,6 +24,24 @@ export interface ChatMessage {
   name?: string;
 }
 
+export interface LlmChatParameters {
+  origin?: string;
+  destination?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  passengers?: number;
+  maxPrice?: number;
+  mode?: string;
+  planner?: string;
+  maxItineraries?: number;
+  daysPerStop?: number;
+  flexDays?: number;
+  minDays?: number;
+  maxDays?: number;
+  homeIata?: string;
+  [key: string]: unknown;
+}
+
 export interface LlmChatRequest {
   messages: ChatMessage[];
   model?: string;
@@ -36,6 +54,7 @@ export interface LlmChatRequest {
     lat?: number;
     lon?: number;
   };
+  parameters?: LlmChatParameters;
 }
 
 export type LlmStreamEvent =
@@ -71,6 +90,32 @@ function buildHomeLocationContext(hl: NonNullable<LlmChatRequest["homeLocation"]
   return [{ role: "system", content: parts.join(" | ") }];
 }
 
+function buildSessionConfigContext(params: LlmChatParameters): ChatMessage | null {
+  const lines: string[] = [];
+  if (params.origin) lines.push(`Origin airport: ${String(params.origin).toUpperCase()}`);
+  if (params.homeIata) lines.push(`Home airport (user setting): ${String(params.homeIata).toUpperCase()}`);
+  if (params.destination) lines.push(`Destination airport: ${String(params.destination).toUpperCase()}`);
+  if (params.dateFrom || params.dateTo) {
+    const from = params.dateFrom || "open";
+    const to = params.dateTo || "open";
+    lines.push(`Date range: ${from} to ${to}`);
+  }
+  if (params.mode) lines.push(`Trip mode: ${String(params.mode)}`);
+  if (params.planner) lines.push(`Planner engine: ${String(params.planner)}`);
+  if (typeof params.maxItineraries === "number") lines.push(`Max itineraries to return: ${params.maxItineraries}`);
+  if (typeof params.daysPerStop === "number") lines.push(`Default stay per stop: ${params.daysPerStop} days`);
+  if (typeof params.flexDays === "number") lines.push(`Stay flex (±days): ${params.flexDays}`);
+  if (typeof params.minDays === "number") lines.push(`Min trip length: ${params.minDays} days`);
+  if (typeof params.maxDays === "number") lines.push(`Max trip length: ${params.maxDays} days`);
+  if (typeof params.passengers === "number") lines.push(`Passengers: ${params.passengers}`);
+  if (typeof params.maxPrice === "number") lines.push(`Max total price: ${params.maxPrice} EUR`);
+  if (lines.length === 0) return null;
+  return {
+    role: "system",
+    content: `[CURRENT SESSION CONFIG] These are the user's saved sidebar settings for this chat session. Use them as defaults; only override when the user explicitly states different values in their message.\n${lines.join("\n")}`,
+  };
+}
+
 function toOpenAiTools(): Array<Record<string, unknown>> {
   return listTools().map((t: ToolDefinition) => ({
     type: "function",
@@ -94,6 +139,7 @@ export async function runLlmAgent(
   const messages: ChatMessage[] = [
     { role: "system", content: WAYFARE_ANSWER_SYSTEM_PROMPT },
     ...(req.homeLocation || req.homeIata ? buildHomeLocationContext(req.homeLocation ?? {}, req.homeIata) : []),
+    ...(req.parameters ? [buildSessionConfigContext(req.parameters)].filter(Boolean) as ChatMessage[] : []),
     ...req.messages,
   ];
   const emit = (e: LlmStreamEvent) => {

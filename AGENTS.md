@@ -12,6 +12,14 @@ Before changing task IDs, task payloads, Trigger.dev callers, ClickHouse schemas
 
 These are settled conventions. **Do not deviate without an explicit user request.**
 
+### 0. `/admin` is gated by nginx basic-auth (VPS only)
+
+- The admin panel (`/admin`) and its mutation surface (`/api/trigger/*`, `/api/scripts/*`) are protected by HTTP Basic auth in `deploy/nginx/wayfare-api.allbyitself.com.conf` using `location ^~` blocks with `auth_basic` + `auth_basic_user_file /etc/nginx/.htpasswd`.
+- Public read endpoints (`/api/health`, `/api/runs*`, `/api/iatas`, `/api/tasks`, `/api/config`, `/api/otel/*`) stay open so the public map keeps working.
+- Credentials live in `/etc/nginx/.htpasswd` (chmod 0640, group `www-data`). Create/update with `sudo scripts/setup-admin-auth.sh [<username>]` (bcrypt-hashed); remove with `sudo scripts/setup-admin-auth.sh --delete <username>`. The script also runs `nginx -t` and reloads nginx.
+- The file `/etc/nginx/.htpasswd` is **never** committed. Re-generate from the password store (1Password / Bitwarden) if the VPS is rebuilt.
+- This gate protects the VPS deployment only. The Vercel deployment (`api/index.ts` + `public/admin.html`) is separate — do not advertise `/admin` as a Vercel path until the same gate is added there.
+
 ### 1. Observability = ClickStack, in-process emitters
 
 - OTEL tables live in the **`otel`** database (migrations `0009`, `0010`). The app writes directly to them via `getClickHouseForOtel()` — no separate collector process needed.
