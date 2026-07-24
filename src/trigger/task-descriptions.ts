@@ -90,6 +90,13 @@ export const TASK_DESCRIPTIONS = {
     params: ["messages[]", "model?", "maxIterations?"],
     eta: "Variable — depends on LLM latency and number of tool calls (typically seconds to minutes)",
   },
+  "wayfare-chat": {
+    label: "Wayfare chat (Trigger.dev chat.agent proxy)",
+    summary:
+      "Trigger.dev native chat.agent surface for the Wayfare chatbot. Delegates the LLM/tool work to the existing custom loop in src/llm/client.ts (runLlmAgent) so the WayfareAnswer schema and OpenAI-compatible provider dance are unchanged, but exposes Sessions, idle suspend/resume, continuation, and the useTriggerChatTransport wire protocol from the SDK. Writes the structured WayfareAnswer back to the chat stream as a persisted data-wayfare-answer chunk plus a short human-readable text-delta reply. Use the Vercel AI SDK chat transport from the browser; the legacy schemaTask `llm-chat-agent` remains available as a fallback.",
+    params: ["clientData: { model?, maxIterations?, homeIata?, parameters?, homeLocation? }"],
+    eta: "Same as llm-chat-agent (the underlying loop is identical)",
+  },
   "crawl-airlines-six-hours": {
     label: "Scheduled: crawl all airlines (every 6h)",
     summary:

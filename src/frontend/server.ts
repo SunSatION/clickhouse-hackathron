@@ -13,6 +13,7 @@ import { join } from "node:path";
 import express from "express";
 
 import { runs, tasks } from "@trigger.dev/sdk";
+import { AgentChat } from "@trigger.dev/sdk/chat";
 
 import { listTaskDescriptions } from "../trigger/task-descriptions.js";
 import { logger } from "../lib/logger.js";
@@ -1784,6 +1785,7 @@ app.post("/api/llm/chat", async (req, res) => {
           lat: req.body?.homeLocation?.lat,
           lon: req.body?.homeLocation?.lon,
         },
+        parameters: session?.parameters ?? (incomingParams as SessionParameters | undefined) ?? undefined,
       },
       { provider: creds.provider, apiKey: creds.apiKey, model: creds.model },
       (event) => {
@@ -1821,6 +1823,143 @@ app.post("/api/llm/chat", async (req, res) => {
     res.end();
   } catch (err) {
     try { sseSend(res, "error", { error: (err as Error).message }); res.end(); } catch { /* aborted */ }
+  }
+});
+
+app.post("/api/llm/chat-agent", async (req, res) => {
+  try {
+    const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+    const chatId = typeof req.body?.chatId === "string" && req.body.chatId.trim()
+      ? req.body.chatId.trim()
+      : crypto.randomUUID();
+    if (!text) {
+      res.status(400).json({ ok: false, error: "text is required" });
+      return;
+    }
+
+    const incomingClientData = (req.body?.clientData && typeof req.body.clientData === "object")
+      ? req.body.clientData
+      : {};
+    const clientData = {
+      model: typeof incomingClientData.model === "string" ? incomingClientData.model : undefined,
+      maxIterations: typeof incomingClientData.maxIterations === "number"
+        ? Math.min(20, Math.max(1, Math.floor(incomingClientData.maxIterations)))
+        : 12,
+      homeIata: typeof incomingClientData.homeIata === "string"
+        ? incomingClientData.homeIata.toUpperCase()
+        : undefined,
+      parameters: incomingClientData.parameters ?? {},
+      homeLocation: {
+        ip: req.ip ?? req.socket.remoteAddress ?? undefined,
+        country: incomingClientData.homeLocation?.country,
+        lat: incomingClientData.homeLocation?.lat,
+        lon: incomingClientData.homeLocation?.lon,
+      },
+    };
+
+    sseHeaders(res);
+    const ac = new AbortController();
+    req.on("close", () => ac.abort());
+    res.on("close", () => ac.abort());
+
+    const chat = new AgentChat({
+      agent: "wayfare-chat",
+      id: chatId,
+      clientData,
+      streamTimeoutSeconds: 600,
+    });
+
+    log.info(">>> chat-agent start", {
+      chatId,
+      textPreview: text.slice(0, 80),
+      homeIata: clientData.homeIata,
+    });
+
+    sseSend(res, "status", { status: "thinking", provider: "wayfare-chat", model: clientData.model ?? "default" });
+
+    let stream;
+    try {
+      stream = await chat.sendMessage(text, { abortSignal: ac.signal });
+    } catch (err) {
+      log.error("chat-agent: sendMessage failed", { chatId, error: (err as Error).message });
+      sseSend(res, "error", { error: (err as Error).message });
+      sseSend(res, "final", { ok: false, chatId, error: (err as Error).message });
+      res.end();
+      return;
+    }
+
+    sseSend(res, "status", { status: "answering", provider: "wayfare-chat", model: clientData.model ?? "default" });
+
+    let answer: unknown = null;
+    let replyText = "";
+    let iter = 0;
+
+    try {
+      for await (const chunk of stream) {
+        if (ac.signal.aborted) break;
+        iter += 1;
+        const t = (chunk as { type?: string }).type;
+        if (t === "data-wayfare-tool") {
+          const data = (chunk as { data?: { tool?: string; label?: string } }).data ?? {};
+          sseSend(res, "tool_progress", { tool: data.tool, label: data.label ?? `Working (${data.tool ?? "?"})…` });
+          continue;
+        }
+        if (t === "data-wayfare-run") {
+          const data = (chunk as { data?: { tool?: string; runId?: string; task?: string | null; crawlRunId?: string | null } }).data ?? {};
+          sseSend(res, "run_triggered", {
+            toolName: data.tool ?? "background",
+            runId: data.runId ?? "",
+            task: data.task ?? null,
+            crawlRunId: data.crawlRunId ?? null,
+            publicAccessToken: null,
+          });
+          continue;
+        }
+        if (t === "data-wayfare-error") {
+          const data = (chunk as { data?: { error?: string } }).data ?? {};
+          sseSend(res, "error", { error: data.error ?? "unknown error" });
+          continue;
+        }
+        if (t === "data-wayfare-answer") {
+          const data = (chunk as { data?: unknown }).data;
+          if (data) answer = data;
+          sseSend(res, "answer", { answer: data });
+          continue;
+        }
+        if (t === "data-wayfare-tool-summary") {
+          continue;
+        }
+        if (t === "text-delta") {
+          const delta = (chunk as { delta?: string }).delta;
+          if (typeof delta === "string" && delta.length) replyText += delta;
+          continue;
+        }
+      }
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (!ac.signal.aborted) {
+        log.error("chat-agent: stream error", { chatId, error: msg });
+        sseSend(res, "error", { error: msg });
+      }
+    }
+
+    sseSend(res, "done", { iterations: iter, toolCalls: 0 });
+    sseSend(res, "final", {
+      ok: answer != null,
+      chatId,
+      answer,
+      replyText,
+      sessionId: chatId,
+    });
+    res.end();
+    log.info("<<< chat-agent done", { chatId, ok: answer != null, replyBytes: replyText.length });
+  } catch (err) {
+    try {
+      sseSend(res, "error", { error: (err as Error).message });
+      res.end();
+    } catch {
+      /* aborted */
+    }
   }
 });
 

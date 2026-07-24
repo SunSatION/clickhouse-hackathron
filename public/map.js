@@ -111,6 +111,7 @@
         if (type === "session_switch") {
           chatSessionId = sessionId;
           chatSessionParameters = parameters || {};
+          applySessionParams(chatSessionParameters);
           if (sessionData) {
             const sessions = getStoredSessions();
             const idx = sessions.findIndex((s) => s.id === sessionId);
@@ -149,6 +150,7 @@
   function getChatSessionParams() {
     return {
       origin: state.mapFilterOrigin || state.homeIata || undefined,
+      homeIata: state.homeIata || undefined,
       destination: Array.from(state.mapFilterDestinations)[0] || undefined,
       dateFrom: state.builder.dateFrom || undefined,
       dateTo: state.builder.dateTo || undefined,
@@ -161,6 +163,44 @@
       maxDays: state.builder.maxDays || 14,
       ...chatSessionParameters,
     };
+  }
+
+  function applySessionParams(params) {
+    if (!params || typeof params !== "object") return;
+    const setLs = (key, value) => { if (value !== undefined && value !== null) localStorage.setItem(key, String(value)); };
+    const homeChanged = params.homeIata && typeof params.homeIata === "string" && params.homeIata.toUpperCase() !== state.homeIata;
+    if (homeChanged) {
+      state.homeIata = params.homeIata.toUpperCase();
+      setLs("wayfarer.home", state.homeIata);
+    }
+    if (params.origin && typeof params.origin === "string") {
+      const o = params.origin.toUpperCase();
+      if (o !== state.mapFilterOrigin) {
+        state.mapFilterOrigin = o;
+        if (Array.isArray(state.mapFilterDestinations)) state.mapFilterDestinations = new Set();
+      }
+    }
+    const builderKeys = [
+      ["dateFrom", "wayfarer.builder.dateFrom"],
+      ["dateTo", "wayfarer.builder.dateTo"],
+      ["mode", "wayfarer.builder.mode"],
+      ["planner", "wayfarer.builder.planner"],
+      ["maxItineraries", "wayfarer.builder.maxItineraries"],
+      ["daysPerStop", "wayfarer.builder.daysPerStop"],
+      ["flexDays", "wayfarer.builder.flexDays"],
+      ["minDays", "wayfarer.builder.minDays"],
+      ["maxDays", "wayfarer.builder.maxDays"],
+    ];
+    for (const [key, lsKey] of builderKeys) {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+        state.builder[key] = params[key];
+        setLs(lsKey, params[key]);
+      }
+    }
+    if (typeof renderBuilder === "function" && state.sidebarMode === "builder") renderBuilder();
+    if (homeChanged && typeof refreshReachableToHome === "function") {
+      refreshReachableToHome().then(() => { if (typeof drawPins === "function") drawPins(); }).catch(() => {});
+    }
   }
 
   function getStoredSessions() {
@@ -241,6 +281,7 @@
     if (!session) return;
     chatSessionId = session.id;
     chatSessionParameters = session.parameters || {};
+    applySessionParams(chatSessionParameters);
     updateStoredSession(id, { updatedAt: Date.now() });
     broadcastSessionSwitch(session.id, chatSessionParameters);
     const label = session.name || "New chat";
@@ -1420,23 +1461,26 @@
     return homeLocationPromise;
   }
 
-  async function runLlmStream(messages, handlers) {
+  async function runLlmStream(text, handlers) {
     const home = await requestHomeLocation();
     let resp;
     try {
-      resp = await fetch("/api/llm/chat", {
+      resp = await fetch("/api/llm/chat-agent", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "text/event-stream" },
         body: JSON.stringify({
-          messages,
-          sessionId: chatSessionId,
-          parameters: getChatSessionParams(),
-          maxIterations: 12,
-          homeIata: home.homeIata || undefined,
-          homeLocation: {
-            lat: home.lat ?? undefined,
-            lon: home.lon ?? undefined,
-            country: home.country ?? undefined,
+          text,
+          chatId: chatSessionId,
+          clientData: {
+            model: undefined,
+            maxIterations: 12,
+            homeIata: home.homeIata || undefined,
+            parameters: getChatSessionParams(),
+            homeLocation: {
+              lat: home.lat ?? undefined,
+              lon: home.lon ?? undefined,
+              country: home.country ?? undefined,
+            },
           },
         }),
       });
@@ -1491,23 +1535,22 @@
     const prompt = chatInput.value.trim();
     if (!prompt) return;
     chatSend.disabled = true;
-    const messages = [{ role: "user", content: prompt }];
 
-    await runChat(messages, prompt);
+    await runChat(prompt);
 
     chatSend.disabled = false;
     chatInput.value = "";
     autoResize();
   }
 
-  async function runChat(messages, prompt) {
+  async function runChat(text) {
     aiProgressShow("Thinking…");
     aiProgressAppendStep("Thinking", "");
     let finalAnswer = null;
     let hadError = false;
     let pendingClarification = null;
 
-    await runLlmStream(messages, {
+    await runLlmStream(text, {
       onEvent: (evtName, data) => {
         if (evtName === "status") {
           if (data && data.status === "answering") {
@@ -1550,11 +1593,10 @@
           return;
         }
         if (evtName === "final") {
-          if (data && data.sessionId) {
-            const firstMsg = data.sessionMessages?.find((m) => m.role === "user");
-            const msgContent = typeof firstMsg?.content === "string" ? firstMsg.content : "";
-            const name = msgContent.slice(0, 40) + (msgContent.length > 40 ? "…" : "");
-            registerSession(data.sessionId, name, data.sessionParameters || {});
+          if (data && data.chatId) {
+            const preview = String(text || "").slice(0, 40) + ((text || "").length > 40 ? "…" : "");
+            registerSession(data.chatId, preview, getChatSessionParams());
+            chatSessionId = data.chatId;
           }
           return;
         }
@@ -1574,10 +1616,8 @@
     if (pendingClarification) {
       aiProgressDone("I need a bit more info");
       const q = pendingClarification;
-      const nextMessages = [...messages, { role: "user", content: prompt }, { role: "assistant", content: JSON.stringify(q) }];
-       showClarification(q.text || "", Array.isArray(q.suggestions) ? q.suggestions : [], async (reply) => {
-        nextMessages.push({ role: "user", content: reply });
-        await runChat(nextMessages, reply);
+      showClarification(q.text || "", Array.isArray(q.suggestions) ? q.suggestions : [], async (reply) => {
+        await runChat(reply);
       });
       return;
     }
